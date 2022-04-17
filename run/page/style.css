@@ -1,0 +1,236 @@
+:root {
+  --immr-background-color: #1f1f1f;
+  --immr-active-color: #4287f5;
+
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#immr-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--immr-background-color);
+}
+
+#immr-panel > #immr-show-hide-button {
+  position: absolute;
+  bottom: 5px;
+  left: -40px;
+
+  width: 40px;
+  height: 40px;
+
+  border-bottom-left-radius: 5px;
+  border-top-left-radius: 5px;
+
+  background-color: var(--immr-background-color);
+
+  box-sizing: border-box;
+  border-left: 1px solid white;
+  border-top: 1px solid white;
+  border-bottom: 1px solid white;
+
+  line-height: 40px;
+  color: white;
+  text-align: center;
+  font-size: 30px;
+  user-select: none;
+}
+
+#immr-search-area {
+  width: 100%;
+  height: auto;
+  position: relative;
+}
+
+#immr-search {
+  width: calc(100% - 70px);
+  margin-left: 20px;
+  margin-top: 10px;
+
+  padding: 0;
+  padding-left: 20px;
+
+  height: 30px;
+  line-height: 30px;
+  border: 5px solid white;
+
+  border-radius: 10px;
+
+  background-color: white;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+#immr-search:focus {
+  outline: none;
+  border-color: var(--immr-active-color);
+}
+
+#immr-search-suggestions {
+  z-index: 20;
+
+  position: absolute;
+  bottom: -10px;
+  transform: translateY(100%);
+  left: 25px;
+
+  border: 5px solid white;
+  border-radius: 10px;
+  width: calc(100% - 60px);
+  height: auto;
+
+  display: grid;
+  grid-template-columns: 100%;
+  row-gap: 2.5px;
+
+  background-color: white;
+}
+
+.immr-search-suggestion {
+  width: 100%;
+  text-align: center;
+
+  height: 30px;
+  line-height: 30px;
+  font-size: 20px;
+  color: white;
+
+  background-color: var(--immr-background-color);
+}
+
+.immr-search-suggestion.selected {
+  background-color: var(--immr-active-color);
+  color: black;
+}
+
+.immr-search-suggestion.error {
+  color: gray;
+  font-style: italic;
+}
+
+.immr-search-suggestion:first-child {
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+}
+
+.immr-search-suggestion:last-child {
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+#immr-card-panel {
+  position: relative;
+  width: calc(100% - 40px);
+  margin-top: 20px;
+  margin-left: 20px;
+  height: auto;
+
+  display: grid;
+  grid-template-columns: 100%;
+  row-gap: 10px;
+}
+
+.immr-card-row {
+  position: relative;
+  width: 100%;
+  height: auto;
+}
+
+.immr-card-row > p {
+  padding: 0;
+  margin: 0;
+  padding-right: 20px;
+  color: white;
+  display: inline-block;
+  text-align: left;
+  position: relative;
+}
+
+.immr-card-row > p.big {
+  font-size: 20px;
+  line-height: 25px;
+}
+
+.immr-card-row > p.small {
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.immr-card-row > p.center {
+  text-align: center;
+  padding-right: 0;
+}
+
+#immr-card-panel > img {
+  position: relative;
+  width: 100%;
+  height: auto;
+  border-radius: 5px;
+}
+
+.immr-image-placeholder {
+  position: relative;
+  padding-top: calc(9 / 16 * 100%);
+  background-color: #2f2f2f;
+  border-radius: 5px;
+}
+
+.immr-image-placeholder > span {
+  color: gray;
+  text-align: center;
+  display: block;
+
+  position: absolute;
+  transform: translate(-50%, -50%);
+  top: 50%;
+  left: 50%;
+}
+
+.immr-card-sentence {
+  color: white;
+  padding: 0;
+  width: 100%;
+  font-size: 15px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.immr-card-sentence > .highlight {
+  background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.immr-card-line {
+  background-color: gray;
+  height: 2px;
+  width: 75%;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 1px;
+}
+
+.immr-card-edit {
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  min-width: max-content;
+  z-index: 30;
+  border: 2.5px solid var(--immr-active-color);
+  background-color: white;
+  color: black;
+  display: block;
+
+  top: -2.5px;
+  left: -2.5px;
+  border-radius: 2.5px;
+}
+
+.immr-card-edit:focus {
+  outline: none;
+}

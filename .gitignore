@@ -1,4 +1,10 @@
 /.gradle
 /.idea
 /build
-/run
+
+/web/node_modules
+
+/run/data/cards/*
+/run/data/images/*
+/run/page/*.js
+/run/options.json

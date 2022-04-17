@@ -10,7 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 fun Route.imageRouting() {
-	route("/images") {
+	route("/api/images") {
 		get("{name?}") {
 			val name = call.parameters["name"] ?: return@get badRequest(call, "Missing name")
 			val image = Images.getImage(name) ?: return@get badRequest(call, "image not found")

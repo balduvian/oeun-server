@@ -13,7 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 fun Route.collectionRouting() {
-	route("/collection") {
+	route("/api/collection") {
 		get("browse") {
 			call.respond(Collection.serializeBrowseCards())
 		}
