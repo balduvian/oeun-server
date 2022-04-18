@@ -137,8 +137,7 @@ class UI extends preact.Component<{}, State> {
 		this.setState({ editingField: field }, () => {
 			const editBox = this.editBoxRef.current;
 			if (editBox !== null) {
-				editBox.focus();
-
+				//editBox.focus();
 				//const selection = window.getSelection();
 				//const range = document.createRange();
 				//range.selectNodeContents(editBox);
@@ -322,7 +321,7 @@ class UI extends preact.Component<{}, State> {
 					className={`immr-card-edit ${editing ? 'editing' : ''} ${className}`}
 					style={style}
 					role="textbox"
-					contentEditable={editing}
+					contentEditable
 					/* exit and confirmation conditions */
 					onKeyDown={
 						!editing
@@ -427,32 +426,47 @@ class UI extends preact.Component<{}, State> {
 						'sentence',
 						initialEditingField === 'sentence',
 					)}
-					<div
-						onPaste={event => {
-							const card = this.state.currentCard;
-							if (card === undefined) return;
-
-							const items = event.clipboardData;
-							console.log(items);
-							const goodItem = [...items.items].find(item => {
-								console.log(item);
-								return item.type === 'image/png' || item.type === 'image/jpeg';
-							});
-							const file = goodItem?.getAsFile() ?? undefined;
-							if (file === undefined) return;
-
-							const imageName = 'paste-' + Date.now().toString() + '.jpg';
-
-							file.arrayBuffer().then(async buffer => {
-								console.log(await util.imagePostRequest(`/api/images/${imageName}`, buffer));
-
-								card.picture = imageName;
+					<div className={`image-container ${initialEditingField === 'picture' ? 'image-editing' : ''}`}>
+						<input
+							onFocus={event => {
+								event.stopPropagation();
 								this.setState({
-									currentCard: card,
+									editingField: 'picture',
 								});
-							});
-						}}
-					>
+							}}
+							onBlur={event => {
+								event.stopPropagation();
+								this.setState({
+									editingField: undefined,
+								});
+							}}
+							onPaste={event => {
+								if (this.state.editingField !== 'picture') return;
+
+								const card = this.state.currentCard;
+								if (card === undefined) return;
+
+								const items = event.clipboardData;
+								console.log(items);
+								const goodItem = [...items.items].find(item => {
+									console.log(item);
+									return item.type === 'image/png' || item.type === 'image/jpeg';
+								});
+								const file = goodItem?.getAsFile() ?? undefined;
+								if (file === undefined) return;
+
+								const imageName = 'paste-' + Date.now().toString() + '.jpg';
+
+								file.arrayBuffer().then(async buffer => {
+									console.log(await util.imagePostRequest(`/api/images/${imageName}`, buffer));
+
+									card.picture = imageName;
+									this.setState({
+										currentCard: card,
+									});
+								});
+							}}
+						></input>
 						{initialCard.picture !== undefined ? (
 							<img className="card-img" src={'/api/images/' + initialCard.picture} />
 						) : (

@@ -2,7 +2,7 @@ import path from 'path';
 import * as webpack from 'webpack';
 
 const config: webpack.Configuration = {
-	mode: 'production',
+	mode: 'development',
 	entry: {
 		content: './src/content.tsx',
 	},

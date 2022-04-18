@@ -1,8 +1,10 @@
 package com.balduvian
 
 import com.balduvian.Directories.PATH_IMAGES
+import java.awt.image.BufferedImage
 import java.io.File
 import java.io.InputStream
+import javax.imageio.ImageIO
 
 object Images {
 	data class CachedImage(val name: String, val data: ByteArray)
@@ -27,12 +29,26 @@ object Images {
 		return null
 	}
 
-	fun saveImage(name: String, inputStream: InputStream) {
-		val file = File(PATH_IMAGES + name)
+	private fun makeOpaqueImage(inputStream: InputStream): BufferedImage {
+		val image = ImageIO.read(inputStream)
 
-		val stream = file.outputStream()
-		stream.write(inputStream.readAllBytes())
-		stream.close()
+		if (image.transparency == BufferedImage.OPAQUE) return image
+
+		/* reduce transparency */
+		val width = image.width
+		val height = image.height
+
+		val pixelsCopy = IntArray(width * height)
+		image.getRGB(0, 0, width, height, pixelsCopy, 0, width)
+
+		val opqueImage = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+		opqueImage.setRGB(0, 0, width, height, pixelsCopy, 0, width)
+
+		return opqueImage
+	}
+
+	fun saveImage(name: String, inputStream: InputStream) {
+		ImageIO.write(makeOpaqueImage(inputStream), "JPEG", File(PATH_IMAGES + name))
 	}
 
 	fun getImage(name: String): ByteArray? {
