@@ -21,7 +21,7 @@ fun Route.imageRouting() {
 			val name = call.parameters["name"] ?: return@post badRequest(call, "No name provided")
 			withContext(Dispatchers.IO) {
 				Images.saveImage(name, call.receiveStream())
-				call.respondText("saved")
+				call.respondText("{ \"message\": \"saved\" }")
 			}
 		}
 		delete("unused") {

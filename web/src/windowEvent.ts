@@ -1,11 +1,11 @@
-import * as preact from 'react';
+import * as react from 'react';
 
 export type Props<K extends keyof WindowEventMap> = {
 	eventName: K;
 	callBack: (event: WindowEventMap[K]) => void;
 };
 
-export class WindowEvent<K extends keyof WindowEventMap> extends preact.Component<Props<K>, {}> {
+export class WindowEvent<K extends keyof WindowEventMap> extends react.Component<Props<K>, {}> {
 	constructor(props: Props<K>) {
 		super(props);
 	}

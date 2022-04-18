@@ -1,122 +1,18 @@
 import * as preact from 'react';
 import * as reactDom from 'react-dom';
 import { WindowEvent } from './windowEvent';
-
-const wait = (time: number) => new Promise(acc => setTimeout(acc, time));
-
-const jsonGetRequest = (url: string) =>
-	new Promise<any>((acc, rej) =>
-		fetch(url)
-			.then(response => {
-				response
-					.json()
-					.then(json => acc(json))
-					.catch(rej);
-			})
-			.catch(rej),
-	);
-
-const imageGetRequest = (url: string) =>
-	new Promise<string>((acc, rej) =>
-		fetch(url).then(response => {
-			response
-				.blob()
-				.then(blob => {
-					const reader = new FileReader();
-					reader.onloadend = () => {
-						/* remove this part 'data:/;base64,' */
-						/* add this part 'data:image/jpg;base64,' */
-						const result = reader.result as string;
-
-						acc('data:image/jpg;base64,' + result.substring(result.indexOf(',') + 1));
-					};
-					reader.onerror = rej;
-					reader.readAsDataURL(blob);
-				})
-				.catch(rej);
-		}),
-	);
-
-type Part = {
-	english: string;
-	korean: string;
-};
-
-export type SearchSuggestion = {
-	word: string;
-	id: number;
-};
-
-type Highlights = { part: string; highlight: boolean }[];
-type EditHistory = { field: keyof Card; value: string | undefined }[];
-
-const strToHighlights = (str: string) => {
-	/* get indices of all the star markers */
-	const indicies: number[] = [];
-	let start = 0;
-	while (true) {
-		const nextIndex = str.indexOf('**', start);
-		if (nextIndex === -1) {
-			break;
-		} else {
-			indicies.push(nextIndex);
-			start = nextIndex + 2;
-		}
-	}
-
-	/* remove last fake index (no closing **) */
-	if (indicies.length % 2 == 1) {
-		indicies.pop();
-	}
-
-	/* don't need any processing */
-	if (indicies.length === 0) return [{ part: str, highlight: false }];
-
-	const ret: Highlights = [];
-
-	/* for each pair of indices */
-	for (let i = 0; i < indicies.length / 2; ++i) {
-		ret.push({
-			part: str.substring(i === 0 ? 0 : indicies[(i - 1) * 2 + 1] + 2, indicies[i * 2]),
-			highlight: false,
-		});
-		ret.push({
-			part: str.substring(indicies[i * 2] + 2, indicies[i * 2 + 1]),
-			highlight: true,
-		});
-	}
-	/* part after last pair */
-	ret.push({
-		part: str.substring(indicies[indicies.length - 1] + 2),
-		highlight: false,
-	});
-
-	return ret;
-};
+import { Card, EditHistory, Highlights, HistoryEntry, Part, SearchSuggestion } from './types';
+import * as util from './util';
 
 /* globals */
 let currentGoodTypingEventNo = 0;
-
-type Card = {
-	id: number;
-	word: string;
-	part: string | undefined;
-	definition: string;
-	sentence: string | undefined;
-	sentenceHighlights: Highlights | undefined;
-	picture: string | undefined;
-	date: Date;
-	badges: string[];
-};
 
 type State = {
 	searchSuggestions: SearchSuggestion[] | undefined;
 	noResults: boolean;
 	searchSelection: number;
 	currentCard: Card | undefined;
-	currentImage: string | undefined;
-	loadingImage: boolean;
-	parts: { [key: string]: Part };
+	parts: Part[];
 	badges: { [key: string]: string };
 	searchValue: string;
 	editingField: keyof Card | undefined;
@@ -125,7 +21,7 @@ type State = {
 
 class UI extends preact.Component<{}, State> {
 	searchRef: preact.RefObject<HTMLInputElement>;
-	editBoxRef: preact.RefObject<HTMLSpanElement>;
+	editBoxRef: preact.RefObject<HTMLParagraphElement>;
 
 	constructor(props: {}) {
 		super(props);
@@ -134,9 +30,7 @@ class UI extends preact.Component<{}, State> {
 			noResults: false,
 			searchSelection: 0,
 			currentCard: undefined,
-			currentImage: undefined,
-			loadingImage: false,
-			parts: {},
+			parts: [],
 			badges: {},
 			searchValue: '',
 			editingField: undefined,
@@ -146,9 +40,13 @@ class UI extends preact.Component<{}, State> {
 		this.searchRef = preact.createRef();
 		this.editBoxRef = preact.createRef();
 
-		Promise.all([jsonGetRequest(`/api/parts`), jsonGetRequest(`/api/badges`)]).then(([parts, badges]) => {
+		Promise.all([util.jsonGetRequest(`/api/parts`), util.jsonGetRequest(`/api/badges`)]).then(([parts, badges]) => {
 			this.setState({
-				parts,
+				parts: Object.keys(parts).map(partName => ({
+					id: partName,
+					english: parts[partName].english,
+					korean: parts[partName].korean,
+				})),
 				badges,
 			});
 		});
@@ -196,32 +94,36 @@ class UI extends preact.Component<{}, State> {
 		if (query.length === 0) {
 			this.setState(this.stateSearchResults([], false));
 		} else {
-			jsonGetRequest(`/api/collection/search/${query}`)
+			util.jsonGetRequest(`/api/collection/search/${query}`)
 				.then(data => this.setState(this.stateSearchResults(data, true)))
 				.catch(() => this.setState(this.stateSearchResults(undefined, false)));
 		}
 	}
 
-	confirm(newValue: string, nullable: boolean, forField: keyof Card) {
+	confirmFieldEdit(newValue: string, nullable: boolean, forField: keyof Card) {
 		const currentCard = this.state.currentCard;
 		/* impossible, but just in case */
-		if (currentCard === undefined) {
-			return this.setState({ editingField: undefined });
-		}
+		if (currentCard === undefined) return this.setState({ editingField: undefined });
 
 		const history = this.state.editHistory;
+		const lastHistoryEntry = history.length === 0 ? undefined : history[history.length - 1];
 
-		const filtered = newValue.trim();
-		if (filtered.length === 0) {
-			if (nullable) {
-				history.push({ field: forField, value: currentCard[forField] as string | undefined });
-				(currentCard[forField] as string | undefined) = undefined;
-			} else {
-				/* do not modify, illegal */
-			}
-		} else {
+		/* prevent history duplicates */
+		const sameEntry = (entry: HistoryEntry | undefined, newField: keyof Card, newValue: string | undefined) => {
+			return entry?.field === newField && entry?.value === newValue;
+		};
+
+		let filtered0 = newValue.trim();
+		let filtered1 = filtered0.length === 0 ? undefined : filtered0;
+
+		if ((filtered1 !== undefined || nullable) && !sameEntry(lastHistoryEntry, forField, filtered1)) {
+			/* first add the current value to history */
 			history.push({ field: forField, value: currentCard[forField] as string | undefined });
-			(currentCard[forField] as string) = filtered;
+
+			/* modify card with new value */
+			(currentCard[forField] as string | undefined) = filtered1;
+
+			//TODO edit database
 		}
 
 		this.setState({
@@ -237,13 +139,18 @@ class UI extends preact.Component<{}, State> {
 			if (editBox !== null) {
 				editBox.focus();
 
-				const selection = window.getSelection();
-				const range = document.createRange();
-				range.selectNodeContents(editBox);
-				selection?.removeAllRanges();
-				selection?.addRange(range);
+				//const selection = window.getSelection();
+				//const range = document.createRange();
+				//range.selectNodeContents(editBox);
+				//selection?.removeAllRanges();
+				//selection?.addRange(range);
 			}
 		});
+	}
+
+	partName(partid: string | undefined) {
+		if (partid === undefined) return undefined;
+		return this.state.parts.find(part => part.id === partid)?.english;
 	}
 
 	render() {
@@ -296,8 +203,6 @@ class UI extends preact.Component<{}, State> {
 						} else if (event.code === 'Escape') {
 							event.preventDefault();
 							this.unFocusSearch();
-						} else if (event.code === 'KeyZ' && event.ctrlKey) {
-							event.preventDefault();
 						} else if (event.code === 'Enter') {
 							++currentGoodTypingEventNo;
 							event.preventDefault();
@@ -309,33 +214,13 @@ class UI extends preact.Component<{}, State> {
 								this.selectAllSearch();
 							});
 
-							jsonGetRequest(`/api/collection/${id}`)
+							util.jsonGetRequest(`/api/collection/${id}`)
 								.then((data: Card) => {
-									if (data.sentence !== undefined) {
-										data.sentenceHighlights = strToHighlights(data.sentence);
-									}
 									this.setState({
 										currentCard: data,
-										currentImage: undefined,
 										editingField: undefined,
 										editHistory: [],
-										loadingImage: data.picture !== undefined,
 									});
-
-									if (data.picture !== undefined) {
-										imageGetRequest(`/api/images/${data.picture}`)
-											.then((imageData: string) => {
-												this.setState({
-													currentImage: imageData,
-													loadingImage: false,
-												});
-											})
-											.catch(() => {
-												this.setState({
-													loadingImage: false,
-												});
-											});
-									}
 								})
 								.catch(() => {
 									alert('Could not find card');
@@ -354,7 +239,7 @@ class UI extends preact.Component<{}, State> {
 						const query = event.currentTarget.value;
 
 						/* save search calls */
-						await wait(500);
+						await util.wait(500);
 						if (currentGoodTypingEventNo != thisNo) return;
 
 						this.makeSearch(query);
@@ -376,136 +261,221 @@ class UI extends preact.Component<{}, State> {
 			</div>
 		);
 
-		const editBox = (initialValue: string, nullable: boolean, forField: keyof Card) => {
+		const editDropdown = (initialPart: string | undefined, initialParts: Part[], visible: boolean) => {
+			let cancelBlur = false;
 			return (
-				<span
-					ref={this.editBoxRef}
-					className="immr-card-edit"
-					role="textbox"
-					contentEditable
-					/* exit and confirmation conditions */
+				<select
+					className={`immr-part-edit ${visible ? 'visible' : ''}`}
 					onKeyDown={event => {
-						event.stopPropagation();
-
-						/* cancel edit */
 						if (event.code === 'Escape' || (event.code === 'KeyZ' && event.ctrlKey)) {
+							/* cancel editing */
 							event.preventDefault();
-							/* mark onBlur not to trigger */
-							event.currentTarget.contentEditable = 'false';
+							cancelBlur = true;
+
 							this.setState({
 								editingField: undefined,
 							});
-							/* confirm edit */
 						} else if (event.code === 'Enter') {
 							event.preventDefault();
-							/* mark onBlur not to trigger */
-							event.currentTarget.contentEditable = 'false';
-							this.confirm(event.currentTarget.textContent as string, nullable, forField);
+							cancelBlur = true;
+
+							this.confirmFieldEdit(event.currentTarget.value, true, 'part');
 						}
+					}}
+					onChange={event => {
+						cancelBlur = true;
+						console.log('changed to', event.currentTarget.value);
+						this.confirmFieldEdit(event.currentTarget.value, true, 'part');
 					}}
 					onBlur={event => {
-						event.stopPropagation();
-						if (event.currentTarget.contentEditable === 'true') {
-							this.confirm(event.currentTarget.textContent as string, nullable, forField);
+						if (!cancelBlur) {
+							this.confirmFieldEdit(event.currentTarget.value, true, 'part');
 						}
+						cancelBlur = false;
 					}}
 				>
-					{initialValue as string}
-				</span>
+					{initialParts.map(part => (
+						<option selected={part.id === initialPart} value={part.id}>
+							{part.english}
+						</option>
+					))}
+					<option selected={initialPart === undefined} value="" style={{ textDecoration: 'italic' }}>
+						{'No part'}
+					</option>
+				</select>
 			);
 		};
 
-		const cardPanel = (
-			initialCard: Card,
-			initialCurrentImage: string | undefined,
-			initialEditingField: string | undefined,
-			initialLoadingImage: boolean,
-			initialParts: { [key: string]: Part },
+		const cardField = (
+			className: string,
+			style: preact.CSSProperties,
+			initialValue: string | undefined,
+			displayValue: any,
+			nullable: boolean,
+			forField: keyof Card,
+			editing: boolean,
 		) => {
+			let cancelBlur = false;
+			return (
+				<p
+					ref={editing ? this.editBoxRef : undefined}
+					className={`immr-card-edit ${editing ? 'editing' : ''} ${className}`}
+					style={style}
+					role="textbox"
+					contentEditable={editing}
+					/* exit and confirmation conditions */
+					onKeyDown={
+						!editing
+							? undefined
+							: event => {
+									/* cancel edit */
+									if (event.code === 'Escape' || (event.code === 'KeyZ' && event.ctrlKey)) {
+										event.preventDefault();
+										cancelBlur = true;
+										this.setState({
+											editingField: undefined,
+										});
+										/* confirm edit */
+									} else if (event.code === 'Enter') {
+										event.preventDefault();
+										cancelBlur = true;
+										this.confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField);
+									}
+							  }
+					}
+					onBlur={
+						!editing
+							? undefined
+							: event => {
+									if (!cancelBlur) {
+										this.confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField);
+									}
+									cancelBlur = false;
+							  }
+					}
+					onClick={
+						this.state.editingField === forField
+							? undefined
+							: event => {
+									event.stopPropagation();
+									this.goIntoEdit(forField);
+							  }
+					}
+				>
+					{editing ? initialValue ?? '' : displayValue}
+				</p>
+			);
+		};
+
+		const cardPanel = (initialCard: Card, initialEditingField: string | undefined, initialParts: Part[]) => {
+			const highlights = initialCard.sentence === undefined ? undefined : util.strToHighlights(initialCard.sentence);
 			return (
 				<div id="immr-card-panel">
 					<WindowEvent
 						eventName="keydown"
 						callBack={event => {
 							if (event.code === 'KeyZ' && event.ctrlKey) {
-								/* don't edit the stale captured card*/
-								const currentCard = this.state.currentCard;
-								if (currentCard === undefined) return;
+								event.preventDefault();
+
+								const card = this.state.currentCard;
+								if (card === undefined) return;
 
 								const history = this.state.editHistory;
 								const lastEdit = history.pop();
 								if (lastEdit === undefined) return;
 
-								(currentCard[lastEdit.field] as string | undefined) = lastEdit.value;
+								(card[lastEdit.field] as string | undefined) = lastEdit.value;
 
 								this.setState({
-									currentCard: currentCard,
+									currentCard: card,
 									editHistory: history,
 								});
 							}
 						}}
 					></WindowEvent>
 					<div className="immr-card-row">
+						{cardField('big', { fontWeight: 'bold' }, initialCard.word, initialCard.word, false, 'word', initialEditingField === 'word')}
 						<p
-							className="big"
-							style={{ fontWeight: 'bold' }}
+							className={`big ${initialCard.part === undefined || initialEditingField === 'part' ? 'no-part' : 'part'}`}
 							onClick={
-								initialEditingField === 'word'
+								initialEditingField === 'part'
 									? undefined
 									: event => {
 											event.stopPropagation();
-											this.goIntoEdit('word');
+											this.goIntoEdit('part');
 									  }
 							}
 						>
-							{initialEditingField === 'word' ? editBox(initialCard.word, false, 'word') : null}
-							{initialCard.word}
-						</p>
-						<p className="big" style={{ color: 'rgb(205, 182, 103)' }}>
-							{initialParts[initialCard.part ?? '']?.english ?? ''}
+							{editDropdown(initialCard.part, initialParts, initialEditingField === 'part')}
+							{initialEditingField === 'part' ? 'a' : this.partName(initialCard.part) ?? 'a' /* invisible placeholder text */}
 						</p>
 					</div>
 					<div className="immr-card-row">
-						<p
-							className="small"
-							onClick={
-								initialEditingField === 'definition'
-									? undefined
-									: event => {
-											event.stopPropagation();
-											this.goIntoEdit('definition');
-									  }
-							}
-						>
-							{initialEditingField === 'definition' ? editBox(initialCard.definition, false, 'definition') : null}
-							{initialCard.definition}
-						</p>
+						{cardField('small', {}, initialCard.definition, initialCard.definition, false, 'definition', initialEditingField === 'definition')}
 					</div>
 					<div className="immr-card-line" />
-					<p className="immr-card-sentence">
-						{initialCard.sentenceHighlights === undefined ? (
+					{cardField(
+						'immr-card-sentence',
+						{},
+						initialCard.sentence,
+						highlights === undefined ? (
 							<span />
 						) : (
-							initialCard.sentenceHighlights.map(({ part, highlight }) => <span className={highlight ? 'highlight' : ''}>{part}</span>)
-						)}
-					</p>
-					{initialCurrentImage !== undefined ? (
-						<img src={initialCurrentImage} />
-					) : (
-						<div className="immr-image-placeholder">
-							<span>{initialLoadingImage ? 'Loading...' : 'Paste Image here'}</span>
-						</div>
+							highlights.map(({ part, highlight }) => <span className={highlight ? 'highlight' : ''}>{part}</span>)
+						),
+						true,
+						'sentence',
+						initialEditingField === 'sentence',
 					)}
+					<div
+						onPaste={event => {
+							const card = this.state.currentCard;
+							if (card === undefined) return;
+
+							const items = event.clipboardData;
+							console.log(items);
+							const goodItem = [...items.items].find(item => {
+								console.log(item);
+								return item.type === 'image/png' || item.type === 'image/jpeg';
+							});
+							const file = goodItem?.getAsFile() ?? undefined;
+							if (file === undefined) return;
+
+							const imageName = 'paste-' + Date.now().toString() + '.jpg';
+
+							file.arrayBuffer().then(async buffer => {
+								console.log(await util.imagePostRequest(`/api/images/${imageName}`, buffer));
+
+								card.picture = imageName;
+								this.setState({
+									currentCard: card,
+								});
+							});
+						}}
+					>
+						{initialCard.picture !== undefined ? (
+							<img className="card-img" src={'/api/images/' + initialCard.picture} />
+						) : (
+							<div className="immr-image-placeholder">
+								<span>Paste Image here</span>
+							</div>
+						)}
+					</div>
 				</div>
 			);
 		};
 
 		return (
 			<div id="immr-panel">
+				<WindowEvent
+					eventName="keydown"
+					callBack={event => {
+						/* this is some bullshit */
+						if (event.code === 'KeyZ' && event.ctrlKey) event.preventDefault();
+					}}
+				></WindowEvent>
 				{searchBar(this.state.searchValue, this.state.searchSuggestions, this.state.noResults, this.state.searchSelection)}
-				{this.state.currentCard === undefined
-					? null
-					: cardPanel(this.state.currentCard, this.state.currentImage, this.state.editingField, this.state.loadingImage, this.state.parts)}
+				{this.state.currentCard === undefined ? null : cardPanel(this.state.currentCard, this.state.editingField, this.state.parts)}
 				{
 					<p
 						style={{

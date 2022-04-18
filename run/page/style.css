@@ -1,6 +1,7 @@
 :root {
   --immr-background-color: #1f1f1f;
   --immr-active-color: #4287f5;
+  --gold: rgb(205, 182, 103);
 
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -142,7 +143,6 @@
 .immr-card-row > p {
   padding: 0;
   margin: 0;
-  padding-right: 20px;
   color: white;
   display: inline-block;
   text-align: left;
@@ -152,6 +152,20 @@
 .immr-card-row > p.big {
   font-size: 20px;
   line-height: 25px;
+}
+
+.immr-card-row > p.part {
+  margin-left: 20px;
+  color: var(--gold);
+}
+
+.immr-card-row > p.no-part {
+  margin-left: 20px;
+  width: 200px;
+  padding: 0;
+  outline: 1px solid var(--gold);
+  color: rgba(0, 0, 0, 0);
+  user-select: none;
 }
 
 .immr-card-row > p.small {
@@ -164,7 +178,7 @@
   padding-right: 0;
 }
 
-#immr-card-panel > img {
+.card-img {
   position: relative;
   width: 100%;
   height: auto;
@@ -189,15 +203,6 @@
   left: 50%;
 }
 
-.immr-card-sentence {
-  color: white;
-  padding: 0;
-  width: 100%;
-  font-size: 15px;
-  line-height: 20px;
-  text-align: center;
-}
-
 .immr-card-sentence > .highlight {
   background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
   -webkit-background-clip: text;
@@ -214,23 +219,54 @@
 }
 
 .immr-card-edit {
+  padding: 0;
+  margin: 0;
+  color: white;
+  display: inline-block;
+  text-align: left;
+  position: relative;
+}
+
+.immr-card-edit.editing {
+  outline: 2.5px solid var(--immr-active-color);
+  background-color: white;
+  color: black;
+  border-radius: 2.5px;
+}
+
+.immr-part-edit:focus {
+  outline: 2.5px solid var(--immr-active-color);
+}
+
+.immr-part-edit {
   margin: 0;
   padding: 0;
   position: absolute;
   height: 100%;
-  width: 100%;
-  min-width: max-content;
-  z-index: 30;
-  border: 2.5px solid var(--immr-active-color);
-  background-color: white;
-  color: black;
-  display: block;
+  width: 200px;
 
-  top: -2.5px;
-  left: -2.5px;
-  border-radius: 2.5px;
+  border: 0;
+  background: none;
+  color: rgba(0, 0, 0, 0);
+}
+
+.immr-part-edit.visible {
+  color: var(--gold);
+}
+
+.immr-part-edit > option {
+  background-color: var(--immr-background-color);
 }
 
 .immr-card-edit:focus {
   outline: none;
+}
+
+.immr-card-sentence {
+  color: white;
+  padding: 0;
+  width: 100%;
+  font-size: 15px;
+  line-height: 20px;
+  text-align: center;
 }
