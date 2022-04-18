@@ -24,3 +24,9 @@ export type Card = {
 	date: Date;
 	badges: string[];
 };
+
+export enum Views {
+	EDIT_CARD,
+	NEW_CARD,
+	DICTIONARY,
+}

@@ -1,7 +1,7 @@
-import * as preact from 'react';
+import React, * as react from 'react';
 import * as reactDom from 'react-dom';
 import { WindowEvent } from './windowEvent';
-import { Card, EditHistory, Highlights, HistoryEntry, Part, SearchSuggestion } from './types';
+import { Card, EditHistory, Highlights, HistoryEntry, Part, SearchSuggestion, Views } from './types';
 import * as util from './util';
 
 /* globals */
@@ -17,11 +17,12 @@ type State = {
 	searchValue: string;
 	editingField: keyof Card | undefined;
 	editHistory: EditHistory;
+	newCard: Partial<Card>;
+	view: Views;
 };
 
-class UI extends preact.Component<{}, State> {
-	searchRef: preact.RefObject<HTMLInputElement>;
-	editBoxRef: preact.RefObject<HTMLParagraphElement>;
+class UI extends react.Component<{}, State> {
+	searchRef: react.RefObject<HTMLInputElement>;
 
 	constructor(props: {}) {
 		super(props);
@@ -35,10 +36,11 @@ class UI extends preact.Component<{}, State> {
 			searchValue: '',
 			editingField: undefined,
 			editHistory: [],
+			newCard: {},
+			view: Views.NEW_CARD,
 		};
 
-		this.searchRef = preact.createRef();
-		this.editBoxRef = preact.createRef();
+		this.searchRef = react.createRef();
 
 		Promise.all([util.jsonGetRequest(`/api/parts`), util.jsonGetRequest(`/api/badges`)]).then(([parts, badges]) => {
 			this.setState({
@@ -100,30 +102,46 @@ class UI extends preact.Component<{}, State> {
 		}
 	}
 
-	confirmFieldEdit(newValue: string, nullable: boolean, forField: keyof Card) {
+	cancelFieldEdit(eventTarget: (HTMLOrSVGElement & ElementContentEditable & Node) | undefined) {
+		return this.confirmFieldEdit(undefined, false, 'word', eventTarget);
+	}
+
+	/**
+	 * @param newValue set to undefined if you wish to not edit
+	 */
+	confirmFieldEdit(
+		newValue: string | undefined,
+		nullable: boolean,
+		forField: keyof Card,
+		eventTarget: (HTMLOrSVGElement & ElementContentEditable & Node) | undefined,
+	) {
+		eventTarget?.blur();
+
 		const currentCard = this.state.currentCard;
-		/* impossible, but just in case */
-		if (currentCard === undefined) return this.setState({ editingField: undefined });
-
 		const history = this.state.editHistory;
-		const lastHistoryEntry = history.length === 0 ? undefined : history[history.length - 1];
 
-		/* prevent history duplicates */
-		const sameEntry = (entry: HistoryEntry | undefined, newField: keyof Card, newValue: string | undefined) => {
-			return entry?.field === newField && entry?.value === newValue;
-		};
+		/* cancelled or invalid state */
+		if (currentCard !== undefined && newValue !== undefined) {
+			/* make an edit */
+			const lastHistoryEntry = history.length === 0 ? undefined : history[history.length - 1];
 
-		let filtered0 = newValue.trim();
-		let filtered1 = filtered0.length === 0 ? undefined : filtered0;
+			/* prevent history duplicates */
+			const sameEntry = (entry: HistoryEntry | undefined, newField: keyof Card, newValue: string | undefined) => {
+				return entry?.field === newField && entry?.value === newValue;
+			};
 
-		if ((filtered1 !== undefined || nullable) && !sameEntry(lastHistoryEntry, forField, filtered1)) {
-			/* first add the current value to history */
-			history.push({ field: forField, value: currentCard[forField] as string | undefined });
+			let filtered0 = newValue.trim();
+			let filtered1 = filtered0.length === 0 ? undefined : filtered0;
 
-			/* modify card with new value */
-			(currentCard[forField] as string | undefined) = filtered1;
+			if ((filtered1 !== undefined || nullable) && !sameEntry(lastHistoryEntry, forField, filtered1)) {
+				/* first add the current value to history */
+				history.push({ field: forField, value: currentCard[forField] as string | undefined });
 
-			//TODO edit database
+				/* modify card with new value */
+				(currentCard[forField] as string | undefined) = filtered1;
+
+				//TODO edit database
+			}
 		}
 
 		this.setState({
@@ -134,22 +152,51 @@ class UI extends preact.Component<{}, State> {
 	}
 
 	goIntoEdit(field: keyof Card) {
-		this.setState({ editingField: field }, () => {
-			const editBox = this.editBoxRef.current;
-			if (editBox !== null) {
-				//editBox.focus();
-				//const selection = window.getSelection();
-				//const range = document.createRange();
-				//range.selectNodeContents(editBox);
-				//selection?.removeAllRanges();
-				//selection?.addRange(range);
-			}
-		});
+		this.setState({ editingField: field });
 	}
 
-	partName(partid: string | undefined) {
-		if (partid === undefined) return undefined;
-		return this.state.parts.find(part => part.id === partid)?.english;
+	partName(partId: string | undefined) {
+		if (partId === undefined) return undefined;
+		return this.state.parts.find(part => part.id === partId)?.english;
+	}
+
+	partOptions(selectedPart: string | undefined) {
+		return (
+			<>
+				{this.state.parts.map(part => (
+					<option selected={part.id === selectedPart} value={part.id}>
+						{part.english}
+					</option>
+				))}
+				<option selected={selectedPart === undefined} value="">
+					No part
+				</option>
+			</>
+		);
+	}
+
+	async onPasteImage(event: react.ClipboardEvent<HTMLInputElement>): Promise<[ArrayBuffer, string]> {
+		const file = [...event.clipboardData.items].find(item => item.type === 'image/png' || item.type === 'image/jpeg')?.getAsFile() ?? undefined;
+		if (file === undefined) return Promise.reject();
+
+		const buffer = await file.arrayBuffer();
+
+		return [buffer, 'paste-' + Date.now().toString() + '.jpg'];
+	}
+
+	pictureInput(className: string, inputElement: react.ReactElement, imageName: string | undefined) {
+		return (
+			<div className={className}>
+				{inputElement}
+				{imageName !== undefined ? (
+					<img className="card-img" src={'/api/images/' + imageName} />
+				) : (
+					<div className="immr-image-placeholder">
+						<span>Paste Image here</span>
+					</div>
+				)}
+			</div>
+		);
 	}
 
 	render() {
@@ -271,43 +318,34 @@ class UI extends preact.Component<{}, State> {
 							event.preventDefault();
 							cancelBlur = true;
 
-							this.setState({
-								editingField: undefined,
-							});
+							this.cancelFieldEdit(event.currentTarget);
 						} else if (event.code === 'Enter') {
 							event.preventDefault();
 							cancelBlur = true;
 
-							this.confirmFieldEdit(event.currentTarget.value, true, 'part');
+							this.confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
 						}
 					}}
 					onChange={event => {
 						cancelBlur = true;
 						console.log('changed to', event.currentTarget.value);
-						this.confirmFieldEdit(event.currentTarget.value, true, 'part');
+						this.confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
 					}}
 					onBlur={event => {
 						if (!cancelBlur) {
-							this.confirmFieldEdit(event.currentTarget.value, true, 'part');
+							this.confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
 						}
 						cancelBlur = false;
 					}}
 				>
-					{initialParts.map(part => (
-						<option selected={part.id === initialPart} value={part.id}>
-							{part.english}
-						</option>
-					))}
-					<option selected={initialPart === undefined} value="" style={{ textDecoration: 'italic' }}>
-						{'No part'}
-					</option>
+					{this.partOptions(initialPart)}
 				</select>
 			);
 		};
 
 		const cardField = (
 			className: string,
-			style: preact.CSSProperties,
+			style: react.CSSProperties,
 			initialValue: string | undefined,
 			displayValue: any,
 			nullable: boolean,
@@ -315,51 +353,38 @@ class UI extends preact.Component<{}, State> {
 			editing: boolean,
 		) => {
 			let cancelBlur = false;
+			let cancelTyping = false;
 			return (
 				<p
-					ref={editing ? this.editBoxRef : undefined}
 					className={`immr-card-edit ${editing ? 'editing' : ''} ${className}`}
 					style={style}
 					role="textbox"
 					contentEditable
+					tabIndex={100}
+					onCompositionStart={() => (cancelTyping = true)}
+					onCompositionEnd={() => (cancelTyping = false)}
 					/* exit and confirmation conditions */
-					onKeyDown={
-						!editing
-							? undefined
-							: event => {
-									/* cancel edit */
-									if (event.code === 'Escape' || (event.code === 'KeyZ' && event.ctrlKey)) {
-										event.preventDefault();
-										cancelBlur = true;
-										this.setState({
-											editingField: undefined,
-										});
-										/* confirm edit */
-									} else if (event.code === 'Enter') {
-										event.preventDefault();
-										cancelBlur = true;
-										this.confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField);
-									}
-							  }
-					}
-					onBlur={
-						!editing
-							? undefined
-							: event => {
-									if (!cancelBlur) {
-										this.confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField);
-									}
-									cancelBlur = false;
-							  }
-					}
-					onClick={
-						this.state.editingField === forField
-							? undefined
-							: event => {
-									event.stopPropagation();
-									this.goIntoEdit(forField);
-							  }
-					}
+					onKeyDown={event => {
+						if (cancelTyping) return;
+						if (event.code === 'Escape' || (event.code === 'KeyZ' && event.ctrlKey)) {
+							/* cancel edit */
+							event.preventDefault();
+							cancelBlur = true;
+							this.cancelFieldEdit(event.currentTarget);
+						} else if (event.code === 'Enter') {
+							/* confirm edit */
+							event.preventDefault();
+							cancelBlur = true;
+							this.confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField, event.currentTarget);
+						}
+					}}
+					onBlur={event => {
+						if (!cancelBlur) {
+							this.confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField, event.currentTarget);
+						}
+						cancelBlur = false;
+					}}
+					onFocus={() => this.goIntoEdit(forField)}
 				>
 					{editing ? initialValue ?? '' : displayValue}
 				</p>
@@ -426,58 +451,76 @@ class UI extends preact.Component<{}, State> {
 						'sentence',
 						initialEditingField === 'sentence',
 					)}
-					<div className={`image-container ${initialEditingField === 'picture' ? 'image-editing' : ''}`}>
+					{this.pictureInput(
+						`image-container ${initialEditingField === 'picture' ? 'image-editing' : ''}`,
 						<input
-							onFocus={event => {
-								event.stopPropagation();
-								this.setState({
-									editingField: 'picture',
-								});
-							}}
-							onBlur={event => {
-								event.stopPropagation();
-								this.setState({
-									editingField: undefined,
-								});
-							}}
-							onPaste={event => {
+							onFocus={event => this.setState({ editingField: 'picture' })}
+							onBlur={event => this.setState({ editingField: undefined })}
+							onPaste={async event => {
 								if (this.state.editingField !== 'picture') return;
 
 								const card = this.state.currentCard;
 								if (card === undefined) return;
 
-								const items = event.clipboardData;
-								console.log(items);
-								const goodItem = [...items.items].find(item => {
-									console.log(item);
-									return item.type === 'image/png' || item.type === 'image/jpeg';
-								});
-								const file = goodItem?.getAsFile() ?? undefined;
-								if (file === undefined) return;
+								const [buffer, filename] = await this.onPasteImage(event);
 
-								const imageName = 'paste-' + Date.now().toString() + '.jpg';
+								await util.imagePostRequest(`/api/images/${filename}`, buffer);
 
-								file.arrayBuffer().then(async buffer => {
-									console.log(await util.imagePostRequest(`/api/images/${imageName}`, buffer));
-
-									card.picture = imageName;
-									this.setState({
-										currentCard: card,
-									});
+								card.picture = filename;
+								this.setState({
+									currentCard: card,
 								});
 							}}
-						></input>
-						{initialCard.picture !== undefined ? (
-							<img className="card-img" src={'/api/images/' + initialCard.picture} />
-						) : (
-							<div className="immr-image-placeholder">
-								<span>Paste Image here</span>
-							</div>
-						)}
-					</div>
+						></input>,
+						initialCard.picture,
+					)}
 				</div>
 			);
 		};
+
+		const newCardField = (prettyName: string, cardField: keyof Card) => {
+			let cancelTyping = false;
+			return (
+				<>
+					<p className="new-caption">{prettyName}</p>
+					<input
+						onCompositionStart={() => (cancelTyping = true)}
+						onCompositionEnd={() => (cancelTyping = false)}
+						onInput={event => {
+							if (cancelTyping) return;
+
+							const value = event.currentTarget.value.length === 0 ? undefined : event.currentTarget.value;
+							Object.assign(this.state.newCard, { [cardField]: value });
+
+							this.setState({
+								newCard: this.state.newCard,
+							});
+						}}
+						className="new-card-field"
+					/>
+				</>
+			);
+		};
+
+		const newCardPanel = (initialNewCard: Partial<Card>) => (
+			<div id="immr-card-panel">
+				<div className="new-card-row">{newCardField('Word', 'word')}</div>
+				<div className="new-card-row">
+					<p className="new-caption">Part of speech</p>
+					<select>{this.partOptions(initialNewCard.part)}</select>
+				</div>
+				<div className="new-card-row">{newCardField('Definition', 'definition')}</div>
+				<div className="new-card-row">{newCardField('Sentence', 'sentence')}</div>
+				<div className="new-card-row">
+					<p>Picture</p>
+					{this.pictureInput('image-container', <input />, initialNewCard.picture)}
+				</div>
+				<div className="new-card-row button-row">
+					<button className="new-button">Cancel</button>
+					<button className="new-button">Create</button>
+				</div>
+			</div>
+		);
 
 		return (
 			<div id="immr-panel">
@@ -489,18 +532,11 @@ class UI extends preact.Component<{}, State> {
 					}}
 				></WindowEvent>
 				{searchBar(this.state.searchValue, this.state.searchSuggestions, this.state.noResults, this.state.searchSelection)}
-				{this.state.currentCard === undefined ? null : cardPanel(this.state.currentCard, this.state.editingField, this.state.parts)}
-				{
-					<p
-						style={{
-							color: 'white',
-							position: 'absolute',
-							bottom: '10px',
-						}}
-					>
-						{`${this.state.searchSelection} ${this.state.noResults} ${this.state.searchValue}`}
-					</p>
-				}
+				{this.state.view === Views.EDIT_CARD ? (
+					<>{this.state.currentCard === undefined ? null : cardPanel(this.state.currentCard, this.state.editingField, this.state.parts)}</>
+				) : (
+					<>{newCardPanel(this.state.newCard)}</>
+				)}
 			</div>
 		);
 	}
