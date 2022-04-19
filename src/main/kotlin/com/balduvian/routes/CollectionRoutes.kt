@@ -48,7 +48,7 @@ fun Route.collectionRouting() {
 				withContext(Dispatchers.IO) {
 					val json = JsonParser.parseReader(call.receiveStream().reader())
 					Collection.editCard(json)
-					call.respond("Edited")
+					call.respond("{\"message\":\"Edited\"}")
 				}
 			} catch (ex: PrettyException) {
 				return@patch badRequest(call, ex.message)

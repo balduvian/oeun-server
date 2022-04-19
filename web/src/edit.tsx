@@ -1,10 +1,11 @@
 import * as react from 'react';
 import * as reactDom from 'react-dom';
 import { WindowEvent } from './windowEvent';
-import { Card, EditHistory, HistoryEntry, Part } from './types';
+import { Card, EditHistory, HistoryEntry, Part, Editing } from './types';
 import * as util from './util';
 import { SearchBox } from './searchBox';
 import * as shared from './shared';
+import { threadId } from 'worker_threads';
 
 type Props = {
 	initialId: number | undefined;
@@ -17,8 +18,8 @@ type State = {
 
 	error: boolean;
 	currentCard: Card | undefined;
-	editingField: keyof Card | undefined;
 	editHistory: EditHistory;
+	editing: Editing;
 };
 
 class EditPage extends react.Component<Props, State> {
@@ -31,8 +32,8 @@ class EditPage extends react.Component<Props, State> {
 
 			error: false,
 			currentCard: undefined,
-			editingField: undefined,
 			editHistory: [],
+			editing: {},
 		};
 
 		shared.getPartsBadges().then(({ parts, badges }) => this.setState({ parts, badges }));
@@ -65,11 +66,11 @@ class EditPage extends react.Component<Props, State> {
 	) {
 		eventTarget?.blur();
 
-		const currentCard = this.state.currentCard;
+		const card = this.state.currentCard;
 		const history = this.state.editHistory;
 
 		/* cancelled or invalid state */
-		if (currentCard !== undefined && newValue !== undefined) {
+		if (card !== undefined && newValue !== undefined) {
 			/* make an edit */
 			const lastHistoryEntry = history.length === 0 ? undefined : history[history.length - 1];
 
@@ -83,41 +84,23 @@ class EditPage extends react.Component<Props, State> {
 
 			if ((filtered1 !== undefined || nullable) && !sameEntry(lastHistoryEntry, forField, filtered1)) {
 				/* first add the current value to history */
-				history.push({ field: forField, value: currentCard[forField] as string | undefined });
+				history.push({ field: forField, value: card[forField] as string | undefined });
 
 				/* modify card with new value */
-				(currentCard[forField] as string | undefined) = filtered1;
+				(card[forField] as string | undefined) = filtered1;
 
-				//TODO edit database
+				this.databaseChange(card.id, { [forField]: filtered1 });
 			}
 		}
 
-		this.setState({
-			currentCard: currentCard,
-			editingField: undefined,
-			editHistory: history,
-		});
-	}
-
-	goIntoEdit(field: keyof Card) {
-		this.setState({ editingField: field });
-	}
-
-	partName(partId: string | undefined) {
-		if (partId === undefined) return undefined;
-		return this.state.parts.find(part => part.id === partId)?.english;
-	}
-
-	partOptions(selectedPart: string | undefined) {
-		return (
-			<>
-				{this.state.parts.map(part => (
-					<option selected={part.id === selectedPart} value={part.id}>
-						{part.english}
-					</option>
-				))}
-				<option selected={selectedPart === undefined} value=""></option>
-			</>
+		this.setState(
+			Object.assign(
+				{
+					currentCard: card,
+					editHistory: history,
+				},
+				this.setEditing(forField, false),
+			),
 		);
 	}
 
@@ -130,27 +113,32 @@ class EditPage extends react.Component<Props, State> {
 		return [buffer, 'paste-' + Date.now().toString() + '.jpg'];
 	}
 
-	pictureInput(className: string, inputElement: react.ReactElement, imageName: string | undefined) {
-		return (
-			<div className={className}>
-				{inputElement}
-				{imageName !== undefined ? (
-					<img className="card-img" src={'/api/images/' + imageName} />
-				) : (
-					<div className="immr-image-placeholder">
-						<span>Paste Image here</span>
-					</div>
-				)}
-			</div>
-		);
+	isEditing(field: string) {
+		return this.state.editing[field] ?? false;
+	}
+	setEditing(field: string, value: boolean) {
+		this.state.editing[field] = value;
+		return { editing: this.state.editing };
+	}
+
+	databaseChange(id: number, obj: { [key: string]: any }) {
+		util.jsonPatchRequest(
+			'/api/collection',
+			Object.assign(
+				{
+					id: id,
+				},
+				obj,
+			),
+		).then(res => console.log(res));
 	}
 
 	render() {
-		const editDropdown = (initialPart: string | undefined, initialParts: Part[], visible: boolean) => {
+		const editDropdown = (initialPart: string | undefined, initialParts: Part[]) => {
 			let cancelBlur = false;
 			return (
 				<select
-					className={`immr-part-edit ${visible ? 'visible' : ''}`}
+					className={`immr-part-edit ${initialPart === undefined ? 'no-part' : ''}`}
 					onKeyDown={event => {
 						if (event.code === 'Escape' || (event.code === 'KeyZ' && event.ctrlKey)) {
 							/* cancel editing */
@@ -176,8 +164,9 @@ class EditPage extends react.Component<Props, State> {
 						}
 						cancelBlur = false;
 					}}
+					onFocus={() => this.setState(this.setEditing('part', true))}
 				>
-					{this.partOptions(initialPart)}
+					{shared.partOptions(initialParts, initialPart)}
 				</select>
 			);
 		};
@@ -189,31 +178,29 @@ class EditPage extends react.Component<Props, State> {
 			displayValue: any,
 			nullable: boolean,
 			forField: keyof Card,
-			editing: boolean,
 		) => {
 			let cancelBlur = false;
 			let cancelTyping = false;
 			return (
 				<p
-					className={`immr-card-edit ${editing ? 'editing' : ''} ${className}`}
+					className={`immr-card-edit ${className}`}
 					style={style}
 					role="textbox"
 					contentEditable
 					tabIndex={100}
 					onCompositionStart={() => (cancelTyping = true)}
 					onCompositionEnd={() => (cancelTyping = false)}
-					/* exit and confirmation conditions */
 					onKeyDown={event => {
 						if (cancelTyping) return;
 						if (event.code === 'Escape' || (event.code === 'KeyZ' && event.ctrlKey)) {
-							/* cancel edit */
 							event.preventDefault();
 							cancelBlur = true;
+
 							this.cancelFieldEdit(event.currentTarget);
 						} else if (event.code === 'Enter') {
-							/* confirm edit */
 							event.preventDefault();
 							cancelBlur = true;
+
 							this.confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField, event.currentTarget);
 						}
 					}}
@@ -223,14 +210,14 @@ class EditPage extends react.Component<Props, State> {
 						}
 						cancelBlur = false;
 					}}
-					onFocus={() => this.goIntoEdit(forField)}
+					onFocus={() => this.setState(this.setEditing(forField, true))}
 				>
-					{editing ? initialValue ?? '' : displayValue}
+					{this.isEditing(forField) ? initialValue ?? '' : displayValue}
 				</p>
 			);
 		};
 
-		const cardPanel = (initialCard: Card, initialEditingField: string | undefined, initialParts: Part[]) => {
+		const cardPanel = (initialCard: Card, initialParts: Part[]) => {
 			const highlights = initialCard.sentence === undefined ? undefined : util.strToHighlights(initialCard.sentence);
 			return (
 				<div id="immr-card-panel">
@@ -253,30 +240,19 @@ class EditPage extends react.Component<Props, State> {
 									currentCard: card,
 									editHistory: history,
 								});
+
+								this.databaseChange(card.id, { [lastEdit.field]: lastEdit.value });
 							}
 						}}
 					></WindowEvent>
 					<div className="immr-card-row">
-						{cardField('big', { fontWeight: 'bold' }, initialCard.word, initialCard.word, false, 'word', initialEditingField === 'word')}
-						<p
-							className={`big ${initialCard.part === undefined || initialEditingField === 'part' ? 'no-part' : 'part'}`}
-							onClick={
-								initialEditingField === 'part'
-									? undefined
-									: event => {
-											event.stopPropagation();
-											this.goIntoEdit('part');
-									  }
-							}
-						>
-							{editDropdown(initialCard.part, initialParts, initialEditingField === 'part')}
-							{initialEditingField === 'part' ? 'a' : this.partName(initialCard.part) ?? 'a' /* invisible placeholder text */}
-						</p>
+						{cardField('big', { fontWeight: 'bold' }, initialCard.word, initialCard.word, false, 'word')}
+						{editDropdown(initialCard.part, initialParts)}
 					</div>
-					<div className="immr-card-row">
-						{cardField('small', {}, initialCard.definition, initialCard.definition, false, 'definition', initialEditingField === 'definition')}
-					</div>
+					<div className="immr-card-row">{cardField('small', {}, initialCard.definition, initialCard.definition, false, 'definition')}</div>
+
 					<div className="immr-card-line" />
+
 					{cardField(
 						'immr-card-sentence',
 						{},
@@ -288,17 +264,21 @@ class EditPage extends react.Component<Props, State> {
 						),
 						true,
 						'sentence',
-						initialEditingField === 'sentence',
 					)}
-					{this.pictureInput(
-						`image-container ${initialEditingField === 'picture' ? 'image-editing' : ''}`,
+					{shared.pictureInput(
+						'image-container',
 						<input
-							onFocus={() => this.setState({ editingField: 'picture' })}
-							onBlur={() => this.setState({ editingField: undefined })}
+							readOnly
+							onFocus={() => this.setState(this.setEditing('picture', true))}
+							onBlur={() => this.setState(this.setEditing('picture', false))}
+							onKeyDown={event => {
+								if (event.code === 'Delete') {
+									event.preventDefault();
+									this.confirmFieldEdit(undefined, true, 'picture', event.currentTarget);
+								}
+							}}
 							onPaste={async event => {
 								event.preventDefault();
-
-								if (this.state.editingField !== 'picture') return;
 
 								const card = this.state.currentCard;
 								if (card === undefined) return;
@@ -307,10 +287,7 @@ class EditPage extends react.Component<Props, State> {
 
 								await util.imagePostRequest(`/api/images/${filename}`, buffer);
 
-								card.picture = filename;
-								this.setState({
-									currentCard: card,
-								});
+								this.confirmFieldEdit(filename, true, 'picture', event.currentTarget);
 							}}
 						></input>,
 						initialCard.picture,
@@ -331,7 +308,11 @@ class EditPage extends react.Component<Props, State> {
 						])
 					}
 				></SearchBox>
-				{this.state.currentCard === undefined ? null : cardPanel(this.state.currentCard, this.state.editingField, this.state.parts)}
+				{this.state.currentCard === undefined ? (
+					<div className="blank-holder">{this.state.error ? <p>Could not find card</p> : <img src="/blank.svg" />}</div>
+				) : (
+					cardPanel(this.state.currentCard, this.state.parts)
+				)}
 			</div>
 		);
 	}

@@ -27,6 +27,10 @@ export type Card = {
 	badges: string[];
 };
 
+export type Editing = {
+	[key: string]: boolean;
+};
+
 export type NewField<T> = {
 	value: string | undefined;
 	nullable: boolean;

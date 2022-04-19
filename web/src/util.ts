@@ -38,6 +38,8 @@ export const imageGetRequest = (url: string) =>
 
 export const jsonPostRequest = (url: string, data: any) => fetch(url, { method: 'POST', body: JSON.stringify(data) }).then(response => response.json());
 
+export const jsonPatchRequest = (url: string, data: any) => fetch(url, { method: 'PATCH', body: JSON.stringify(data) }).then(response => response.json());
+
 export const wait = (time: number) => new Promise(acc => setTimeout(acc, time));
 
 export const strToHighlights = (str: string) => {
