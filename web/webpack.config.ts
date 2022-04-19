@@ -4,7 +4,8 @@ import * as webpack from 'webpack';
 const config: webpack.Configuration = {
 	mode: 'development',
 	entry: {
-		content: './src/content.tsx',
+		edit: './src/edit.tsx',
+		new: './src/new.tsx',
 	},
 	module: {
 		rules: [

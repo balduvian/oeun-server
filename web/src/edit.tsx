@@ -1,43 +1,53 @@
-import React, * as react from 'react';
+import * as react from 'react';
 import * as reactDom from 'react-dom';
 import { WindowEvent } from './windowEvent';
-import { Card, EditHistory, Highlights, NewCard, HistoryEntry, Part, SearchSuggestion, Views, NewField } from './types';
+import { Card, EditHistory, HistoryEntry, Part } from './types';
 import * as util from './util';
 import { SearchBox } from './searchBox';
+import * as shared from './shared';
 
-type State = {
-	currentCard: Card | undefined;
-	parts: Part[];
-	badges: { [key: string]: string };
-	editingField: keyof Card | undefined;
-	editHistory: EditHistory;
-	newCard: NewCard;
-	view: Views;
+type Props = {
+	initialId: number | undefined;
+	initialWord: string | undefined;
 };
 
-class UI extends react.Component<{}, State> {
-	constructor(props: {}) {
+type State = {
+	parts: Part[];
+	badges: { [key: string]: string };
+
+	error: boolean;
+	currentCard: Card | undefined;
+	editingField: keyof Card | undefined;
+	editHistory: EditHistory;
+};
+
+class EditPage extends react.Component<Props, State> {
+	constructor(props: Props) {
 		super(props);
+
 		this.state = {
-			currentCard: undefined,
 			parts: [],
 			badges: {},
+
+			error: false,
+			currentCard: undefined,
 			editingField: undefined,
 			editHistory: [],
-			newCard: util.blankNewCard(),
-			view: Views.EDIT_CARD,
 		};
 
-		Promise.all([util.jsonGetRequest(`/api/parts`), util.jsonGetRequest(`/api/badges`)]).then(([parts, badges]) => {
-			this.setState({
-				parts: Object.keys(parts).map(partName => ({
-					id: partName,
-					english: parts[partName].english,
-					korean: parts[partName].korean,
-				})),
-				badges,
-			});
-		});
+		shared.getPartsBadges().then(({ parts, badges }) => this.setState({ parts, badges }));
+
+		if (props.initialId !== undefined) {
+			util.jsonGetRequest(`/api/collection/${props.initialId}`)
+				.then(data => {
+					if (data.message) {
+						this.setState({ error: true });
+					} else {
+						this.setState({ currentCard: data });
+					}
+				})
+				.catch(() => this.setState({ error: true }));
+		}
 	}
 
 	cancelFieldEdit(eventTarget: (HTMLOrSVGElement & ElementContentEditable & Node) | undefined) {
@@ -309,167 +319,25 @@ class UI extends react.Component<{}, State> {
 			);
 		};
 
-		const newCardField = (initialNewCard: NewCard, cardField: keyof NewCard, prettyName: string) => {
-			const field = initialNewCard[cardField] as NewField<HTMLInputElement>;
-			return (
-				<div className="immr-card-row">
-					<p className={`new-caption ${field.error ? 'error' : ''}`}>{prettyName}</p>
-					<input ref={field.ref} className="new-card-field" />
-				</div>
-			);
-		};
-
-		const newPartField = (initialNewCard: NewCard) => (
-			<div className="immr-card-row">
-				<p className="new-caption">Part of speech</p>
-				<select ref={initialNewCard.part.ref} className="new-select">
-					{this.partOptions(initialNewCard.part.value)}
-				</select>
-			</div>
-		);
-
-		const newPictureField = (initialNewCard: NewCard) => (
-			<div className="immr-card-row">
-				<p className="new-caption">Picture</p>
-				{this.pictureInput(
-					'image-container',
-					<input
-						readOnly
-						ref={initialNewCard.picture.ref}
-						onKeyDown={event => {
-							if (event.code === 'Delete') {
-								event.preventDefault();
-								this.state.newCard.picture.value = '';
-								this.setState({ newCard: this.state.newCard });
-							}
-						}}
-						onPaste={async event => {
-							event.preventDefault();
-
-							const [buffer, filename] = await this.onPasteImage(event);
-							await util.imagePostRequest(`/api/images/${filename}`, buffer);
-
-							if (initialNewCard.picture.ref.current !== null) initialNewCard.picture.ref.current.value = filename;
-
-							this.state.newCard.picture.value = filename;
-							this.setState({ newCard: this.state.newCard }, () => console.log(this.state.newCard));
-						}}
-					/>,
-					initialNewCard.picture.value,
-				)}
-			</div>
-		);
-
-		const newCardPanel = (initialNewCard: NewCard) => (
-			<div id="immr-card-panel">
-				{newCardField(initialNewCard, 'word', 'Word *')}
-				{newPartField(initialNewCard)}
-				{newCardField(initialNewCard, 'definition', 'Definition *')}
-				{newCardField(initialNewCard, 'sentence', 'Sentence')}
-				{newPictureField(initialNewCard)}
-				<div className="immr-card-row">
-					<div className="button-grid">
-						<button
-							className="new-button"
-							onClick={() => {
-								this.setState({
-									view: Views.EDIT_CARD,
-									currentCard: undefined,
-								});
-							}}
-						>
-							Cancel
-						</button>
-						<button
-							className="new-button"
-							onClick={() => {
-								let foundError = false;
-
-								const fields = Object.keys(this.state.newCard) as (keyof NewCard)[];
-								for (const fieldName of fields) {
-									const field = this.state.newCard[fieldName];
-
-									/* the real value which will be passed */
-									field.value = field.ref.current?.value;
-									if (field.value === '') field.value = undefined;
-
-									if (field.value === undefined && !field.nullable) {
-										field.error = true;
-										foundError = true;
-									}
-								}
-
-								if (foundError) {
-									this.setState({ newCard: this.state.newCard });
-								} else {
-									const newCard = this.state.newCard;
-
-									const uploadCard: Card = {
-										id: 0,
-										word: newCard.word.value as string,
-										part: newCard.part.value,
-										definition: newCard.definition.value as string,
-										sentence: newCard.sentence.value,
-										picture: newCard.picture.value,
-										date: new Date(),
-										badges: [],
-									};
-
-									console.log(uploadCard);
-
-									util.jsonPostRequest('/api/collection', uploadCard).then(res => {
-										if (res.message !== undefined) {
-											console.log(res.message);
-										} else {
-											this.setState({
-												view: Views.EDIT_CARD,
-												currentCard: undefined,
-											});
-										}
-									});
-								}
-							}}
-						>
-							Create
-						</button>
-					</div>
-				</div>
-			</div>
-		);
-
 		return (
 			<div id="immr-panel">
-				<WindowEvent
-					eventName="keydown"
-					callBack={event => {
-						/* this is some bullshit */
-						if (event.code === 'KeyZ' && event.ctrlKey) event.preventDefault();
-					}}
-				></WindowEvent>
+				{shared.killCtrlZ()}
 				<SearchBox
-					searchValue=""
-					onSearch={({ id }) => {
-						util.jsonGetRequest(`/api/collection/${id}`)
-							.then((data: Card) => {
-								this.setState({
-									currentCard: data,
-									editingField: undefined,
-									editHistory: [],
-								});
-							})
-							.catch(err => console.log('Could not find card', err));
-					}}
+					searchValue={this.props.initialWord ?? ''}
+					onSearch={({ word, id }) =>
+						shared.goToNewPage('/edit', [
+							['id', id.toString()],
+							['word', word],
+						])
+					}
 				></SearchBox>
-				{this.state.view === Views.EDIT_CARD ? (
-					<>{this.state.currentCard === undefined ? null : cardPanel(this.state.currentCard, this.state.editingField, this.state.parts)}</>
-				) : (
-					<>{newCardPanel(this.state.newCard)}</>
-				)}
+				{this.state.currentCard === undefined ? null : cardPanel(this.state.currentCard, this.state.editingField, this.state.parts)}
 			</div>
 		);
 	}
 }
 
-console.log('Anki being killed...');
+const searchParams = new URLSearchParams(window.location.search);
+const initialId = searchParams.get('id');
 
-reactDom.render(<UI />, document.body);
+reactDom.render(<EditPage initialId={initialId === null ? undefined : +initialId} initialWord={searchParams.get('word') ?? undefined} />, document.body);

@@ -34,11 +34,13 @@ fun Route.collectionRouting() {
 			try {
 				withContext(Dispatchers.IO) {
 					val card = Card.deserialize(call.receiveStream())
-					call.respond(Collection.addCard(card).toString())
+					Collection.addCard(card).toString()
+
+					call.respondText(card.serialize(false))
 				}
 			} catch (ex: Exception) {
 				ex.printStackTrace()
-				return@post badRequest(call, "Bad card data")
+				badRequest(call, "Bad card data")
 			}
 		}
 		patch {

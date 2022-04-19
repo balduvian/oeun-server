@@ -46,16 +46,33 @@
   position: relative;
 }
 
-#immr-search {
-  width: calc(100% - 70px);
-  margin-left: 20px;
+.search-grid {
   margin-top: 10px;
+  position: relative;
+
+  display: grid;
+  grid-template-columns: 1fr 40px;
+  column-gap: 10px;
+
+  width: calc(100% - 40px);
+  height: 40px;
+
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#immr-search {
+  position: relative;
+  display: block;
+
+  width: 100%;
 
   padding: 0;
   padding-left: 20px;
 
-  height: 30px;
-  line-height: 30px;
+  height: 40px;
+  box-sizing: border-box;
+  line-height: 40px;
   border: 5px solid white;
 
   border-radius: 10px;
@@ -63,6 +80,21 @@
   background-color: white;
   font-size: 20px;
   font-weight: bold;
+}
+
+#add-button {
+  border: none;
+  font-size: 20px;
+
+  position: relative;
+  display: block;
+
+  width: 40px;
+  height: 40px;
+
+  border-radius: 10px;
+  line-height: 40px;
+  text-align: center;
 }
 
 #immr-search:focus {

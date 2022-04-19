@@ -41,9 +41,3 @@ export type NewCard = {
 	sentence: NewField<HTMLInputElement>;
 	picture: NewField<HTMLInputElement>;
 };
-
-export enum Views {
-	EDIT_CARD,
-	NEW_CARD,
-	DICTIONARY,
-}

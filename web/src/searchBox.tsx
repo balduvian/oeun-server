@@ -1,6 +1,7 @@
-import React, * as react from 'react';
-import { Card, EditHistory, Highlights, NewCard, HistoryEntry, Part, SearchSuggestion, Views, NewField } from './types';
+import * as react from 'react';
+import { SearchSuggestion } from './types';
 import * as util from './util';
+import * as shared from './shared';
 
 let currentGoodTypingEventNo = 0;
 
@@ -110,69 +111,74 @@ export class SearchBox extends react.Component<Props, State> {
 
 		return (
 			<div id="immr-search-area">
-				<input
-					ref={this.searchRef}
-					value={initialValue}
-					id="immr-search"
-					onFocus={event => {
-						/* select everything on click in */
-						this.selectAllSearch();
-						this.makeSearch(event.currentTarget.value);
-					}}
-					onBlur={() => this.stateSearchClear()}
-					onCompositionStart={() => (composing = true)}
-					onCompositionEnd={() => (composing = false)}
-					onKeyDown={event => {
-						if (composing) return;
+				<div className="search-grid">
+					<input
+						ref={this.searchRef}
+						value={initialValue}
+						id="immr-search"
+						onFocus={event => {
+							/* select everything on click in */
+							this.selectAllSearch();
+							this.makeSearch(event.currentTarget.value);
+						}}
+						onBlur={() => this.stateSearchClear()}
+						onCompositionStart={() => (composing = true)}
+						onCompositionEnd={() => (composing = false)}
+						onKeyDown={event => {
+							if (composing) return;
 
-						const suggestions = this.state.suggestions;
-						const searchSelection = this.state.selection;
-						if (suggestions === undefined) return;
+							const suggestions = this.state.suggestions;
+							const searchSelection = this.state.selection;
+							if (suggestions === undefined) return;
 
-						if (event.code === 'ArrowDown') {
-							event.preventDefault();
-							let newSelect = searchSelection + 1;
-							if (newSelect < suggestions.length) {
-								this.setState({ selection: newSelect });
+							if (event.code === 'ArrowDown') {
+								event.preventDefault();
+								let newSelect = searchSelection + 1;
+								if (newSelect < suggestions.length) {
+									this.setState({ selection: newSelect });
+								}
+							} else if (event.code === 'ArrowUp') {
+								event.preventDefault();
+								let newSelect = searchSelection - 1;
+								if (newSelect >= 0) {
+									this.setState({ selection: newSelect });
+								}
+							} else if (event.code === 'Escape') {
+								event.preventDefault();
+								this.unFocusSearch();
+							} else if (event.code === 'Enter') {
+								event.preventDefault();
+								if (searchSelection < 0 || searchSelection >= suggestions.length) return;
+
+								const suggestion = suggestions[searchSelection];
+
+								//this.unFocusSearch();
+								this.stateSearchClear(suggestion.word);
+								this.props.onSearch(suggestions[searchSelection]);
 							}
-						} else if (event.code === 'ArrowUp') {
-							event.preventDefault();
-							let newSelect = searchSelection - 1;
-							if (newSelect >= 0) {
-								this.setState({ selection: newSelect });
-							}
-						} else if (event.code === 'Escape') {
-							event.preventDefault();
-							this.unFocusSearch();
-						} else if (event.code === 'Enter') {
-							event.preventDefault();
-							if (searchSelection < 0 || searchSelection >= suggestions.length) return;
+						}}
+						onInput={async event => {
+							const currentValue = event.currentTarget.value;
+							if (currentValue === this.state.searchValue) return;
 
-							const suggestion = suggestions[searchSelection];
+							this.setState({
+								searchValue: currentValue,
+							});
 
-							this.unFocusSearch();
-							this.stateSearchClear(suggestion.word);
-							this.props.onSearch(suggestions[searchSelection]);
-						}
-					}}
-					onInput={async event => {
-						const currentValue = event.currentTarget.value;
-						if (currentValue === this.state.searchValue) return;
+							const thisNo = ++currentGoodTypingEventNo;
+							const query = event.currentTarget.value;
 
-						this.setState({
-							searchValue: currentValue,
-						});
+							/* save search calls */
+							await util.wait(500);
+							if (currentGoodTypingEventNo != thisNo) return;
 
-						const thisNo = ++currentGoodTypingEventNo;
-						const query = event.currentTarget.value;
-
-						/* save search calls */
-						await util.wait(500);
-						if (currentGoodTypingEventNo != thisNo) return;
-
-						this.makeSearch(query);
-					}}
-				/>
+							this.makeSearch(query);
+						}}
+					/>
+					<button id="add-button" onClick={() => shared.goToNewPage('/new', [])}>
+						+
+					</button>
+				</div>
 				{initialSuggestions === undefined || initialNoResults || initialSuggestions.length > 0 ? (
 					<div id="immr-search-suggestions">
 						{initialSuggestions === undefined ? (

@@ -63,15 +63,13 @@ object Collection {
 	/**
 	 * @return the new card's assigned id
 	 */
-	fun addCard(newCard: Card): Int {
+	fun addCard(newCard: Card) {
 		val id = if (cards.isEmpty()) 0 else cards.last().id + 1
 		newCard.id = id
 
 		insertCard(newCard)
 
 		CompletableFuture.runAsync { newCard.save(PATH_CARDS) }
-
-		return id
 	}
 
 	fun editCard(editObject: JsonElement) {
