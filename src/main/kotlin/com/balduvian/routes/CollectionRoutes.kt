@@ -37,6 +37,7 @@ fun Route.collectionRouting() {
 					call.respond(Collection.addCard(card).toString())
 				}
 			} catch (ex: Exception) {
+				ex.printStackTrace()
 				return@post badRequest(call, "Bad card data")
 			}
 		}

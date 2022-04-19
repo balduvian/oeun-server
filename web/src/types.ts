@@ -25,6 +25,20 @@ export type Card = {
 	badges: string[];
 };
 
+export type NewField = {
+	value: string | undefined;
+	nullable: boolean;
+	error: boolean;
+};
+
+export type NewCard = {
+	word: NewField;
+	part: NewField;
+	definition: NewField;
+	sentence: NewField;
+	picture: NewField;
+};
+
 export enum Views {
 	EDIT_CARD,
 	NEW_CARD,

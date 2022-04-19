@@ -1,4 +1,4 @@
-import { Highlights } from './types';
+import { Highlights, NewCard, NewField } from './types';
 
 export const jsonGetRequest = (url: string) =>
 	new Promise<any>((acc, rej) =>
@@ -12,8 +12,7 @@ export const jsonGetRequest = (url: string) =>
 			.catch(rej),
 	);
 
-export const imagePostRequest = (url: string, data: ArrayBuffer) =>
-	fetch(url, { method: 'POST', body: data }).then(response => response.json().then(json => json));
+export const imagePostRequest = (url: string, data: ArrayBuffer) => fetch(url, { method: 'POST', body: data }).then(response => response.json());
 
 export const imageGetRequest = (url: string) =>
 	new Promise<string>((acc, rej) =>
@@ -35,6 +34,8 @@ export const imageGetRequest = (url: string) =>
 				.catch(rej);
 		}),
 	);
+
+export const jsonPostRequest = (url: string, data: any) => fetch(url, { method: 'POST', body: JSON.stringify(data) }).then(response => response.json());
 
 export const wait = (time: number) => new Promise(acc => setTimeout(acc, time));
 
@@ -81,3 +82,17 @@ export const strToHighlights = (str: string) => {
 
 	return ret;
 };
+
+const blankNewField = (nullable: boolean): NewField => ({
+	value: undefined,
+	nullable: nullable,
+	error: false,
+});
+
+export const blankNewCard = (): NewCard => ({
+	word: blankNewField(false),
+	part: blankNewField(true),
+	definition: blankNewField(false),
+	sentence: blankNewField(true),
+	picture: blankNewField(true),
+});

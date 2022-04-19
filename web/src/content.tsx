@@ -1,7 +1,7 @@
 import React, * as react from 'react';
 import * as reactDom from 'react-dom';
 import { WindowEvent } from './windowEvent';
-import { Card, EditHistory, Highlights, HistoryEntry, Part, SearchSuggestion, Views } from './types';
+import { Card, EditHistory, Highlights, NewCard, HistoryEntry, Part, SearchSuggestion, Views } from './types';
 import * as util from './util';
 
 /* globals */
@@ -17,7 +17,7 @@ type State = {
 	searchValue: string;
 	editingField: keyof Card | undefined;
 	editHistory: EditHistory;
-	newCard: Partial<Card>;
+	newCard: NewCard;
 	view: Views;
 };
 
@@ -36,7 +36,7 @@ class UI extends react.Component<{}, State> {
 			searchValue: '',
 			editingField: undefined,
 			editHistory: [],
-			newCard: {},
+			newCard: util.blankNewCard(),
 			view: Views.NEW_CARD,
 		};
 
@@ -454,8 +454,8 @@ class UI extends react.Component<{}, State> {
 					{this.pictureInput(
 						`image-container ${initialEditingField === 'picture' ? 'image-editing' : ''}`,
 						<input
-							onFocus={event => this.setState({ editingField: 'picture' })}
-							onBlur={event => this.setState({ editingField: undefined })}
+							onFocus={() => this.setState({ editingField: 'picture' })}
+							onBlur={() => this.setState({ editingField: undefined })}
 							onPaste={async event => {
 								if (this.state.editingField !== 'picture') return;
 
@@ -478,19 +478,18 @@ class UI extends react.Component<{}, State> {
 			);
 		};
 
-		const newCardField = (prettyName: string, cardField: keyof Card) => {
+		const newCardField = (prettyName: string, cardField: keyof NewCard, error: boolean) => {
 			let cancelTyping = false;
 			return (
 				<>
-					<p className="new-caption">{prettyName}</p>
+					<p className={`new-caption ${error ? 'error' : ''}`}>{prettyName}</p>
 					<input
 						onCompositionStart={() => (cancelTyping = true)}
 						onCompositionEnd={() => (cancelTyping = false)}
 						onInput={event => {
 							if (cancelTyping) return;
 
-							const value = event.currentTarget.value.length === 0 ? undefined : event.currentTarget.value;
-							Object.assign(this.state.newCard, { [cardField]: value });
+							this.state.newCard[cardField].value = event.currentTarget.value.length === 0 ? undefined : event.currentTarget.value;
 
 							this.setState({
 								newCard: this.state.newCard,
@@ -502,22 +501,103 @@ class UI extends react.Component<{}, State> {
 			);
 		};
 
-		const newCardPanel = (initialNewCard: Partial<Card>) => (
+		const newCardPanel = (initialNewCard: NewCard) => (
 			<div id="immr-card-panel">
-				<div className="new-card-row">{newCardField('Word', 'word')}</div>
-				<div className="new-card-row">
+				<div className="immr-card-row">{newCardField('Word *', 'word', initialNewCard.word.error)}</div>
+				<div className="immr-card-row">
 					<p className="new-caption">Part of speech</p>
-					<select>{this.partOptions(initialNewCard.part)}</select>
+					<select className="new-select">{this.partOptions(initialNewCard.part.value)}</select>
 				</div>
-				<div className="new-card-row">{newCardField('Definition', 'definition')}</div>
-				<div className="new-card-row">{newCardField('Sentence', 'sentence')}</div>
-				<div className="new-card-row">
-					<p>Picture</p>
-					{this.pictureInput('image-container', <input />, initialNewCard.picture)}
+				<div className="immr-card-row">{newCardField('Definition *', 'definition', initialNewCard.definition.error)}</div>
+				<div className="immr-card-row">{newCardField('Sentence', 'sentence', initialNewCard.sentence.error)}</div>
+				<div className="immr-card-row">
+					<p className="new-caption">Picture</p>
+					{this.pictureInput(
+						'image-container',
+						<input
+							onKeyDown={event => {
+								if (event.code === 'Delete') {
+									event.preventDefault();
+									this.state.newCard.picture.value = undefined;
+									this.setState({ newCard: this.state.newCard });
+								}
+							}}
+							onPaste={async event => {
+								const pictureField = this.state.newCard.picture;
+
+								const [buffer, filename] = await this.onPasteImage(event);
+
+								await util.imagePostRequest(`/api/images/${filename}`, buffer);
+
+								pictureField.value = filename;
+								this.setState({ newCard: this.state.newCard });
+							}}
+						/>,
+						initialNewCard.picture.value,
+					)}
 				</div>
-				<div className="new-card-row button-row">
-					<button className="new-button">Cancel</button>
-					<button className="new-button">Create</button>
+				<div className="immr-card-row">
+					<div className="button-grid">
+						<button
+							className="new-button"
+							onClick={() => {
+								this.setState({
+									view: Views.EDIT_CARD,
+									currentCard: undefined,
+								});
+							}}
+						>
+							Cancel
+						</button>
+						<button
+							className="new-button"
+							onClick={() => {
+								let foundError = false;
+
+								const fields = Object.keys(this.state.newCard) as (keyof NewCard)[];
+								for (const fieldName of fields) {
+									const field = this.state.newCard[fieldName];
+
+									if (field.value === undefined && !field.nullable) {
+										field.error = true;
+										foundError = true;
+									}
+								}
+
+								if (foundError) {
+									this.setState({ newCard: this.state.newCard });
+								} else {
+									const newCard = this.state.newCard;
+
+									const uploadCard: Card = {
+										id: 0,
+										word: newCard.word.value as string,
+										part: newCard.part.value,
+										definition: newCard.definition.value as string,
+										sentence: newCard.sentence.value,
+										picture: newCard.picture.value,
+										date: new Date(),
+										badges: [],
+									};
+
+									console.log(uploadCard);
+
+									util.jsonPostRequest('/api/collection', uploadCard).then(res => {
+										if (res.message !== undefined) {
+											console.log(res.message);
+										} else {
+											this.setState({
+												view: Views.EDIT_CARD,
+												currentCard: undefined,
+											});
+										}
+									});
+								}
+							}}
+						>
+							Create
+						</button>
+					</div>
 				</div>
 			</div>
 		);
