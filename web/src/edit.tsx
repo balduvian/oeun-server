@@ -248,6 +248,23 @@ class EditPage extends react.Component<Props, State> {
 					<div className="immr-card-row">
 						{cardField('big', { fontWeight: 'bold' }, initialCard.word, initialCard.word, false, 'word')}
 						{editDropdown(initialCard.part, initialParts)}
+						<button
+							className="delete-button"
+							onClick={() => {
+								const card = this.state.currentCard;
+								if (card === undefined) return;
+
+								util.jsonDeleteRequest(`/api/collection/${card.id}`).then(({ message }) => {
+									if (message === 'Deleted') {
+										shared.goToNewPage('/edit', []);
+									} else {
+										console.log(message);
+									}
+								});
+							}}
+						>
+							X
+						</button>
 					</div>
 					<div className="immr-card-row">{cardField('small', {}, initialCard.definition, initialCard.definition, false, 'definition')}</div>
 

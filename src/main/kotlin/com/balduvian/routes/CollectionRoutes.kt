@@ -62,7 +62,7 @@ fun Route.collectionRouting() {
 
 			try {
 				Collection.removeCard(idNo)
-				call.respondText("Deleted")
+				call.respondText("{\"message\":\"Deleted\"}")
 
 			} catch (ex: Exception) {
 				return@delete badRequest(call, "Could not delete card")
