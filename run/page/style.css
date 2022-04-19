@@ -277,16 +277,11 @@
 
 .image-editing {
   box-sizing: border-box;
-  outline: 5px solid var(--immr-active-color);
   border-radius: 5px;
 
   border: none;
   padding: 0;
   margin: 0;
-}
-
-.image-container > input:focus {
-  outline: none;
 }
 
 .image-container > input {
@@ -297,6 +292,7 @@
   top: 0;
 
   color: rgba(0, 0, 0, 0);
+  user-select: none;
   background: none;
   border: none;
   width: 100%;
@@ -305,6 +301,12 @@
 
   margin: 0;
   padding: 0;
+
+  border-radius: 5px;
+}
+
+.image-container > input:focus {
+  outline: 5px solid var(--immr-active-color);
 }
 
 img {

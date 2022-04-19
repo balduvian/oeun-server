@@ -1,3 +1,4 @@
+import * as react from 'react';
 import { Highlights, NewCard, NewField } from './types';
 
 export const jsonGetRequest = (url: string) =>
@@ -83,10 +84,11 @@ export const strToHighlights = (str: string) => {
 	return ret;
 };
 
-const blankNewField = (nullable: boolean): NewField => ({
+const blankNewField = <T>(nullable: boolean): NewField<T> => ({
 	value: undefined,
 	nullable: nullable,
 	error: false,
+	ref: react.createRef(),
 });
 
 export const blankNewCard = (): NewCard => ({

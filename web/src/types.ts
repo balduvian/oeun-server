@@ -1,3 +1,5 @@
+import * as react from 'react';
+
 export type Part = {
 	id: string;
 	english: string;
@@ -25,18 +27,19 @@ export type Card = {
 	badges: string[];
 };
 
-export type NewField = {
+export type NewField<T> = {
 	value: string | undefined;
 	nullable: boolean;
 	error: boolean;
+	ref: react.RefObject<T>;
 };
 
 export type NewCard = {
-	word: NewField;
-	part: NewField;
-	definition: NewField;
-	sentence: NewField;
-	picture: NewField;
+	word: NewField<HTMLInputElement>;
+	part: NewField<HTMLSelectElement>;
+	definition: NewField<HTMLInputElement>;
+	sentence: NewField<HTMLInputElement>;
+	picture: NewField<HTMLInputElement>;
 };
 
 export enum Views {

@@ -1,20 +1,14 @@
 import React, * as react from 'react';
 import * as reactDom from 'react-dom';
 import { WindowEvent } from './windowEvent';
-import { Card, EditHistory, Highlights, NewCard, HistoryEntry, Part, SearchSuggestion, Views } from './types';
+import { Card, EditHistory, Highlights, NewCard, HistoryEntry, Part, SearchSuggestion, Views, NewField } from './types';
 import * as util from './util';
-
-/* globals */
-let currentGoodTypingEventNo = 0;
+import { SearchBox } from './searchBox';
 
 type State = {
-	searchSuggestions: SearchSuggestion[] | undefined;
-	noResults: boolean;
-	searchSelection: number;
 	currentCard: Card | undefined;
 	parts: Part[];
 	badges: { [key: string]: string };
-	searchValue: string;
 	editingField: keyof Card | undefined;
 	editHistory: EditHistory;
 	newCard: NewCard;
@@ -22,25 +16,17 @@ type State = {
 };
 
 class UI extends react.Component<{}, State> {
-	searchRef: react.RefObject<HTMLInputElement>;
-
 	constructor(props: {}) {
 		super(props);
 		this.state = {
-			searchSuggestions: [],
-			noResults: false,
-			searchSelection: 0,
 			currentCard: undefined,
 			parts: [],
 			badges: {},
-			searchValue: '',
 			editingField: undefined,
 			editHistory: [],
 			newCard: util.blankNewCard(),
-			view: Views.NEW_CARD,
+			view: Views.EDIT_CARD,
 		};
-
-		this.searchRef = react.createRef();
 
 		Promise.all([util.jsonGetRequest(`/api/parts`), util.jsonGetRequest(`/api/badges`)]).then(([parts, badges]) => {
 			this.setState({
@@ -52,54 +38,6 @@ class UI extends react.Component<{}, State> {
 				badges,
 			});
 		});
-	}
-
-	private stateSearchResults(results: SearchSuggestion[] | undefined, noResults: boolean) {
-		let newSelect = this.state.searchSelection;
-		if (results === undefined || results.length === 0) {
-			newSelect = 0;
-		} else if (newSelect >= results.length) {
-			newSelect = results.length - 1;
-		}
-
-		return {
-			searchSuggestions: results,
-			searchSelection: newSelect,
-			noResults: noResults && results?.length === 0,
-		};
-	}
-
-	private focusSearch() {
-		const search = this.searchRef.current;
-		if (search === null) return;
-
-		search.focus();
-	}
-
-	private unFocusSearch() {
-		const search = this.searchRef.current;
-		if (search === null) return;
-
-		search.blur();
-	}
-
-	private selectAllSearch() {
-		const search = this.searchRef.current;
-		if (search === null) return;
-
-		search.selectionStart = 0;
-		search.selectionEnd = search.value.length;
-	}
-
-	private makeSearch(query: string) {
-		/* don't need to ask for empty search */
-		if (query.length === 0) {
-			this.setState(this.stateSearchResults([], false));
-		} else {
-			util.jsonGetRequest(`/api/collection/search/${query}`)
-				.then(data => this.setState(this.stateSearchResults(data, true)))
-				.catch(() => this.setState(this.stateSearchResults(undefined, false)));
-		}
 	}
 
 	cancelFieldEdit(eventTarget: (HTMLOrSVGElement & ElementContentEditable & Node) | undefined) {
@@ -168,9 +106,7 @@ class UI extends react.Component<{}, State> {
 						{part.english}
 					</option>
 				))}
-				<option selected={selectedPart === undefined} value="">
-					No part
-				</option>
+				<option selected={selectedPart === undefined} value=""></option>
 			</>
 		);
 	}
@@ -200,113 +136,6 @@ class UI extends react.Component<{}, State> {
 	}
 
 	render() {
-		const searchBar = (
-			initialSearchValue: string,
-			initialSearchSuggestions: SearchSuggestion[] | undefined,
-			initialNoResults: boolean,
-			initialSearchSelection: number,
-		) => (
-			<div id="immr-search-area">
-				<input
-					ref={this.searchRef}
-					value={initialSearchValue}
-					id="immr-search"
-					onFocus={event => {
-						/* select everything on click in */
-						this.selectAllSearch();
-						this.makeSearch(event.currentTarget.value);
-					}}
-					onBlur={event => {
-						this.setState(this.stateSearchResults([], false));
-					}}
-					onCompositionStart={event => {
-						event.currentTarget.dataset.composing = 'T';
-					}}
-					onCompositionEnd={event => {
-						event.currentTarget.dataset.composing = 'F';
-					}}
-					onKeyDown={event => {
-						if (event.currentTarget.dataset.composing === 'T') {
-							return;
-						}
-
-						const suggestions = this.state.searchSuggestions;
-						const searchSelection = this.state.searchSelection;
-						if (suggestions === undefined) return;
-
-						if (event.code === 'ArrowDown') {
-							event.preventDefault();
-							let newSelect = searchSelection + 1;
-							if (newSelect < suggestions.length) {
-								this.setState({ searchSelection: newSelect });
-							}
-						} else if (event.code === 'ArrowUp') {
-							event.preventDefault();
-							let newSelect = searchSelection - 1;
-							if (newSelect >= 0) {
-								this.setState({ searchSelection: newSelect });
-							}
-						} else if (event.code === 'Escape') {
-							event.preventDefault();
-							this.unFocusSearch();
-						} else if (event.code === 'Enter') {
-							++currentGoodTypingEventNo;
-							event.preventDefault();
-							if (searchSelection < 0 || searchSelection >= suggestions.length) return;
-
-							const { id, word } = suggestions[searchSelection];
-
-							this.setState(Object.assign(this.stateSearchResults([], false), { searchValue: word.slice() }), () => {
-								this.selectAllSearch();
-							});
-
-							util.jsonGetRequest(`/api/collection/${id}`)
-								.then((data: Card) => {
-									this.setState({
-										currentCard: data,
-										editingField: undefined,
-										editHistory: [],
-									});
-								})
-								.catch(() => {
-									alert('Could not find card');
-								});
-						}
-					}}
-					onInput={async event => {
-						const currentValue = event.currentTarget.value;
-						if (currentValue === this.state.searchValue) return;
-
-						this.setState({
-							searchValue: currentValue,
-						});
-
-						const thisNo = ++currentGoodTypingEventNo;
-						const query = event.currentTarget.value;
-
-						/* save search calls */
-						await util.wait(500);
-						if (currentGoodTypingEventNo != thisNo) return;
-
-						this.makeSearch(query);
-					}}
-				/>
-				{initialSearchSuggestions === undefined || initialNoResults || initialSearchSuggestions.length > 0 ? (
-					<div id="immr-search-suggestions">
-						{initialSearchSuggestions === undefined ? (
-							<div className="immr-search-suggestion error">Something went wrong...</div>
-						) : initialNoResults ? (
-							<div className="immr-search-suggestion error">No results</div>
-						) : (
-							initialSearchSuggestions.map(({ word }, i) => (
-								<div className={`immr-search-suggestion ${i === initialSearchSelection ? 'selected' : ''}`}>{word}</div>
-							))
-						)}
-					</div>
-				) : null}
-			</div>
-		);
-
 		const editDropdown = (initialPart: string | undefined, initialParts: Part[], visible: boolean) => {
 			let cancelBlur = false;
 			return (
@@ -457,6 +286,8 @@ class UI extends react.Component<{}, State> {
 							onFocus={() => this.setState({ editingField: 'picture' })}
 							onBlur={() => this.setState({ editingField: undefined })}
 							onPaste={async event => {
+								event.preventDefault();
+
 								if (this.state.editingField !== 'picture') return;
 
 								const card = this.state.currentCard;
@@ -478,64 +309,64 @@ class UI extends react.Component<{}, State> {
 			);
 		};
 
-		const newCardField = (prettyName: string, cardField: keyof NewCard, error: boolean) => {
-			let cancelTyping = false;
+		const newCardField = (initialNewCard: NewCard, cardField: keyof NewCard, prettyName: string) => {
+			const field = initialNewCard[cardField] as NewField<HTMLInputElement>;
 			return (
-				<>
-					<p className={`new-caption ${error ? 'error' : ''}`}>{prettyName}</p>
-					<input
-						onCompositionStart={() => (cancelTyping = true)}
-						onCompositionEnd={() => (cancelTyping = false)}
-						onInput={event => {
-							if (cancelTyping) return;
-
-							this.state.newCard[cardField].value = event.currentTarget.value.length === 0 ? undefined : event.currentTarget.value;
-
-							this.setState({
-								newCard: this.state.newCard,
-							});
-						}}
-						className="new-card-field"
-					/>
-				</>
+				<div className="immr-card-row">
+					<p className={`new-caption ${field.error ? 'error' : ''}`}>{prettyName}</p>
+					<input ref={field.ref} className="new-card-field" />
+				</div>
 			);
 		};
 
+		const newPartField = (initialNewCard: NewCard) => (
+			<div className="immr-card-row">
+				<p className="new-caption">Part of speech</p>
+				<select ref={initialNewCard.part.ref} className="new-select">
+					{this.partOptions(initialNewCard.part.value)}
+				</select>
+			</div>
+		);
+
+		const newPictureField = (initialNewCard: NewCard) => (
+			<div className="immr-card-row">
+				<p className="new-caption">Picture</p>
+				{this.pictureInput(
+					'image-container',
+					<input
+						readOnly
+						ref={initialNewCard.picture.ref}
+						onKeyDown={event => {
+							if (event.code === 'Delete') {
+								event.preventDefault();
+								this.state.newCard.picture.value = '';
+								this.setState({ newCard: this.state.newCard });
+							}
+						}}
+						onPaste={async event => {
+							event.preventDefault();
+
+							const [buffer, filename] = await this.onPasteImage(event);
+							await util.imagePostRequest(`/api/images/${filename}`, buffer);
+
+							if (initialNewCard.picture.ref.current !== null) initialNewCard.picture.ref.current.value = filename;
+
+							this.state.newCard.picture.value = filename;
+							this.setState({ newCard: this.state.newCard }, () => console.log(this.state.newCard));
+						}}
+					/>,
+					initialNewCard.picture.value,
+				)}
+			</div>
+		);
+
 		const newCardPanel = (initialNewCard: NewCard) => (
 			<div id="immr-card-panel">
-				<div className="immr-card-row">{newCardField('Word *', 'word', initialNewCard.word.error)}</div>
-				<div className="immr-card-row">
-					<p className="new-caption">Part of speech</p>
-					<select className="new-select">{this.partOptions(initialNewCard.part.value)}</select>
-				</div>
-				<div className="immr-card-row">{newCardField('Definition *', 'definition', initialNewCard.definition.error)}</div>
-				<div className="immr-card-row">{newCardField('Sentence', 'sentence', initialNewCard.sentence.error)}</div>
-				<div className="immr-card-row">
-					<p className="new-caption">Picture</p>
-					{this.pictureInput(
-						'image-container',
-						<input
-							onKeyDown={event => {
-								if (event.code === 'Delete') {
-									event.preventDefault();
-									this.state.newCard.picture.value = undefined;
-									this.setState({ newCard: this.state.newCard });
-								}
-							}}
-							onPaste={async event => {
-								const pictureField = this.state.newCard.picture;
-
-								const [buffer, filename] = await this.onPasteImage(event);
-
-								await util.imagePostRequest(`/api/images/${filename}`, buffer);
-
-								pictureField.value = filename;
-								this.setState({ newCard: this.state.newCard });
-							}}
-						/>,
-						initialNewCard.picture.value,
-					)}
-				</div>
+				{newCardField(initialNewCard, 'word', 'Word *')}
+				{newPartField(initialNewCard)}
+				{newCardField(initialNewCard, 'definition', 'Definition *')}
+				{newCardField(initialNewCard, 'sentence', 'Sentence')}
+				{newPictureField(initialNewCard)}
 				<div className="immr-card-row">
 					<div className="button-grid">
 						<button
@@ -557,6 +388,10 @@ class UI extends react.Component<{}, State> {
 								const fields = Object.keys(this.state.newCard) as (keyof NewCard)[];
 								for (const fieldName of fields) {
 									const field = this.state.newCard[fieldName];
+
+									/* the real value which will be passed */
+									field.value = field.ref.current?.value;
+									if (field.value === '') field.value = undefined;
 
 									if (field.value === undefined && !field.nullable) {
 										field.error = true;
@@ -611,7 +446,20 @@ class UI extends react.Component<{}, State> {
 						if (event.code === 'KeyZ' && event.ctrlKey) event.preventDefault();
 					}}
 				></WindowEvent>
-				{searchBar(this.state.searchValue, this.state.searchSuggestions, this.state.noResults, this.state.searchSelection)}
+				<SearchBox
+					searchValue=""
+					onSearch={({ id }) => {
+						util.jsonGetRequest(`/api/collection/${id}`)
+							.then((data: Card) => {
+								this.setState({
+									currentCard: data,
+									editingField: undefined,
+									editHistory: [],
+								});
+							})
+							.catch(err => console.log('Could not find card', err));
+					}}
+				></SearchBox>
 				{this.state.view === Views.EDIT_CARD ? (
 					<>{this.state.currentCard === undefined ? null : cardPanel(this.state.currentCard, this.state.editingField, this.state.parts)}</>
 				) : (
