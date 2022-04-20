@@ -51,15 +51,11 @@ class EditPage extends react.Component<Props, State> {
 		}
 	}
 
-	cancelFieldEdit(eventTarget: (HTMLOrSVGElement & ElementContentEditable & Node) | undefined) {
-		return this.confirmFieldEdit(undefined, false, 'word', eventTarget);
-	}
-
 	/**
-	 * @param newValue set to undefined if you wish to not edit
+	 * @param newString set to undefined if you wish to not edit
 	 */
 	confirmFieldEdit(
-		newValue: string | undefined,
+		newString: string | undefined,
 		nullable: boolean,
 		forField: keyof Card,
 		eventTarget: (HTMLOrSVGElement & ElementContentEditable & Node) | undefined,
@@ -67,29 +63,34 @@ class EditPage extends react.Component<Props, State> {
 		eventTarget?.blur();
 
 		const card = this.state.currentCard;
+		if (card === undefined) return;
+
 		const history = this.state.editHistory;
+		const previousValue = this.editingInitial(forField);
 
-		/* cancelled or invalid state */
-		if (card !== undefined && newValue !== undefined) {
-			/* make an edit */
-			const lastHistoryEntry = history.length === 0 ? undefined : history[history.length - 1];
+		if (newString === undefined) {
+			console.log('reverting', previousValue);
+			(card[forField] as string | undefined) = previousValue;
 
-			/* prevent history duplicates */
-			const sameEntry = (entry: HistoryEntry | undefined, newField: keyof Card, newValue: string | undefined) => {
-				return entry?.field === newField && entry?.value === newValue;
-			};
+			const value = (eventTarget as any)?.value;
+			if (value !== undefined) {
+				(eventTarget as any).value = previousValue;
+			} else {
+				(eventTarget as any).textContent = previousValue;
+			}
+		} else {
+			let filtered = this.realValue(newString);
+			console.log('coming in', filtered);
 
-			let filtered0 = newValue.trim();
-			let filtered1 = filtered0.length === 0 ? undefined : filtered0;
-
-			if ((filtered1 !== undefined || nullable) && !sameEntry(lastHistoryEntry, forField, filtered1)) {
+			if ((filtered !== undefined || nullable) && previousValue !== filtered) {
+				console.log('was different');
 				/* first add the current value to history */
 				history.push({ field: forField, value: card[forField] as string | undefined });
 
 				/* modify card with new value */
-				(card[forField] as string | undefined) = filtered1;
+				(card[forField] as string | undefined) = filtered;
 
-				this.databaseChange(card.id, { [forField]: filtered1 });
+				this.databaseChange(card.id, { [forField]: filtered });
 			}
 		}
 
@@ -99,7 +100,7 @@ class EditPage extends react.Component<Props, State> {
 					currentCard: card,
 					editHistory: history,
 				},
-				this.setEditing(forField, false),
+				this.setEditing(forField, '', false),
 			),
 		);
 	}
@@ -113,12 +114,20 @@ class EditPage extends react.Component<Props, State> {
 		return [buffer, 'paste-' + Date.now().toString() + '.jpg'];
 	}
 
-	isEditing(field: string) {
-		return this.state.editing[field] ?? false;
+	editingInitial(field: string) {
+		return this.state.editing[field]?.initial;
 	}
-	setEditing(field: string, value: boolean) {
-		this.state.editing[field] = value;
+	isEditing(field: string) {
+		return this.state.editing[field]?.editing ?? false;
+	}
+	setEditing(field: string, initial: string | undefined, value: boolean) {
+		this.state.editing[field] = { initial, editing: value };
 		return { editing: this.state.editing };
+	}
+
+	realValue(value: string) {
+		let filtered = value.trim();
+		return filtered?.length === 0 ? undefined : filtered;
 	}
 
 	databaseChange(id: number, obj: { [key: string]: any }) {
@@ -141,11 +150,11 @@ class EditPage extends react.Component<Props, State> {
 					className={`immr-part-edit ${initialPart === undefined ? 'no-part' : ''}`}
 					onKeyDown={event => {
 						if (event.code === 'Escape' || (event.code === 'KeyZ' && event.ctrlKey)) {
-							/* cancel editing */
+							event.stopPropagation();
 							event.preventDefault();
 							cancelBlur = true;
 
-							this.cancelFieldEdit(event.currentTarget);
+							this.confirmFieldEdit(undefined, true, 'part', event.currentTarget);
 						} else if (event.code === 'Enter') {
 							event.preventDefault();
 							cancelBlur = true;
@@ -164,14 +173,14 @@ class EditPage extends react.Component<Props, State> {
 						}
 						cancelBlur = false;
 					}}
-					onFocus={() => this.setState(this.setEditing('part', true))}
+					onFocus={event => this.setState(this.setEditing('part', this.realValue(event.currentTarget.value), true))}
 				>
 					{shared.partOptions(initialParts, initialPart)}
 				</select>
 			);
 		};
 
-		const cardField = (
+		const editField = (
 			className: string,
 			style: react.CSSProperties,
 			initialValue: string | undefined,
@@ -187,16 +196,19 @@ class EditPage extends react.Component<Props, State> {
 					style={style}
 					role="textbox"
 					contentEditable
+					suppressContentEditableWarning={true}
 					tabIndex={100}
 					onCompositionStart={() => (cancelTyping = true)}
 					onCompositionEnd={() => (cancelTyping = false)}
 					onKeyDown={event => {
 						if (cancelTyping) return;
+
 						if (event.code === 'Escape' || (event.code === 'KeyZ' && event.ctrlKey)) {
+							event.stopPropagation();
 							event.preventDefault();
 							cancelBlur = true;
 
-							this.cancelFieldEdit(event.currentTarget);
+							this.confirmFieldEdit(undefined, nullable, forField, event.currentTarget);
 						} else if (event.code === 'Enter') {
 							event.preventDefault();
 							cancelBlur = true;
@@ -206,11 +218,12 @@ class EditPage extends react.Component<Props, State> {
 					}}
 					onBlur={event => {
 						if (!cancelBlur) {
+							console.log('prevented blur');
 							this.confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField, event.currentTarget);
 						}
 						cancelBlur = false;
 					}}
-					onFocus={() => this.setState(this.setEditing(forField, true))}
+					onFocus={event => this.setState(this.setEditing(forField, this.realValue(event.currentTarget.textContent as string), true))}
 				>
 					{this.isEditing(forField) ? initialValue ?? '' : displayValue}
 				</p>
@@ -246,7 +259,7 @@ class EditPage extends react.Component<Props, State> {
 						}}
 					></WindowEvent>
 					<div className="immr-card-row">
-						{cardField('big', { fontWeight: 'bold' }, initialCard.word, initialCard.word, false, 'word')}
+						{editField('big', { fontWeight: 'bold' }, initialCard.word, initialCard.word, false, 'word')}
 						{editDropdown(initialCard.part, initialParts)}
 						<button
 							className="delete-button"
@@ -266,11 +279,11 @@ class EditPage extends react.Component<Props, State> {
 							X
 						</button>
 					</div>
-					<div className="immr-card-row">{cardField('small', {}, initialCard.definition, initialCard.definition, false, 'definition')}</div>
+					<div className="immr-card-row">{editField('small', {}, initialCard.definition, initialCard.definition, false, 'definition')}</div>
 
 					<div className="immr-card-line" />
 
-					{cardField(
+					{editField(
 						'immr-card-sentence',
 						{},
 						initialCard.sentence,
@@ -286,10 +299,13 @@ class EditPage extends react.Component<Props, State> {
 						'image-container',
 						<input
 							readOnly
-							onFocus={() => this.setState(this.setEditing('picture', true))}
-							onBlur={() => this.setState(this.setEditing('picture', false))}
+							onFocus={event => this.setState(this.setEditing('picture', this.realValue(event.currentTarget.value), true))}
+							onBlur={() => this.setState(this.setEditing('picture', '', false))}
 							onKeyDown={event => {
 								if (event.code === 'Delete') {
+									event.preventDefault();
+									this.confirmFieldEdit('', true, 'picture', event.currentTarget);
+								} else if (event.code === 'Escape') {
 									event.preventDefault();
 									this.confirmFieldEdit(undefined, true, 'picture', event.currentTarget);
 								}

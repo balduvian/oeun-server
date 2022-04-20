@@ -28,7 +28,7 @@ export type Card = {
 };
 
 export type Editing = {
-	[key: string]: boolean;
+	[key: string]: { initial: string | undefined; editing: boolean };
 };
 
 export type NewField<T> = {
