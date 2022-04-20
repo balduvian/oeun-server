@@ -105,9 +105,15 @@ export class SearchBox extends react.Component<Props, State> {
 		}
 	}
 
+	setElBool(target: HTMLOrSVGElement, name: string, value: boolean) {
+		value ? (target.dataset[name] = 't') : delete target.dataset[name];
+	}
+	getElBool(target: HTMLOrSVGElement, name: string) {
+		return target.dataset[name] !== undefined;
+	}
+
 	render() {
 		const { searchValue: initialValue, suggestions: initialSuggestions, selection: initialSelection, noResults: initialNoResults } = this.state;
-		let composing = false;
 
 		return (
 			<div id="immr-search-area">
@@ -121,11 +127,17 @@ export class SearchBox extends react.Component<Props, State> {
 							this.selectAllSearch();
 							this.makeSearch(event.currentTarget.value);
 						}}
-						onBlur={() => this.stateSearchClear()}
-						onCompositionStart={() => (composing = true)}
-						onCompositionEnd={() => (composing = false)}
+						onBlur={() => {
+							this.stateSearchClear();
+							console.log('blur');
+						}}
+						onCompositionStart={event => this.setElBool(event.currentTarget, 'composing', true)}
+						onCompositionEnd={event => this.setElBool(event.currentTarget, 'composing', false)}
 						onKeyDown={event => {
-							if (composing) return;
+							if (this.getElBool(event.currentTarget, 'composing')) {
+								console.log('prevented');
+								return;
+							}
 
 							const suggestions = this.state.suggestions;
 							const searchSelection = this.state.selection;
@@ -152,7 +164,6 @@ export class SearchBox extends react.Component<Props, State> {
 
 								const suggestion = suggestions[searchSelection];
 
-								//this.unFocusSearch();
 								this.stateSearchClear(suggestion.word);
 								this.props.onSearch(suggestions[searchSelection]);
 							}
