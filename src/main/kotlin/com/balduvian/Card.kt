@@ -28,7 +28,7 @@ class Card(
 
 
 	private fun filename(directoryPath: String, scramble: Boolean): String {
-		return directoryPath + "card-" + id.toString() + if (scramble) UUID.randomUUID().toString() else "" + ".json"
+		return directoryPath + "card-" + id.toString() + (if (scramble) "-" + UUID.randomUUID().toString() else "") + ".json"
 	}
 
 	fun save(directoryPath: String, scramble: Boolean = false) {

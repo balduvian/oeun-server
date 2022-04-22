@@ -17,11 +17,14 @@ object Homonyms {
 		var index = 0
 
 		override fun hasNext(): Boolean {
+			while (index < homonymList.size && homonymList[index].cards.isEmpty()) {
+				println("${index} | ${homonymList.size}")
+				++index
+			}
 			return index < homonymList.size
 		}
 
 		override fun next(): Homonym {
-			while (homonymList[index].cards.isEmpty()) ++index
 			val ret = homonymList[index]
 			++index
 			return ret

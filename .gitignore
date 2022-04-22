@@ -6,5 +6,6 @@
 
 /run/data/cards/*
 /run/data/images/*
+/run/data/trash/*
 /run/page/*.js
 /run/options.json
