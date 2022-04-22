@@ -99,7 +99,7 @@ export class SearchBox extends react.Component<Props, State> {
 			/* don't need to ask for empty search */
 			this.stateSearchClear();
 		} else {
-			util.jsonGetRequest(`/api/collection/search/${query}`)
+			util.jsonGetRequest(`/api/collection/search/${query}/10`)
 				.then(data => this.stateSearchResults(data))
 				.catch(() => this.stateSearchError());
 		}

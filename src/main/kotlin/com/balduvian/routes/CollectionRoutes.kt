@@ -3,6 +3,7 @@ package com.balduvian.routes
 import com.balduvian.Card
 import com.balduvian.PrettyException
 import com.balduvian.Collection
+import com.balduvian.Homonyms
 import com.balduvian.Util.badRequest
 import com.google.gson.JsonParser
 import io.ktor.server.application.*
@@ -17,11 +18,13 @@ fun Route.collectionRouting() {
 		get("browse") {
 			call.respond(Collection.serializeBrowseCards())
 		}
-		get("search/{q?}") {
+		get("search/{q?}/{limit?}") {
 			val query = call.parameters["q"] ?: ""
+			val limit = call.parameters["limit"]?.toIntOrNull() ?: return@get badRequest(call, "Missing limit")
+
 			val results = Collection.search(query)
 
-			call.respond(Collection.serializeSearchResults(results))
+			call.respond(Collection.serializeSearchResults(results, limit))
 		}
 		get("{id?}") {
 			val id = call.parameters["id"] ?: return@get badRequest(call, "Missing card id")
@@ -30,13 +33,20 @@ fun Route.collectionRouting() {
 
 			call.respond(card.serialize(false))
 		}
+		get("homonym/{id?}") {
+			val id = call.parameters["id"] ?: return@get badRequest(call, "Missing homonym id")
+			val idNo = id.toIntOrNull() ?: return@get badRequest(call, "Bad id")
+
+			val homonym = Homonyms.getHomonym(idNo) ?: return@get badRequest(call, "Could not find that homonym")
+			call.respond(homonym.serialize())
+		}
 		post {
 			try {
 				withContext(Dispatchers.IO) {
 					val card = Card.deserialize(call.receiveStream())
-					Collection.addCard(card).toString()
+					val homonym = Collection.addCard(card)
 
-					call.respondText(card.serialize(false))
+					call.respondText(homonym.serialize())
 				}
 			} catch (ex: Exception) {
 				ex.printStackTrace()

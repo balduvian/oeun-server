@@ -1,23 +1,17 @@
 package com.balduvian
 
 import com.balduvian.Directories.PATH_CARDS
+import com.balduvian.Directories.PATH_TRASH
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.google.gson.stream.JsonWriter
 import java.io.File
 import java.util.concurrent.CompletableFuture
 import kotlin.collections.ArrayList
 
 object Collection {
-	/* main data */
 	val cards: ArrayList<Card> = ArrayList()
-
-	data class Search(
-		val prompt: String,
-		val included: ArrayList<Int>,
-	)
-	val searchCache = ArrayList<Search>()
+	init { Homonyms }
 
 	fun loadAllCards() {
 		val directory = File(PATH_CARDS)
@@ -33,23 +27,23 @@ object Collection {
 		filesNumbers.sortBy { (_, num) -> num }
 
 		cards.ensureCapacity(filesNumbers.size)
+
 		for ((file, _) in filesNumbers) {
-			try {
-				cards.add(Card.deserialize(file.inputStream()))
+			val card = try {
+				Card.deserialize(file.inputStream())
 			} catch (ex: Exception) {
 				ex.printStackTrace()
+				null
+			}
+
+			if (card != null) {
+				cards.add(card)
+				Homonyms.addCard(card)
 			}
 		}
 	}
 
-	private fun insertCard(card: Card) {
-		val insertIndex = cards.binarySearch { it.id - card.id }
-		if (insertIndex < 0) {
-			cards.add(-insertIndex - 1, card)
-		} else {
-			throw Exception("Trying to add duplicate card")
-		}
-	}
+	/* ==== INTERFACE ==== */
 
 	fun getCard(id: Int): Card? {
 		val index = cards.binarySearch { it.id - id }
@@ -60,16 +54,22 @@ object Collection {
 		}
 	}
 
-	/**
-	 * @return the new card's assigned id
-	 */
-	fun addCard(newCard: Card) {
+	fun addCard(newCard: Card): Homonyms.Homonym {
 		val id = if (cards.isEmpty()) 0 else cards.last().id + 1
 		newCard.id = id
 
-		insertCard(newCard)
+		/* insert */
+		val insertIndex = cards.binarySearch { it.id - id }
+		val homonym = if (insertIndex < 0) {
+			cards.add(-insertIndex - 1, newCard)
+			Homonyms.addCard(newCard)
+		} else {
+			throw PrettyException("Trying to add duplicate card")
+		}
 
 		CompletableFuture.runAsync { newCard.save(PATH_CARDS) }
+
+		return homonym
 	}
 
 	fun editCard(editObject: JsonElement) {
@@ -79,7 +79,10 @@ object Collection {
 		val collectionCard = getCard(id) ?: throw PrettyException("No such card exists")
 
 		try {
+			val oldWord = collectionCard.word
 			collectionCard.permuteInto(obj)
+			Homonyms.renameCard(collectionCard, oldWord)
+
 			CompletableFuture.runAsync { collectionCard.save(PATH_CARDS) }
 
 		} catch (ex: Exception) {
@@ -92,9 +95,17 @@ object Collection {
 		if (removeIndex < 0) {
 			throw Exception("Card does not exist")
 		} else {
-			cards.removeAt(removeIndex)
+			Homonyms.removeCard(cards[removeIndex])
+			val card = cards.removeAt(removeIndex)
+
+			CompletableFuture.runAsync {
+				card.unsave(PATH_CARDS)
+				card.save(PATH_TRASH, true)
+			}
 		}
 	}
+
+	/* ==== SEARCH ==== */
 
 	/**
 	 * a list of all cards without details
@@ -113,8 +124,8 @@ object Collection {
 
 	data class SearchResult(
 		val word: String,
-		val id: Int,
 		val sortValue: Int,
+		val id: Int,
 	)
 
 	/**
@@ -141,13 +152,13 @@ object Collection {
 			::matchWordCompletedPlusSyllable
 		}
 
-		for (cardIndex in cards.indices) {
-			val word = cards[cardIndex].word
+		for (homonym in Homonyms.HomonymListIterator()) {
+			val word = homonym.word()
 
 			val (start, match) = matchFunction(completedPart, lastSyllable, word)
 			if (match != Syllable.MATCH_NONE) {
 				val sortValue = (if (match == Syllable.MATCH_EXACT) 10000 else 0) + start * 1000 + word.length
-				val searchResult = SearchResult(word, cards[cardIndex].id, sortValue)
+				val searchResult = SearchResult(word, sortValue, homonym.id)
 
 				/* place in descending order */
 				val insertPosition = ret.binarySearch { it.sortValue - sortValue }
@@ -162,12 +173,17 @@ object Collection {
 		return ret
 	}
 
-	fun serializeSearchResults(results: ArrayList<SearchResult>): String {
-		val array = JsonArray(results.size)
-		for (result in results) {
+	fun serializeSearchResults(results: ArrayList<SearchResult>, limit: Int): String {
+		val realLimit = results.size.coerceAtMost(limit)
+
+		val array = JsonArray(realLimit)
+		for (i in 0 until realLimit) {
+			val result = results[i]
 			val entry = JsonObject()
+
 			entry.addProperty("word", result.word)
 			entry.addProperty("id", result.id)
+
 			array.add(entry)
 		}
 		return Util.senderGson.toJson(array)

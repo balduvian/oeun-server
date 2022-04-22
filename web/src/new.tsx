@@ -147,7 +147,7 @@ class NewPage extends react.Component<Props, State> {
 										} else {
 											shared.goToNewPage('/edit', [
 												['id', res.id.toString()],
-												['word', res.word],
+												['word', res.cards[0].word],
 											]);
 										}
 									});

@@ -26,11 +26,21 @@ class Card(
 		}.toJson(this)
 	}
 
-	fun save(directoryPath: String) {
-		val file = File(directoryPath + "card-" + id.toString() + ".json")
+
+	private fun filename(directoryPath: String, scramble: Boolean): String {
+		return directoryPath + "card-" + id.toString() + if (scramble) UUID.randomUUID().toString() else "" + ".json"
+	}
+
+	fun save(directoryPath: String, scramble: Boolean = false) {
+		val file = File(filename(directoryPath, scramble))
 		val fileWriter = FileWriter(file, Charset.forName("UTF-8"))
 		fileWriter.write(serialize(true))
 		fileWriter.close()
+	}
+
+	fun unsave(directoryPath: String) {
+		val file = File(filename(directoryPath, false))
+		file.delete()
 	}
 
 	fun permuteInto(editObject: JsonObject) {

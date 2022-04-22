@@ -1,11 +1,10 @@
 import * as react from 'react';
 import * as reactDom from 'react-dom';
-import { WindowEvent } from './windowEvent';
-import { Card, EditHistory, HistoryEntry, Part, Editing } from './types';
+import { Card, Part } from './types';
 import * as util from './util';
 import { SearchBox } from './searchBox';
 import * as shared from './shared';
-import { threadId } from 'worker_threads';
+import { EditPanel } from './editPanel';
 
 type Props = {
 	initialId: number | undefined;
@@ -17,9 +16,7 @@ type State = {
 	badges: { [key: string]: string };
 
 	error: boolean;
-	currentCard: Card | undefined;
-	editHistory: EditHistory;
-	editing: Editing;
+	cards: Card[];
 };
 
 class EditPage extends react.Component<Props, State> {
@@ -31,304 +28,25 @@ class EditPage extends react.Component<Props, State> {
 			badges: {},
 
 			error: false,
-			currentCard: undefined,
-			editHistory: [],
-			editing: {},
+			cards: [],
 		};
 
 		shared.getPartsBadges().then(({ parts, badges }) => this.setState({ parts, badges }));
 
 		if (props.initialId !== undefined) {
-			util.jsonGetRequest(`/api/collection/${props.initialId}`)
+			util.jsonGetRequest(`/api/collection/homonym/${props.initialId}`)
 				.then(data => {
 					if (data.message) {
 						this.setState({ error: true });
 					} else {
-						this.setState({ currentCard: data });
+						this.setState({ cards: data.cards });
 					}
 				})
 				.catch(() => this.setState({ error: true }));
 		}
 	}
 
-	/**
-	 * @param newString set to undefined if you wish to not edit
-	 */
-	confirmFieldEdit(
-		newString: string | undefined,
-		nullable: boolean,
-		forField: keyof Card,
-		eventTarget: (HTMLOrSVGElement & ElementContentEditable & Node) | undefined,
-	) {
-		eventTarget?.blur();
-
-		const card = this.state.currentCard;
-		if (card === undefined) return;
-
-		const history = this.state.editHistory;
-		const previousValue = this.editingInitial(forField);
-
-		if (newString === undefined) {
-			console.log('reverting', previousValue);
-			(card[forField] as string | undefined) = previousValue;
-
-			const value = (eventTarget as any)?.value;
-			if (value !== undefined) {
-				(eventTarget as any).value = previousValue;
-			} else {
-				(eventTarget as any).textContent = previousValue;
-			}
-		} else {
-			let filtered = this.realValue(newString);
-			console.log('coming in', filtered);
-
-			if ((filtered !== undefined || nullable) && previousValue !== filtered) {
-				console.log('was different');
-				/* first add the current value to history */
-				history.push({ field: forField, value: card[forField] as string | undefined });
-
-				/* modify card with new value */
-				(card[forField] as string | undefined) = filtered;
-
-				this.databaseChange(card.id, { [forField]: filtered });
-			}
-		}
-
-		this.setState(
-			Object.assign(
-				{
-					currentCard: card,
-					editHistory: history,
-				},
-				this.setEditing(forField, '', false),
-			),
-		);
-	}
-
-	async onPasteImage(event: react.ClipboardEvent<HTMLInputElement>): Promise<[ArrayBuffer, string]> {
-		const file = [...event.clipboardData.items].find(item => item.type === 'image/png' || item.type === 'image/jpeg')?.getAsFile() ?? undefined;
-		if (file === undefined) return Promise.reject();
-
-		const buffer = await file.arrayBuffer();
-
-		return [buffer, 'paste-' + Date.now().toString() + '.jpg'];
-	}
-
-	editingInitial(field: string) {
-		return this.state.editing[field]?.initial;
-	}
-	isEditing(field: string) {
-		return this.state.editing[field]?.editing ?? false;
-	}
-	setEditing(field: string, initial: string | undefined, value: boolean) {
-		this.state.editing[field] = { initial, editing: value };
-		return { editing: this.state.editing };
-	}
-
-	realValue(value: string) {
-		let filtered = value.trim();
-		return filtered?.length === 0 ? undefined : filtered;
-	}
-
-	databaseChange(id: number, obj: { [key: string]: any }) {
-		util.jsonPatchRequest(
-			'/api/collection',
-			Object.assign(
-				{
-					id: id,
-				},
-				obj,
-			),
-		).then(res => console.log(res));
-	}
-
 	render() {
-		const editDropdown = (initialPart: string | undefined, initialParts: Part[]) => {
-			let cancelBlur = false;
-			return (
-				<select
-					className={`immr-part-edit ${initialPart === undefined ? 'no-part' : ''}`}
-					onKeyDown={event => {
-						if (event.code === 'Escape' || (event.code === 'KeyZ' && event.ctrlKey)) {
-							event.stopPropagation();
-							event.preventDefault();
-							cancelBlur = true;
-
-							this.confirmFieldEdit(undefined, true, 'part', event.currentTarget);
-						} else if (event.code === 'Enter') {
-							event.preventDefault();
-							cancelBlur = true;
-
-							this.confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
-						}
-					}}
-					onChange={event => {
-						cancelBlur = true;
-						console.log('changed to', event.currentTarget.value);
-						this.confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
-					}}
-					onBlur={event => {
-						if (!cancelBlur) {
-							this.confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
-						}
-						cancelBlur = false;
-					}}
-					onFocus={event => this.setState(this.setEditing('part', this.realValue(event.currentTarget.value), true))}
-				>
-					{shared.partOptions(initialParts, initialPart)}
-				</select>
-			);
-		};
-
-		const editField = (
-			className: string,
-			style: react.CSSProperties,
-			initialValue: string | undefined,
-			displayValue: any,
-			nullable: boolean,
-			forField: keyof Card,
-		) => {
-			let cancelBlur = false;
-			let cancelTyping = false;
-			return (
-				<p
-					className={`immr-card-edit ${className}`}
-					style={style}
-					role="textbox"
-					contentEditable
-					suppressContentEditableWarning={true}
-					tabIndex={100}
-					onCompositionStart={() => (cancelTyping = true)}
-					onCompositionEnd={() => (cancelTyping = false)}
-					onKeyDown={event => {
-						if (cancelTyping) return;
-
-						if (event.code === 'Escape' || (event.code === 'KeyZ' && event.ctrlKey)) {
-							event.stopPropagation();
-							event.preventDefault();
-							cancelBlur = true;
-
-							this.confirmFieldEdit(undefined, nullable, forField, event.currentTarget);
-						} else if (event.code === 'Enter') {
-							event.preventDefault();
-							cancelBlur = true;
-
-							this.confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField, event.currentTarget);
-						}
-					}}
-					onBlur={event => {
-						if (!cancelBlur) {
-							console.log('prevented blur');
-							this.confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField, event.currentTarget);
-						}
-						cancelBlur = false;
-					}}
-					onFocus={event => this.setState(this.setEditing(forField, this.realValue(event.currentTarget.textContent as string), true))}
-				>
-					{this.isEditing(forField) ? initialValue ?? '' : displayValue}
-				</p>
-			);
-		};
-
-		const cardPanel = (initialCard: Card, initialParts: Part[]) => {
-			const highlights = initialCard.sentence === undefined ? undefined : util.strToHighlights(initialCard.sentence);
-			return (
-				<div id="immr-card-panel">
-					<WindowEvent
-						eventName="keydown"
-						callBack={event => {
-							if (event.code === 'KeyZ' && event.ctrlKey) {
-								event.preventDefault();
-
-								const card = this.state.currentCard;
-								if (card === undefined) return;
-
-								const history = this.state.editHistory;
-								const lastEdit = history.pop();
-								if (lastEdit === undefined) return;
-
-								(card[lastEdit.field] as string | undefined) = lastEdit.value;
-
-								this.setState({
-									currentCard: card,
-									editHistory: history,
-								});
-
-								this.databaseChange(card.id, { [lastEdit.field]: lastEdit.value });
-							}
-						}}
-					></WindowEvent>
-					<div className="immr-card-row">
-						{editField('big', { fontWeight: 'bold' }, initialCard.word, initialCard.word, false, 'word')}
-						{editDropdown(initialCard.part, initialParts)}
-						<button
-							className="delete-button"
-							onClick={() => {
-								const card = this.state.currentCard;
-								if (card === undefined) return;
-
-								util.jsonDeleteRequest(`/api/collection/${card.id}`).then(({ message }) => {
-									if (message === 'Deleted') {
-										shared.goToNewPage('/edit', []);
-									} else {
-										console.log(message);
-									}
-								});
-							}}
-						>
-							X
-						</button>
-					</div>
-					<div className="immr-card-row">{editField('small', {}, initialCard.definition, initialCard.definition, false, 'definition')}</div>
-
-					<div className="immr-card-line" />
-
-					{editField(
-						'immr-card-sentence',
-						{},
-						initialCard.sentence,
-						highlights === undefined ? (
-							<span />
-						) : (
-							highlights.map(({ part, highlight }) => <span className={highlight ? 'highlight' : ''}>{part}</span>)
-						),
-						true,
-						'sentence',
-					)}
-					{shared.pictureInput(
-						'image-container',
-						<input
-							readOnly
-							onFocus={event => this.setState(this.setEditing('picture', this.realValue(event.currentTarget.value), true))}
-							onBlur={() => this.setState(this.setEditing('picture', '', false))}
-							onKeyDown={event => {
-								if (event.code === 'Delete') {
-									event.preventDefault();
-									this.confirmFieldEdit('', true, 'picture', event.currentTarget);
-								} else if (event.code === 'Escape') {
-									event.preventDefault();
-									this.confirmFieldEdit(undefined, true, 'picture', event.currentTarget);
-								}
-							}}
-							onPaste={async event => {
-								event.preventDefault();
-
-								const card = this.state.currentCard;
-								if (card === undefined) return;
-
-								const [buffer, filename] = await this.onPasteImage(event);
-
-								await util.imagePostRequest(`/api/images/${filename}`, buffer);
-
-								this.confirmFieldEdit(filename, true, 'picture', event.currentTarget);
-							}}
-						></input>,
-						initialCard.picture,
-					)}
-				</div>
-			);
-		};
-
 		return (
 			<div id="immr-panel">
 				{shared.killCtrlZ()}
@@ -341,10 +59,27 @@ class EditPage extends react.Component<Props, State> {
 						])
 					}
 				></SearchBox>
-				{this.state.currentCard === undefined ? (
+				{this.state.cards.length === 0 ? (
 					<div className="blank-holder">{this.state.error ? <p>Could not find card</p> : <img src="/blank.svg" />}</div>
 				) : (
-					cardPanel(this.state.currentCard, this.state.parts)
+					this.state.cards.map(card => {
+						console.log('CARD', card);
+						return (
+							<EditPanel
+								card={card}
+								parts={this.state.parts}
+								onDelete={deletedId => {
+									util.jsonDeleteRequest(`/api/collection/${deletedId}`).then(({ message }) => {
+										if (message === 'Deleted') {
+											this.setState({ cards: this.state.cards.filter(card => card.id !== deletedId) });
+										} else {
+											console.log(message);
+										}
+									});
+								}}
+							/>
+						);
+					})
 				)}
 			</div>
 		);
