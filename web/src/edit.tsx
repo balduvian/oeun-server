@@ -1,6 +1,6 @@
 import * as react from 'react';
 import * as reactDom from 'react-dom';
-import { Card, Part } from './types';
+import { Card, MessageResponse, Part } from './types';
 import * as util from './util';
 import { SearchBox } from './searchBox';
 import * as shared from './shared';
@@ -34,12 +34,12 @@ class EditPage extends react.Component<Props, State> {
 		shared.getPartsBadges().then(({ parts, badges }) => this.setState({ parts, badges }));
 
 		if (props.initialId !== undefined) {
-			util.jsonGetRequest(`/api/collection/homonym/${props.initialId}`)
-				.then(data => {
-					if (data.message) {
-						this.setState({ error: true });
-					} else {
+			util.getRequest<{ cards: Card[] }>(`/api/collection/homonym/${props.initialId}`)
+				.then(([code, data]) => {
+					if (util.isGood(code, data)) {
 						this.setState({ cards: data.cards });
+					} else {
+						this.setState({ error: true });
 					}
 				})
 				.catch(() => this.setState({ error: true }));
@@ -63,17 +63,16 @@ class EditPage extends react.Component<Props, State> {
 					<div className="blank-holder">{this.state.error ? <p>Could not find card</p> : <img src="/blank.svg" />}</div>
 				) : (
 					this.state.cards.map(card => {
-						console.log('CARD', card);
 						return (
 							<EditPanel
 								card={card}
 								parts={this.state.parts}
 								onDelete={deletedId => {
-									util.jsonDeleteRequest(`/api/collection/${deletedId}`).then(({ message }) => {
-										if (message === 'Deleted') {
+									util.deleteRequest<MessageResponse>(`/api/collection/${deletedId}`).then(([code, data]) => {
+										if (util.isGood(code, data)) {
 											this.setState({ cards: this.state.cards.filter(card => card.id !== deletedId) });
 										} else {
-											console.log(message);
+											console.log(data.error);
 										}
 									});
 								}}

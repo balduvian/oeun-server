@@ -1,46 +1,27 @@
 import * as react from 'react';
-import { Highlights, NewCard, NewField } from './types';
+import { ErrorResonse as ErrorResponse, Highlights, MessageResponse, NewCard, NewField } from './types';
 
-export const jsonGetRequest = (url: string) =>
-	new Promise<any>((acc, rej) =>
-		fetch(url)
-			.then(response => {
-				response
-					.json()
-					.then(json => acc(json))
-					.catch(rej);
-			})
-			.catch(rej),
-	);
+export const OK = 200;
 
-export const imagePostRequest = (url: string, data: ArrayBuffer) => fetch(url, { method: 'POST', body: data }).then(response => response.json());
+const handle = <T>(res: Response): Promise<[number, T | ErrorResponse]> => res.json().then(json => [res.status, json]);
 
-export const imageGetRequest = (url: string) =>
-	new Promise<string>((acc, rej) =>
-		fetch(url).then(response => {
-			response
-				.blob()
-				.then(blob => {
-					const reader = new FileReader();
-					reader.onloadend = () => {
-						/* remove this part 'data:/;base64,' */
-						/* add this part 'data:image/jpg;base64,' */
-						const result = reader.result as string;
+/* ==== FETCH ==== */
 
-						acc('data:image/jpg;base64,' + result.substring(result.indexOf(',') + 1));
-					};
-					reader.onerror = rej;
-					reader.readAsDataURL(blob);
-				})
-				.catch(rej);
-		}),
-	);
+export const getRequest = <T>(url: string) => fetch(url).then(res => handle<T>(res));
 
-export const jsonPostRequest = (url: string, data: any) => fetch(url, { method: 'POST', body: JSON.stringify(data) }).then(response => response.json());
+export const imagePostRequest = <T>(url: string, data: ArrayBuffer) => fetch(url, { method: 'POST', body: data }).then(res => handle<T>(res));
 
-export const jsonPatchRequest = (url: string, data: any) => fetch(url, { method: 'PATCH', body: JSON.stringify(data) }).then(response => response.json());
+export const postRequest = <T>(url: string, data: any) => fetch(url, { method: 'POST', body: JSON.stringify(data) }).then(res => handle<T>(res));
 
-export const jsonDeleteRequest = (url: string) => fetch(url, { method: 'DELETE' }).then(response => response.json());
+export const patchRequest = <T>(url: string, data: any) => fetch(url, { method: 'PATCH', body: JSON.stringify(data) }).then(res => handle<T>(res));
+
+export const deleteRequest = <T>(url: string) => fetch(url, { method: 'DELETE' }).then(res => handle<T>(res));
+
+/* ==== */
+
+export const isGood = <T>(code: number, data: T | ErrorResponse): data is T => {
+	return code === OK;
+};
 
 export const wait = (time: number) => new Promise(acc => setTimeout(acc, time));
 

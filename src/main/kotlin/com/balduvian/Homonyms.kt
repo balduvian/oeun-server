@@ -18,7 +18,6 @@ object Homonyms {
 
 		override fun hasNext(): Boolean {
 			while (index < homonymList.size && homonymList[index].cards.isEmpty()) {
-				println("${index} | ${homonymList.size}")
 				++index
 			}
 			return index < homonymList.size

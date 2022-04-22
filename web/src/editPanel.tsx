@@ -1,6 +1,6 @@
 import * as react from 'react';
 import { WindowEvent } from './windowEvent';
-import { Card, EditHistory, Part, Editing } from './types';
+import { Card, EditHistory, Part, Editing, MessageResponse } from './types';
 import * as util from './util';
 import * as shared from './shared';
 
@@ -69,15 +69,6 @@ export class EditPanel extends react.Component<Props, State> {
 		this.setState(this.setEditing(forField, '', false));
 	}
 
-	async onPasteImage(event: react.ClipboardEvent<HTMLInputElement>): Promise<[ArrayBuffer, string]> {
-		const file = [...event.clipboardData.items].find(item => item.type === 'image/png' || item.type === 'image/jpeg')?.getAsFile() ?? undefined;
-		if (file === undefined) return Promise.reject();
-
-		const buffer = await file.arrayBuffer();
-
-		return [buffer, 'paste-' + Date.now().toString() + '.jpg'];
-	}
-
 	editingInitial(field: string) {
 		return this.state.editing[field]?.initial;
 	}
@@ -95,7 +86,7 @@ export class EditPanel extends react.Component<Props, State> {
 	}
 
 	databaseChange(id: number, obj: { [key: string]: any }) {
-		util.jsonPatchRequest(
+		util.patchRequest<MessageResponse>(
 			'/api/collection',
 			Object.assign(
 				{
@@ -103,7 +94,7 @@ export class EditPanel extends react.Component<Props, State> {
 				},
 				obj,
 			),
-		).then(res => console.log(res));
+		).then(([code, data]) => console.log(code, data));
 	}
 
 	editDropdown(part: string | undefined, parts: Part[]) {
@@ -247,11 +238,15 @@ export class EditPanel extends react.Component<Props, State> {
 						onPaste={async event => {
 							event.preventDefault();
 
-							const [buffer, filename] = await this.onPasteImage(event);
+							const [buffer, filename] = await shared.onPasteImage(event);
 
-							await util.imagePostRequest(`/api/images/${filename}`, buffer);
+							const [code, data] = await util.imagePostRequest<MessageResponse>(`/api/images/${filename}`, buffer);
 
-							this.confirmFieldEdit(filename, true, 'picture', event.currentTarget);
+							if (util.isGood(code, data)) {
+								this.confirmFieldEdit(filename, true, 'picture', event.currentTarget);
+							} else {
+								console.log(data.error);
+							}
 						}}
 					></input>,
 					card.picture,

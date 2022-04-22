@@ -5,6 +5,9 @@ import com.balduvian.PrettyException
 import com.balduvian.Collection
 import com.balduvian.Homonyms
 import com.balduvian.Util.badRequest
+import com.balduvian.Util.notFound
+import com.balduvian.Util.ok
+import com.balduvian.Util.okJson
 import com.google.gson.JsonParser
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -24,21 +27,21 @@ fun Route.collectionRouting() {
 
 			val results = Collection.search(query)
 
-			call.respond(Collection.serializeSearchResults(results, limit))
+			okJson(call, Collection.serializeSearchResults(results, limit))
 		}
 		get("{id?}") {
-			val id = call.parameters["id"] ?: return@get badRequest(call, "Missing card id")
-			val idNo = id.toIntOrNull() ?: return@get badRequest(call, "Bad card id")
-			val card = Collection.getCard(idNo) ?: return@get badRequest(call, "Could not find card")
+			val id = call.parameters["id"]?.toIntOrNull() ?: return@get badRequest(call, "Missing card id")
 
-			call.respond(card.serialize(false))
+			val card = Collection.getCard(id) ?: return@get notFound(call, "Could not find card")
+
+			okJson(call, card.serialize(false))
 		}
 		get("homonym/{id?}") {
-			val id = call.parameters["id"] ?: return@get badRequest(call, "Missing homonym id")
-			val idNo = id.toIntOrNull() ?: return@get badRequest(call, "Bad id")
+			val id = call.parameters["id"]?.toIntOrNull() ?: return@get badRequest(call, "Missing homonym id")
 
-			val homonym = Homonyms.getHomonym(idNo) ?: return@get badRequest(call, "Could not find that homonym")
-			call.respond(homonym.serialize())
+			val homonym = Homonyms.getHomonym(id) ?: return@get notFound(call, "Could not find that homonym")
+
+			okJson(call, homonym.serialize())
 		}
 		post {
 			try {
@@ -46,8 +49,10 @@ fun Route.collectionRouting() {
 					val card = Card.deserialize(call.receiveStream())
 					val homonym = Collection.addCard(card)
 
-					call.respondText(homonym.serialize())
+					okJson(call, homonym.serialize())
 				}
+			} catch (ex: PrettyException) {
+				badRequest(call, ex.message)
 			} catch (ex: Exception) {
 				ex.printStackTrace()
 				badRequest(call, "Bad card data")
@@ -58,24 +63,25 @@ fun Route.collectionRouting() {
 				withContext(Dispatchers.IO) {
 					val json = JsonParser.parseReader(call.receiveStream().reader())
 					Collection.editCard(json)
-					call.respond("{\"message\":\"Edited\"}")
+
+					ok(call, "edited")
 				}
 			} catch (ex: PrettyException) {
-				return@patch badRequest(call, ex.message)
+				badRequest(call, ex.message)
 			} catch (ex: Exception) {
-				return@patch badRequest(call, "Bad request")
+				ex.printStackTrace()
+				badRequest(call, "Bad request")
 			}
 		}
 		delete("{id?}") {
-			val id = call.parameters["id"] ?: return@delete badRequest(call, "Missing card id")
-			val idNo = id.toIntOrNull() ?: return@delete badRequest(call, "Bad card id")
+			val id = call.parameters["id"]?.toIntOrNull() ?: return@delete badRequest(call, "Missing card id")
 
 			try {
-				Collection.removeCard(idNo)
-				call.respondText("{\"message\":\"Deleted\"}")
+				Collection.removeCard(id)
 
+				ok(call, "deleted")
 			} catch (ex: Exception) {
-				return@delete badRequest(call, "Could not delete card")
+				badRequest(call, "Could not delete card")
 			}
 		}
 	}

@@ -1,7 +1,7 @@
 import * as react from 'react';
 import * as reactDom from 'react-dom';
 import { WindowEvent } from './windowEvent';
-import { Card, NewCard, Part, NewField } from './types';
+import { Card, NewCard, Part, NewField, MessageResponse, Homonym } from './types';
 import * as util from './util';
 import { SearchBox } from './searchBox';
 import * as shared from './shared';
@@ -79,12 +79,15 @@ class NewPage extends react.Component<Props, State> {
 							event.preventDefault();
 
 							const [buffer, filename] = await shared.onPasteImage(event);
-							await util.imagePostRequest(`/api/images/${filename}`, buffer);
+							const [code, data] = await util.imagePostRequest<MessageResponse>(`/api/images/${filename}`, buffer);
 
-							if (initialNewCard.picture.ref.current !== null) initialNewCard.picture.ref.current.value = filename;
-
-							this.state.newCard.picture.value = filename;
-							this.setState({ newCard: this.state.newCard }, () => console.log(this.state.newCard));
+							if (util.isGood(code, data)) {
+								if (initialNewCard.picture.ref.current !== null) initialNewCard.picture.ref.current.value = filename;
+								this.state.newCard.picture.value = filename;
+								this.setState({ newCard: this.state.newCard }, () => console.log(this.state.newCard));
+							} else {
+								console.log(data.error);
+							}
 						}}
 					/>,
 					initialNewCard.picture.value,
@@ -141,14 +144,14 @@ class NewPage extends react.Component<Props, State> {
 
 									console.log(uploadCard);
 
-									util.jsonPostRequest('/api/collection', uploadCard).then(res => {
-										if (res.message !== undefined) {
-											console.log(res.message);
-										} else {
+									util.postRequest<Homonym>('/api/collection', uploadCard).then(([code, data]) => {
+										if (util.isGood(code, data)) {
 											shared.goToNewPage('/edit', [
-												['id', res.id.toString()],
-												['word', res.cards[0].word],
+												['id', data.id.toString()],
+												['word', data.cards[0].word],
 											]);
+										} else {
+											console.log(data.error);
 										}
 									});
 								}

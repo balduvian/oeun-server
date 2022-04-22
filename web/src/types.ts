@@ -45,3 +45,16 @@ export type NewCard = {
 	sentence: NewField<HTMLInputElement>;
 	picture: NewField<HTMLInputElement>;
 };
+
+export type ErrorResonse = {
+	error: string;
+};
+
+export type MessageResponse = {
+	message: string;
+};
+
+export type Homonym = {
+	id: number;
+	cards: Card[];
+};
