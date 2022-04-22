@@ -157,10 +157,9 @@ object Collection {
 
 			val (start, match) = matchFunction(completedPart, lastSyllable, word)
 			if (match != Syllable.MATCH_NONE) {
-				val sortValue = (if (match == Syllable.MATCH_EXACT) 10000 else 0) + start * 1000 + word.length
+				val sortValue = (if (match == Syllable.MATCH_EXACT) 0 else 10000) + (if (start == 0) 0 else 1000) + word.length
 				val searchResult = SearchResult(word, sortValue, homonym.id)
 
-				/* place in descending order */
 				val insertPosition = ret.binarySearch { it.sortValue - sortValue }
 				if (insertPosition < 0) {
 					ret.add(-insertPosition - 1, searchResult)
