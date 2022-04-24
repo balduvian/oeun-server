@@ -9,3 +9,6 @@
 /run/data/trash/*
 /run/page/*.js
 /run/options.json
+
+/run/data/.git
+/run/data
