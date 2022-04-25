@@ -1,15 +1,30 @@
 package com.balduvian
 
-import com.google.gson.Gson
+
 import java.io.File
 
 class Options(
 	val port: Int
 ) {
 	companion object {
+		val DEFAULT_PORT = 35432
+
 		fun loadOptionsFile(path: String): Options {
-			val gson = Gson().newBuilder().create()
-			return gson.fromJson(File(path).reader(), Options::class.java)
+			val file = File(path)
+
+			return if (file.exists()) {
+				Util.readerGson.fromJson(File(path).reader(), Options::class.java)
+			} else {
+				val defaultOptions = Options(DEFAULT_PORT)
+
+				println("No options.json found, creating one")
+
+				val writer = file.writer()
+				writer.write(Util.saverGson.toJson(defaultOptions))
+				writer.close()
+
+				defaultOptions
+			}
 		}
 	}
 }
