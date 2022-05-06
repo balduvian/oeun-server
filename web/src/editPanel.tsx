@@ -210,8 +210,6 @@ export class EditPanel extends react.Component<Props, State> {
 				</div>
 				<div className="immr-card-row">{this.editField('small', {}, card.definition, card.definition, false, 'definition')}</div>
 
-				<div className="immr-card-line" />
-
 				{this.editField(
 					'immr-card-sentence',
 					{},
