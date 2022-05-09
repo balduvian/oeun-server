@@ -40,13 +40,50 @@ class NewPage extends react.Component<Props, State> {
 		shared.getPartsBadges().then(({ parts, badges }) => this.setState({ parts, badges }));
 	}
 
+	isHangul(code: number) {
+		return (code >= 0x3131 && code <= 0x318e) || (code >= 0xac00 && code <= 0xd7a3);
+	}
+
+	findStarStart(text: string) {
+		if (text.length === 0) return -1;
+		if (!this.isHangul(text.charCodeAt(text.length - 1))) return -1;
+
+		for (let i = text.length - 2; i >= 0; --i) {
+			if (!this.isHangul(text.charCodeAt(i))) return i + 1;
+		}
+
+		return 0;
+	}
+
 	render() {
 		const newCardField = (initialNewCard: NewCard, cardField: keyof NewCard, prettyName: string) => {
 			const field = initialNewCard[cardField] as NewField<HTMLInputElement>;
 			return (
 				<div className="immr-card-row">
 					<p className={`new-caption ${field.error ? 'error' : ''}`}>{prettyName}</p>
-					<input ref={field.ref} className="new-card-field" />
+					<input
+						ref={field.ref}
+						className="new-card-field"
+						onKeyDown={event => {
+							if (event.key === '*') {
+								const text = event.currentTarget.value;
+								const start = event.currentTarget.selectionStart;
+								const end = event.currentTarget.selectionEnd;
+								if (start === null || end === null) return;
+								if (start === end && end === text.length) {
+									const startIndex = this.findStarStart(text);
+									if (startIndex !== -1) {
+										event.preventDefault();
+										event.currentTarget.value = text.substring(0, startIndex) + '**' + text.substring(startIndex) + '**';
+									}
+								} else if (start !== end) {
+									event.preventDefault();
+									event.currentTarget.value = text.substring(0, start) + '**' + text.substring(start, end) + '**' + text.substring(end);
+									event.currentTarget.setSelectionRange(end + 4, end + 4);
+								}
+							}
+						}}
+					/>
 				</div>
 			);
 		};
