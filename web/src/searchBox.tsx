@@ -3,8 +3,6 @@ import { SearchSuggestion } from './types';
 import * as util from './util';
 import * as shared from './shared';
 
-let currentGoodTypingEventNo = 0;
-
 export type Props = {
 	searchValue: string;
 	onSearch: (suggestion: SearchSuggestion) => void;
@@ -21,6 +19,9 @@ export type State = {
 export class SearchBox extends react.Component<Props, State> {
 	searchRef: react.RefObject<HTMLInputElement>;
 
+	currentGoodTypingEventNo: number;
+	waitingOnInput: boolean;
+
 	constructor(props: Props) {
 		super(props);
 		this.state = {
@@ -32,15 +33,23 @@ export class SearchBox extends react.Component<Props, State> {
 		};
 
 		this.searchRef = react.createRef();
+
+		this.currentGoodTypingEventNo = 0;
+		this.waitingOnInput = false;
 	}
 
 	private stateSearchError() {
-		this.setState({
-			suggestions: [],
-			error: true,
-			noResults: false,
-			selection: 0,
-		});
+		return new Promise<void>(acc =>
+			this.setState(
+				{
+					suggestions: [],
+					error: true,
+					noResults: false,
+					selection: 0,
+				},
+				acc,
+			),
+		);
 	}
 
 	private stateSearchClear(searchValue: string | undefined = undefined) {
@@ -52,7 +61,7 @@ export class SearchBox extends react.Component<Props, State> {
 		};
 		if (searchValue !== undefined) obj.searchValue = searchValue;
 
-		this.setState(obj);
+		return new Promise<void>(acc => this.setState(obj, acc));
 	}
 
 	private stateSearchResults(results: SearchSuggestion[]) {
@@ -64,19 +73,17 @@ export class SearchBox extends react.Component<Props, State> {
 			newSelect = results.length - 1;
 		}
 
-		this.setState({
-			suggestions: results,
-			error: false,
-			noResults: results.length === 0,
-			selection: newSelect,
-		});
-	}
-
-	private focusSearch() {
-		const search = this.searchRef.current;
-		if (search === null) return;
-
-		search.focus();
+		return new Promise<void>(acc =>
+			this.setState(
+				{
+					suggestions: results,
+					error: false,
+					noResults: results.length === 0,
+					selection: newSelect,
+				},
+				acc,
+			),
+		);
 	}
 
 	private unFocusSearch() {
@@ -97,15 +104,11 @@ export class SearchBox extends react.Component<Props, State> {
 	private makeSearch(query: string) {
 		if (query.length === 0) {
 			/* don't need to ask for empty search */
-			this.stateSearchClear();
+			return this.stateSearchClear();
 		} else {
-			util.getRequest<SearchSuggestion[]>(`/api/collection/search/${query}/10`).then(([code, data]) => {
-				if (util.isGood(code, data)) {
-					this.stateSearchResults(data);
-				} else {
-					this.stateSearchError();
-				}
-			});
+			return util
+				.getRequest<SearchSuggestion[]>(`/api/collection/search/${query}/10`)
+				.then(([code, data]) => (util.isGood(code, data) ? this.stateSearchResults(data) : this.stateSearchError()));
 		}
 	}
 
@@ -118,6 +121,15 @@ export class SearchBox extends react.Component<Props, State> {
 
 	render() {
 		const { searchValue: initialValue, suggestions: initialSuggestions, selection: initialSelection, noResults: initialNoResults } = this.state;
+
+		const select = () => {
+			const searchSelection = this.state.selection;
+			const suggestions = this.state.suggestions;
+
+			if (searchSelection < 0 || searchSelection >= suggestions.length) return;
+
+			this.props.onSearch(suggestions[searchSelection]);
+		};
 
 		return (
 			<div id="immr-search-area">
@@ -164,12 +176,13 @@ export class SearchBox extends react.Component<Props, State> {
 								this.unFocusSearch();
 							} else if (event.code === 'Enter') {
 								event.preventDefault();
-								if (searchSelection < 0 || searchSelection >= suggestions.length) return;
 
-								const suggestion = suggestions[searchSelection];
-
-								this.stateSearchClear(suggestion.word);
-								this.props.onSearch(suggestions[searchSelection]);
+								if (this.waitingOnInput) {
+									++this.currentGoodTypingEventNo;
+									this.makeSearch(event.currentTarget.value).then(() => select());
+								} else {
+									select();
+								}
 							}
 						}}
 						onInput={async event => {
@@ -180,12 +193,14 @@ export class SearchBox extends react.Component<Props, State> {
 								searchValue: currentValue,
 							});
 
-							const thisNo = ++currentGoodTypingEventNo;
+							const thisNo = ++this.currentGoodTypingEventNo;
+							this.waitingOnInput = true;
 							const query = event.currentTarget.value;
 
 							/* save search calls */
-							await util.wait(500);
-							if (currentGoodTypingEventNo != thisNo) return;
+							await util.wait(250);
+							if (this.currentGoodTypingEventNo != thisNo) return;
+							this.waitingOnInput = false;
 
 							this.makeSearch(query);
 						}}
