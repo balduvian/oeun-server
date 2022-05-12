@@ -5,6 +5,7 @@ import { Card, NewCard, Part, NewField, MessageResponse, Homonym } from './types
 import * as util from './util';
 import { SearchBox } from './searchBox';
 import * as shared from './shared';
+import { getParts } from './partsBadges';
 
 /* initial values from the URL */
 type Props = {
@@ -31,13 +32,17 @@ class NewPage extends react.Component<Props, State> {
 		newCard.definition.value = props.definition;
 		newCard.sentence.value = props.sentence;
 
+		const retrievedParts = getParts();
+
 		this.state = {
-			parts: [],
+			parts: Array.isArray(retrievedParts) ? retrievedParts : [],
 			badges: {},
 			newCard: newCard,
 		};
 
-		shared.getPartsBadges().then(({ parts, badges }) => this.setState({ parts, badges }));
+		if (retrievedParts instanceof Promise) {
+			retrievedParts.then(parts => this.setState({ parts }));
+		}
 	}
 
 	isHangul(code: number) {

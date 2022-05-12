@@ -5,6 +5,7 @@ import * as util from './util';
 import { SearchBox } from './searchBox';
 import * as shared from './shared';
 import { EditPanel } from './editPanel';
+import { getParts } from './partsBadges';
 
 type Props = {
 	initialId: number | undefined;
@@ -23,15 +24,19 @@ class EditPage extends react.Component<Props, State> {
 	constructor(props: Props) {
 		super(props);
 
+		const retrievedParts = getParts();
+
 		this.state = {
-			parts: [],
+			parts: Array.isArray(retrievedParts) ? retrievedParts : [],
 			badges: {},
 
 			error: false,
 			cards: [],
 		};
 
-		shared.getPartsBadges().then(({ parts, badges }) => this.setState({ parts, badges }));
+		if (retrievedParts instanceof Promise) {
+			retrievedParts.then(parts => this.setState({ parts }));
+		}
 
 		if (props.initialId !== undefined) {
 			util.getRequest<{ cards: Card[] }>(`/api/collection/homonym/${props.initialId}`)

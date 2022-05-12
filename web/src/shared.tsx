@@ -18,25 +18,6 @@ export const pictureInput = (className: string, inputElement: react.ReactElement
 	);
 };
 
-export const getPartsBadges = () =>
-	Promise.all([util.getRequest<any>(`/api/parts`), util.getRequest<any>(`/api/badges`)]).then(([[code0, data0], [code1, data1]]) => {
-		if (util.isGood(code0, data0) && util.isGood(code1, data1)) {
-			return {
-				parts: Object.keys(data0).map(partName => ({
-					id: partName,
-					english: data0[partName].english as string,
-					korean: data0[partName].korean as string,
-				})),
-				badges: data1 as { [key: string]: string },
-			};
-		} else {
-			return {
-				parts: [],
-				badges: {},
-			};
-		}
-	});
-
 export const partName = (parts: Part[], partId: string | undefined) => {
 	if (partId === undefined) return undefined;
 	return parts.find(part => part.id === partId)?.english;
