@@ -8,6 +8,8 @@ import com.balduvian.Util.badRequest
 import com.balduvian.Util.notFound
 import com.balduvian.Util.ok
 import com.balduvian.Util.okJson
+import com.balduvian.Util.senderGson
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -42,6 +44,11 @@ fun Route.collectionRouting() {
 			val homonym = Homonyms.getHomonym(id) ?: return@get notFound(call, "Could not find that homonym")
 
 			okJson(call, homonym.serialize())
+		}
+		get("size") {
+			val obj = JsonObject()
+			obj.addProperty("value", Collection.cards.size)
+			okJson(call, senderGson.toJson(obj))
 		}
 		post {
 			try {

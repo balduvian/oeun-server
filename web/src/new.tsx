@@ -211,12 +211,16 @@ class NewPage extends react.Component<Props, State> {
 				{shared.killCtrlZ()}
 				<SearchBox
 					searchValue=""
-					onSearch={({ word, id }) =>
-						shared.goToNewPage('/edit', [
-							['id', id.toString()],
-							['word', word],
-						])
-					}
+					onSearch={selection => {
+						if (selection === undefined) {
+							shared.goToNewPage('/edit', []);
+						} else {
+							shared.goToNewPage('/edit', [
+								['id', selection.id.toString()],
+								['word', selection.word],
+							]);
+						}
+					}}
 				></SearchBox>
 				{newCardPanel(this.state.newCard)}
 			</div>

@@ -5,7 +5,7 @@ import * as shared from './shared';
 
 export type Props = {
 	searchValue: string;
-	onSearch: (suggestion: SearchSuggestion) => void;
+	onSearch: (suggestion: SearchSuggestion | undefined) => void;
 };
 
 export type State = {
@@ -122,7 +122,9 @@ export class SearchBox extends react.Component<Props, State> {
 	render() {
 		const { searchValue: initialValue, suggestions: initialSuggestions, selection: initialSelection, noResults: initialNoResults } = this.state;
 
-		const select = () => {
+		const select = (value: string) => {
+			if (value.length === 0) return this.props.onSearch(undefined);
+
 			const searchSelection = this.state.selection;
 			const suggestions = this.state.suggestions;
 
@@ -176,12 +178,13 @@ export class SearchBox extends react.Component<Props, State> {
 								this.unFocusSearch();
 							} else if (event.code === 'Enter') {
 								event.preventDefault();
+								const value = event.currentTarget.value;
 
 								if (this.waitingOnInput) {
 									++this.currentGoodTypingEventNo;
-									this.makeSearch(event.currentTarget.value).then(() => select());
+									this.makeSearch(value).then(() => select(value));
 								} else {
-									select();
+									select(value);
 								}
 							}
 						}}

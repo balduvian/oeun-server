@@ -362,6 +362,8 @@ img {
 
   height: 35px;
   line-height: 35px;
+
+  padding-left: 10px;
 }
 
 .new-select:focus {
@@ -375,18 +377,36 @@ img {
   margin-top: 10px;
 }
 
-.blank-holder > img {
+.blank-holder > p {
+  color: white;
+  font-size: 20px;
+  text-align: center;
+}
+
+.image-holder {
   width: calc(100% - 100px);
+  height: auto;
   display: block;
   position: absolute;
   left: 50px;
   overflow: visible;
 }
 
-.blank-holder > p {
-  color: white;
-  font-size: 20px;
+.image-holder > .size-display {
+  width: 100%;
+  height: 20px;
+  
+  line-height: 20px;
   text-align: center;
+
+  position: absolute;
+  left: 0;
+  top: 30%;
+
+  color: white;
+  filter: drop-shadow(2px 2px 2px black);
+  font-size: 20px;
+  font-weight: bold;
 }
 
 .delete-button {

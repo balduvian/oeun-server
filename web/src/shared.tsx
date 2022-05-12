@@ -11,7 +11,7 @@ export const pictureInput = (className: string, inputElement: react.ReactElement
 				<img className="card-img" src={'/api/images/' + imageName} />
 			) : (
 				<div className="immr-image-placeholder">
-					<span>Paste Image here</span>
+					<span>Paste Image Here</span>
 				</div>
 			)}
 		</div>

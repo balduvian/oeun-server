@@ -18,6 +18,8 @@ type State = {
 
 	error: boolean;
 	cards: Card[];
+
+	collectionSize: number;
 };
 
 class EditPage extends react.Component<Props, State> {
@@ -32,6 +34,7 @@ class EditPage extends react.Component<Props, State> {
 
 			error: false,
 			cards: [],
+			collectionSize: 0,
 		};
 
 		if (retrievedParts instanceof Promise) {
@@ -48,6 +51,16 @@ class EditPage extends react.Component<Props, State> {
 					}
 				})
 				.catch(() => this.setState({ error: true }));
+		} else {
+			util.getRequest<{ value: number }>('/api/collection/size')
+				.then(([code, data]) => {
+					if (util.isGood(code, data)) {
+						this.setState({ collectionSize: data.value });
+					} else {
+						this.setState({ error: true });
+					}
+				})
+				.catch(() => this.setState({ error: true }));
 		}
 	}
 
@@ -57,15 +70,28 @@ class EditPage extends react.Component<Props, State> {
 				{shared.killCtrlZ()}
 				<SearchBox
 					searchValue={this.props.initialWord ?? ''}
-					onSearch={({ word, id }) =>
-						shared.goToNewPage('/edit', [
-							['id', id.toString()],
-							['word', word],
-						])
-					}
+					onSearch={selection => {
+						if (selection === undefined) {
+							shared.goToNewPage('/edit', []);
+						} else {
+							shared.goToNewPage('/edit', [
+								['id', selection.id.toString()],
+								['word', selection.word],
+							]);
+						}
+					}}
 				></SearchBox>
 				{this.state.cards.length === 0 ? (
-					<div className="blank-holder">{this.state.error ? <p>Could not find card</p> : <img src="/blank.svg" />}</div>
+					<div className="blank-holder">
+						{this.state.error ? (
+							<p>Could not find card</p>
+						) : (
+							<div className="image-holder">
+								<div className="size-display">{`${this.state.collectionSize} Cards`}</div>
+								<img src="/blank.svg" />
+							</div>
+						)}
+					</div>
 				) : (
 					this.state.cards.map(card => {
 						return (
