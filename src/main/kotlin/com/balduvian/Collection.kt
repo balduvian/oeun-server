@@ -162,6 +162,8 @@ object Collection {
 
 			var highest = cards.binarySearch { card -> card.id - number }
 			if (highest < 0) highest = -highest - 1
+			/* index out of range */
+			if (highest >= cards.size) return ArrayList()
 			val lowest = (highest - limit + 1).coerceAtLeast(0)
 
 			val ret = ArrayList<OutSearchResult>(limit)
