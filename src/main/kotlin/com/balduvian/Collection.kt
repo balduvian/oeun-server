@@ -13,6 +13,11 @@ object Collection {
 	val cards: ArrayList<Card> = ArrayList()
 	init { Homonyms }
 
+	val commands = arrayOf(
+		Command("latest", "/api/collection/latest"),
+		Command("random", "/api/collection/random"),
+	)
+
 	fun loadAllCards() {
 		val directory = File(PATH_CARDS)
 		val files = directory.listFiles { _, name -> Card.isCardFile(name) }
@@ -122,17 +127,56 @@ object Collection {
 		return Util.senderGson.toJson(array)
 	}
 
-	data class SearchResult(
+	data class PreSearchResult(
 		val word: String,
 		val sortValue: Int,
 		val id: Int,
 	)
 
+	data class OutSearchResult(
+		val word: String,
+		val id: Int,
+		val url: String,
+	)
+
 	/**
 	 * @return null if the request was bad
 	 */
-	fun search(phrase: String): ArrayList<SearchResult> {
+	fun search(phrase: String, limit: Int): ArrayList<OutSearchResult> {
 		if (phrase.isEmpty()) return ArrayList()
+
+		if (phrase.startsWith('!')) {
+			return commands.zip(commands.indices).mapNotNull { (command, i) ->
+				if (command.commandName.startsWith(phrase.subSequence(1, phrase.length))) {
+					OutSearchResult('!' + command.commandName, i, command.url)
+				} else {
+					null
+				}
+			} as ArrayList<OutSearchResult>
+		}
+
+		if (phrase.startsWith("#")) {
+			val number = phrase.substring(1).toIntOrNull()
+				?: cards.lastOrNull()?.id
+				?: return ArrayList()
+
+			var highest = cards.binarySearch { card -> card.id - number }
+			if (highest < 0) highest = -highest - 1
+			val lowest = (highest - limit + 1).coerceAtLeast(0)
+
+			val ret = ArrayList<OutSearchResult>(limit)
+
+			for (i in highest downTo lowest) {
+				val card = cards[i]
+				ret.add(OutSearchResult(
+					card.word,
+					card.id,
+					"/api/collection/homonym/card/${card.id}"
+				))
+			}
+
+			return ret
+		}
 
 		/* potentially incomplete syllable */
 		val lastSyllable = Syllable.decompose(phrase.last())
@@ -144,7 +188,7 @@ object Collection {
 			phrase
 		}
 
-		val ret = ArrayList<SearchResult>()
+		val ret = ArrayList<PreSearchResult>()
 
 		val matchFunction = if (completedPart.isEmpty() && lastSyllable != null) {
 			::matchWordSyllable
@@ -158,7 +202,7 @@ object Collection {
 			val (start, match) = matchFunction(completedPart, lastSyllable, word)
 			if (match != Syllable.MATCH_NONE) {
 				val sortValue = (if (match == Syllable.MATCH_EXACT) 0 else 10000) + (if (start == 0) 0 else 1000) + word.length
-				val searchResult = SearchResult(word, sortValue, homonym.id)
+				val searchResult = PreSearchResult(word, sortValue, homonym.id)
 
 				val insertPosition = ret.binarySearch { it.sortValue - sortValue }
 				if (insertPosition < 0) {
@@ -169,19 +213,19 @@ object Collection {
 			}
 		}
 
-		return ret
+		return ret.take(limit).map { pre ->
+			OutSearchResult(pre.word, pre.id, "/api/collection/homonym/${pre.id}")
+		} as ArrayList<OutSearchResult>
 	}
 
-	fun serializeSearchResults(results: ArrayList<SearchResult>, limit: Int): String {
-		val realLimit = results.size.coerceAtMost(limit)
-
-		val array = JsonArray(realLimit)
-		for (i in 0 until realLimit) {
-			val result = results[i]
+	fun serializeSearchResults(results: ArrayList<OutSearchResult>): String {
+		val array = JsonArray(results.size)
+		for (result in results) {
 			val entry = JsonObject()
 
 			entry.addProperty("word", result.word)
 			entry.addProperty("id", result.id)
+			entry.addProperty("url", result.url)
 
 			array.add(entry)
 		}

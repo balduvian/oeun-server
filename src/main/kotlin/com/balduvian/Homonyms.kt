@@ -7,6 +7,12 @@ object Homonyms {
 		fun serialize(): String {
 			return Util.senderGson.toJson(this)
 		}
+
+		companion object {
+			fun empty(): Homonym {
+				return Homonym(0, ArrayList())
+			}
+		}
 	}
 
 	private val homonymMap: HashMap<String, Homonym> = HashMap(2048)

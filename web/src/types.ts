@@ -9,6 +9,7 @@ export type Part = {
 export type SearchSuggestion = {
 	word: string;
 	id: number;
+	url: string;
 };
 
 export type Highlights = { part: string; highlight: boolean }[];

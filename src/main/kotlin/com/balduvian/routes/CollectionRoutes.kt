@@ -17,6 +17,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.random.Random
 
 fun Route.collectionRouting() {
 	route("/api/collection") {
@@ -27,9 +28,9 @@ fun Route.collectionRouting() {
 			val query = call.parameters["q"] ?: ""
 			val limit = call.parameters["limit"]?.toIntOrNull() ?: return@get badRequest(call, "Missing limit")
 
-			val results = Collection.search(query)
+			val results = Collection.search(query, limit)
 
-			okJson(call, Collection.serializeSearchResults(results, limit))
+			okJson(call, Collection.serializeSearchResults(results))
 		}
 		get("{id?}") {
 			val id = call.parameters["id"]?.toIntOrNull() ?: return@get badRequest(call, "Missing card id")
@@ -49,6 +50,39 @@ fun Route.collectionRouting() {
 			val obj = JsonObject()
 			obj.addProperty("value", Collection.cards.size)
 			okJson(call, senderGson.toJson(obj))
+		}
+		get("homonym/card/{id?}") {
+			val id = call.parameters["id"] ?: return@get badRequest(call, "Missing id")
+			val idNo = id.toIntOrNull() ?: return@get badRequest(call, "Bad id")
+
+			val card = Collection.getCard(idNo) ?: return@get notFound(call, "Card not found")
+
+			val homonym = Homonyms.getHomonym(card.word) ?: return@get notFound(call, "Homonym not found")
+
+			okJson(call, homonym.serialize())
+		}
+		get("latest") {
+			if (Collection.cards.isEmpty()) return@get okJson(call, Homonyms.Homonym.empty().serialize())
+
+			val highest = Collection.cards.lastIndex
+			val lowest = (highest - 9).coerceAtLeast(0)
+
+			val cards = ArrayList<Card>(highest - lowest + 1)
+
+			for (i in highest downTo lowest) {
+				cards.add(Collection.cards[i])
+			}
+
+			okJson(call, Homonyms.Homonym(0, cards).serialize())
+		}
+		get("random") {
+			if (Collection.cards.isEmpty()) return@get okJson(call, Homonyms.Homonym.empty().serialize())
+
+			val card = Collection.cards[Random.nextInt(Collection.cards.size)]
+
+			val homonym = Homonyms.getHomonym(card.word) ?: return@get notFound(call, "Homonym not found")
+
+			okJson(call, homonym.serialize())
 		}
 		post {
 			try {

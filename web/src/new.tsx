@@ -218,6 +218,7 @@ class NewPage extends react.Component<Props, State> {
 							shared.goToNewPage('/edit', [
 								['id', selection.id.toString()],
 								['word', selection.word],
+								['url', selection.url],
 							]);
 						}
 					}}

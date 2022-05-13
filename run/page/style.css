@@ -100,6 +100,8 @@
 }
 
 .immr-search-suggestion {
+  position: relative;
+
   width: 100%;
   text-align: center;
 
@@ -129,6 +131,22 @@
 .immr-search-suggestion:last-child {
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
+}
+
+.immr-search-suggestion > .id {
+  position: absolute;
+  right: 2.5px;
+  bottom: 0;
+  color: white;
+  
+  height: 10px;
+  line-height: 10px;
+  font-size: 10px;
+  text-align: right;
+}
+
+.immr-search-suggestion.selected > .id {
+  color: black;
 }
 
 #immr-panel > #immr-card-panel:last-child {
@@ -363,7 +381,7 @@ img {
   height: 35px;
   line-height: 35px;
 
-  padding-left: 10px;
+  padding-left: 6px;
 }
 
 .new-select:focus {

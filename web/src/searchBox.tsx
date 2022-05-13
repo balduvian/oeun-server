@@ -107,7 +107,7 @@ export class SearchBox extends react.Component<Props, State> {
 			return this.stateSearchClear();
 		} else {
 			return util
-				.getRequest<SearchSuggestion[]>(`/api/collection/search/${query}/10`)
+				.getRequest<SearchSuggestion[]>(`/api/collection/search/${query.replaceAll('#', '%23')}/10`)
 				.then(([code, data]) => (util.isGood(code, data) ? this.stateSearchResults(data) : this.stateSearchError()));
 		}
 	}
@@ -219,8 +219,11 @@ export class SearchBox extends react.Component<Props, State> {
 						) : initialNoResults ? (
 							<div className="immr-search-suggestion error">No results</div>
 						) : (
-							initialSuggestions.map(({ word }, i) => (
-								<div className={`immr-search-suggestion ${i === initialSelection ? 'selected' : ''}`}>{word}</div>
+							initialSuggestions.map(({ word, id }, i) => (
+								<div className={`immr-search-suggestion ${i === initialSelection ? 'selected' : ''}`}>
+									{word}
+									<div className="id">{id}</div>
+								</div>
 							))
 						)}
 					</div>

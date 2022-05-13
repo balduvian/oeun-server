@@ -10,6 +10,7 @@ import { getParts } from './partsBadges';
 type Props = {
 	initialId: number | undefined;
 	initialWord: string | undefined;
+	initialUrl: string | undefined;
 };
 
 type State = {
@@ -41,8 +42,8 @@ class EditPage extends react.Component<Props, State> {
 			retrievedParts.then(parts => this.setState({ parts }));
 		}
 
-		if (props.initialId !== undefined) {
-			util.getRequest<{ cards: Card[] }>(`/api/collection/homonym/${props.initialId}`)
+		if (props.initialUrl !== undefined) {
+			util.getRequest<{ cards: Card[] }>(props.initialUrl)
 				.then(([code, data]) => {
 					if (util.isGood(code, data)) {
 						this.setState({ cards: data.cards });
@@ -77,6 +78,7 @@ class EditPage extends react.Component<Props, State> {
 							shared.goToNewPage('/edit', [
 								['id', selection.id.toString()],
 								['word', selection.word],
+								['url', selection.url],
 							]);
 						}
 					}}
@@ -119,4 +121,11 @@ class EditPage extends react.Component<Props, State> {
 const searchParams = new URLSearchParams(window.location.search);
 const initialId = searchParams.get('id');
 
-reactDom.render(<EditPage initialId={initialId === null ? undefined : +initialId} initialWord={searchParams.get('word') ?? undefined} />, document.body);
+reactDom.render(
+	<EditPage
+		initialId={initialId === null ? undefined : +initialId}
+		initialWord={searchParams.get('word') ?? undefined}
+		initialUrl={searchParams.get('url') ?? undefined}
+	/>,
+	document.body,
+);
