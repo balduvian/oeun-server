@@ -8,7 +8,6 @@ import { EditPanel } from './editPanel';
 import { getParts } from './partsBadges';
 
 type Props = {
-	initialId: number | undefined;
 	initialWord: string | undefined;
 	initialUrl: string | undefined;
 };
@@ -76,7 +75,6 @@ class EditPage extends react.Component<Props, State> {
 							shared.goToNewPage('/edit', []);
 						} else {
 							shared.goToNewPage('/edit', [
-								['id', selection.id.toString()],
 								['word', selection.word],
 								['url', selection.url],
 							]);
@@ -119,13 +117,5 @@ class EditPage extends react.Component<Props, State> {
 }
 
 const searchParams = new URLSearchParams(window.location.search);
-const initialId = searchParams.get('id');
 
-reactDom.render(
-	<EditPage
-		initialId={initialId === null ? undefined : +initialId}
-		initialWord={searchParams.get('word') ?? undefined}
-		initialUrl={searchParams.get('url') ?? undefined}
-	/>,
-	document.body,
-);
+reactDom.render(<EditPage initialWord={searchParams.get('word') ?? undefined} initialUrl={searchParams.get('url') ?? undefined} />, document.body);

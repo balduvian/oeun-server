@@ -1,5 +1,7 @@
 package com.balduvian
 
+import com.google.gson.JsonObject
+
 object Homonyms {
 	data class Homonym(val id: Int, val cards: ArrayList<Card>) {
 		fun word() = cards.first().word

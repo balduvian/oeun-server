@@ -47,6 +47,11 @@ export type NewCard = {
 	picture: NewField<HTMLInputElement>;
 };
 
+export type CardPostResponse = {
+	url: string;
+	word: string;
+};
+
 export type ErrorResonse = {
 	error: string;
 };

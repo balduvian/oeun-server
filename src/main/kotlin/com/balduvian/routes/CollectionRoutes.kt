@@ -90,7 +90,11 @@ fun Route.collectionRouting() {
 					val card = Card.deserialize(call.receiveStream())
 					val homonym = Collection.addCard(card)
 
-					okJson(call, homonym.serialize())
+					val jsonObject = JsonObject()
+					jsonObject.addProperty("url", "/api/collection/homonym/${homonym.id}")
+					jsonObject.addProperty("word", homonym.word())
+
+					okJson(call, senderGson.toJson(jsonObject))
 				}
 			} catch (ex: PrettyException) {
 				badRequest(call, ex.message)

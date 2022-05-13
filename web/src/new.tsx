@@ -1,7 +1,7 @@
 import * as react from 'react';
 import * as reactDom from 'react-dom';
 import { WindowEvent } from './windowEvent';
-import { Card, NewCard, Part, NewField, MessageResponse, Homonym } from './types';
+import { Card, NewCard, Part, NewField, MessageResponse, Homonym, CardPostResponse } from './types';
 import * as util from './util';
 import { SearchBox } from './searchBox';
 import * as shared from './shared';
@@ -186,11 +186,11 @@ class NewPage extends react.Component<Props, State> {
 
 									console.log(uploadCard);
 
-									util.postRequest<Homonym>('/api/collection', uploadCard).then(([code, data]) => {
+									util.postRequest<CardPostResponse>('/api/collection', uploadCard).then(([code, data]) => {
 										if (util.isGood(code, data)) {
 											shared.goToNewPage('/edit', [
-												['id', data.id.toString()],
-												['word', data.cards[0].word],
+												['word', data.word],
+												['url', data.url],
 											]);
 										} else {
 											console.log(data.error);
@@ -216,7 +216,6 @@ class NewPage extends react.Component<Props, State> {
 							shared.goToNewPage('/edit', []);
 						} else {
 							shared.goToNewPage('/edit', [
-								['id', selection.id.toString()],
 								['word', selection.word],
 								['url', selection.url],
 							]);
