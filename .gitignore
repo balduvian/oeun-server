@@ -12,3 +12,5 @@
 
 /run/data/.git
 /run/data
+
+*.jar
