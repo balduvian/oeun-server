@@ -219,10 +219,10 @@ export class SearchBox extends react.Component<Props, State> {
 						) : initialNoResults ? (
 							<div className="immr-search-suggestion error">No results</div>
 						) : (
-							initialSuggestions.map(({ word, id }, i) => (
+							initialSuggestions.map(({ word, ids }, i) => (
 								<div className={`immr-search-suggestion ${i === initialSelection ? 'selected' : ''}`}>
 									{word}
-									<div className="id">{id}</div>
+									<div className="id">{ids.join(' ')}</div>
 								</div>
 							))
 						)}

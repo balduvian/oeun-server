@@ -8,7 +8,7 @@ export type Part = {
 
 export type SearchSuggestion = {
 	word: string;
-	id: number;
+	ids: number[];
 	url: string;
 };
 

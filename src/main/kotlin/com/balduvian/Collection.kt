@@ -130,12 +130,13 @@ object Collection {
 	data class PreSearchResult(
 		val word: String,
 		val sortValue: Int,
-		val id: Int,
+		val homonymId: Int,
+		val cardIds: ArrayList<Int>,
 	)
 
 	data class OutSearchResult(
 		val word: String,
-		val id: Int,
+		val ids: ArrayList<Int>,
 		val url: String,
 	)
 
@@ -148,7 +149,7 @@ object Collection {
 		if (phrase.startsWith('!')) {
 			return commands.zip(commands.indices).mapNotNull { (command, i) ->
 				if (command.commandName.startsWith(phrase.subSequence(1, phrase.length))) {
-					OutSearchResult('!' + command.commandName, i, command.url)
+					OutSearchResult('!' + command.commandName, arrayListOf(i), command.url)
 				} else {
 					null
 				}
@@ -172,7 +173,7 @@ object Collection {
 				val card = cards[i]
 				ret.add(OutSearchResult(
 					card.word,
-					card.id,
+					arrayListOf(card.id),
 					"/api/collection/homonym/card/${card.id}"
 				))
 			}
@@ -204,7 +205,7 @@ object Collection {
 			val (start, match) = matchFunction(completedPart, lastSyllable, word)
 			if (match != Syllable.MATCH_NONE) {
 				val sortValue = (if (match == Syllable.MATCH_EXACT) 0 else 10000) + (if (start == 0) 0 else 1000) + word.length
-				val searchResult = PreSearchResult(word, sortValue, homonym.id)
+				val searchResult = PreSearchResult(word, sortValue, homonym.id, homonym.cards.map { it.id } as ArrayList<Int>)
 
 				val insertPosition = ret.binarySearch { it.sortValue - sortValue }
 				if (insertPosition < 0) {
@@ -216,7 +217,7 @@ object Collection {
 		}
 
 		return ret.take(limit).map { pre ->
-			OutSearchResult(pre.word, pre.id, "/api/collection/homonym/${pre.id}")
+			OutSearchResult(pre.word, pre.cardIds, "/api/collection/homonym/${pre.homonymId}")
 		} as ArrayList<OutSearchResult>
 	}
 
@@ -225,8 +226,11 @@ object Collection {
 		for (result in results) {
 			val entry = JsonObject()
 
+			val ids = JsonArray(result.ids.size)
+			for (id in result.ids) ids.add(id)
+			entry.add("ids", ids)
+
 			entry.addProperty("word", result.word)
-			entry.addProperty("id", result.id)
 			entry.addProperty("url", result.url)
 
 			array.add(entry)
