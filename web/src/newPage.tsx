@@ -10,7 +10,7 @@ import {
 import * as util from './util';
 import * as shared from './shared';
 import { getParts } from './partsBadges';
-import KorInput from './korInput';
+import { KorInput } from './korInput';
 import ErrorDisplay from './errorDisplay';
 import { useNavigate } from 'react-router-dom';
 

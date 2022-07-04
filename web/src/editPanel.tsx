@@ -3,6 +3,7 @@ import WindowEvent from './windowEvent';
 import { Card, EditHistory, Part, Editing, MessageResponse } from './types';
 import * as util from './util';
 import * as shared from './shared';
+import { externalDoBracketing, getSelection, setSelection } from './korInput';
 
 type Props = {
 	card: Card;
@@ -186,7 +187,20 @@ const EditPanel = ({ card, parts, onDelete }: Props) => {
 				onKeyDown={event => {
 					if (cancelTyping) return;
 
-					if (
+					const bracketing = externalDoBracketing(
+						event,
+						event.currentTarget.textContent!,
+						getSelection(),
+					);
+					if (bracketing !== undefined) {
+						const {
+							text,
+							selection: [start, end],
+						} = bracketing;
+						event.currentTarget.textContent = text;
+						setSelection(event.currentTarget, start, end);
+						event.preventDefault();
+					} else if (
 						event.code === 'Escape' ||
 						(event.code === 'KeyZ' && event.ctrlKey)
 					) {

@@ -1,59 +1,163 @@
 import * as react from 'react';
 import * as util from './util';
 
-type Props = {
+/**
+ *
+ * this file is a fucking mess
+ * do not even try to understand what's going on
+ *
+ */
+
+type Props<E extends HTMLInputElement | HTMLParagraphElement> = {
 	smart: boolean;
-	onKeyDown?: (event: react.KeyboardEvent<HTMLInputElement>) => void;
-	inputProps: react.DetailedHTMLProps<react.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>;
+	onKeyDown?: (event: react.KeyboardEvent<E>) => void;
+	inputProps: react.DetailedHTMLProps<react.InputHTMLAttributes<E>, E>;
+};
+
+const bracketTypes = {
+	'*': ['**', '**'] as const,
+	')': ['(', ')'] as const,
 };
 
 const isHangul = (code: number) => {
-	return (code >= 0x3131 && code <= 0x318e) || (code >= 0xac00 && code <= 0xd7a3);
+	return (
+		(code >= 0x3131 && code <= 0x318e) || (code >= 0xac00 && code <= 0xd7a3)
+	);
 };
 
-const findStarStart = (text: string) => {
-	if (text.length === 0) return -1;
-	if (!isHangul(text.charCodeAt(text.length - 1))) return -1;
+const findStarStart = (text: string): [number, boolean] => {
+	if (text.length === 0) return [-1, false];
+	if (!isHangul(text.charCodeAt(text.length - 1))) return [-1, false];
 
 	for (let i = text.length - 2; i >= 0; --i) {
-		if (!isHangul(text.charCodeAt(i))) return i + 1;
+		const behind = text.charCodeAt(i);
+		if (!isHangul(behind)) return [i + 1, behind !== '*'.charCodeAt(0)];
 	}
 
-	return 0;
+	return [0, true];
 };
 
-const KorInput = react.memo(({ smart, onKeyDown, inputProps: events }: Props) => (
-	<input
-		onCompositionStart={event => util.setElBool(event.currentTarget, 'composing', true)}
-		onCompositionEnd={event => util.setElBool(event.currentTarget, 'composing', false)}
-		onKeyDown={event => {
-			if (util.getElBool(event.currentTarget, 'composing')) {
-				return;
-			}
+export const getRange = (
+	selection: Selection,
+): [number | undefined, number | undefined] => {
+	if (selection.rangeCount !== 1) return [undefined, undefined];
+	const range = selection.getRangeAt(0);
+	if (range.startContainer !== range.endContainer)
+		return [undefined, undefined];
+	return [range.startOffset, range.endOffset];
+};
 
-			if (smart && event.key === '*') {
-				const text = event.currentTarget.value;
-				const start = event.currentTarget.selectionStart;
-				const end = event.currentTarget.selectionEnd;
+export const getSelection = () => getRange(window.getSelection()!);
 
-				if (start === null || end === null) return;
-				if (start === end && end === text.length) {
-					const startIndex = findStarStart(text);
-					if (startIndex !== -1) {
-						event.preventDefault();
-						event.currentTarget.value = text.substring(0, startIndex) + '**' + text.substring(startIndex) + '**';
-					}
-				} else if (start !== end) {
-					event.preventDefault();
-					event.currentTarget.value = text.substring(0, start) + '**' + text.substring(start, end) + '**' + text.substring(end);
-					event.currentTarget.setSelectionRange(end + 4, end + 4);
+const createRange = (node: Node, start: number, end: number) => {
+	const newRange = document.createRange();
+	newRange.setStart(node.firstChild!, start);
+	newRange.setEnd(node.firstChild!, end);
+	return newRange;
+};
+
+export const setSelection = (element: Node, start: number, end: number) => {
+	const selection = window.getSelection()!;
+	selection.empty();
+	selection.addRange(createRange(element, start, end));
+};
+
+const bracketText = (
+	text: string,
+	before: string,
+	after: string,
+	start: number,
+	end: number,
+) => {
+	return (
+		text.substring(0, start) +
+		before +
+		text.substring(start, end) +
+		after +
+		text.substring(end)
+	);
+};
+
+const composingEvents = {
+	onCompositionStart: (event: react.CompositionEvent<HTMLElement>) =>
+		util.setElBool(event.currentTarget, 'composing', true),
+	onCompositionEnd: (event: react.CompositionEvent<HTMLElement>) =>
+		util.setElBool(event.currentTarget, 'composing', false),
+};
+
+type Bracketing = {
+	text: string;
+	selection: [number, number];
+};
+
+export const externalDoBracketing = <E extends HTMLElement>(
+	event: react.KeyboardEvent<E>,
+	text: string,
+	range: [number | undefined, number | undefined],
+): Bracketing | undefined => {
+	if (!(event.key in bracketTypes)) return undefined;
+	const [before, after] =
+		bracketTypes[event.key as keyof typeof bracketTypes];
+
+	const [start, end] = range;
+	if (start === undefined || end === undefined) {
+		return undefined;
+	}
+
+	if (start === end && end === text.length) {
+		const [startIndex, doBefore] = findStarStart(text);
+		if (startIndex !== -1) {
+			const newText = bracketText(
+				text,
+				doBefore ? before : '',
+				after,
+				startIndex,
+				text.length,
+			);
+			return {
+				text: newText,
+				selection: [newText.length, newText.length],
+			};
+		}
+	} else if (start !== end) {
+		const offset = before.length + after.length;
+		return {
+			text: bracketText(text, before, after, start, end),
+			selection: [end + offset, end + offset],
+		};
+	}
+
+	return undefined;
+};
+
+export const KorInput = react.memo(
+	({ smart, onKeyDown, inputProps }: Props<HTMLInputElement>) => (
+		<input
+			{...composingEvents}
+			onKeyDown={event => {
+				if (util.getElBool(event.currentTarget, 'composing')) {
+					return;
 				}
-			} else {
-				if (onKeyDown !== undefined) onKeyDown(event);
-			}
-		}}
-		{...events}
-	/>
-));
 
-export default KorInput;
+				const bracketing = smart
+					? externalDoBracketing(event, event.currentTarget.value, [
+							event.currentTarget.selectionStart ?? undefined,
+							event.currentTarget.selectionEnd ?? undefined,
+					  ])
+					: undefined;
+				if (bracketing !== undefined) {
+					const {
+						text,
+						selection: [start, end],
+					} = bracketing;
+					event.currentTarget.value = text;
+					event.currentTarget.setSelectionRange(start, end);
+					event.preventDefault();
+				} else {
+					if (onKeyDown !== undefined) onKeyDown(event);
+				}
+			}}
+			{...inputProps}
+		/>
+	),
+);

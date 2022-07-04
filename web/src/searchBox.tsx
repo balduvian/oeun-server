@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { SearchSuggestion } from './types';
 import * as util from './util';
-import KorInput from './korInput';
+import { KorInput } from './korInput';
 import { useNavigate } from 'react-router-dom';
 
 enum ResultState {
