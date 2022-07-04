@@ -42,10 +42,11 @@ const SearchBox = ({ searchValue, setSearchValue }: Props) => {
 		setSelection(0);
 	};
 
-	const clear = () => {
+	const clear = (searchValue?: string) => {
 		setSuggestions(undefined);
 		setResultState(ResultState.GOOD);
 		setSelection(0);
+		if (searchValue !== undefined) setSearchValue(searchValue);
 	};
 
 	const setResults = (results: SearchSuggestion[]) => {
@@ -71,9 +72,12 @@ const SearchBox = ({ searchValue, setSearchValue }: Props) => {
 	};
 
 	const onSearch = (suggestion: SearchSuggestion | undefined) => {
+		(document.activeElement as HTMLElement | null)?.blur();
 		if (suggestion === undefined) {
+			clear('');
 			navigate('/cards');
 		} else {
+			clear(suggestion.word);
 			navigate(suggestion.url);
 		}
 	};
@@ -146,7 +150,13 @@ const SearchBox = ({ searchValue, setSearchValue }: Props) => {
 						},
 					}}
 				/>
-				<button id="add-button" onClick={() => navigate('/new')}>
+				<button
+					id="add-button"
+					onClick={() => {
+						setSearchValue('');
+						navigate('/new');
+					}}
+				>
 					+
 				</button>
 			</div>

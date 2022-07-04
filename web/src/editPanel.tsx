@@ -15,7 +15,10 @@ const EditPanel = ({ card, parts, onDelete }: Props) => {
 	const [editing, setEditing] = react.useState<Editing>({});
 	const [history, setHistory] = react.useState<EditHistory>([]);
 
-	const highlights = card.sentence === undefined ? undefined : util.strToHighlights(card.sentence);
+	const highlights =
+		card.sentence === undefined
+			? undefined
+			: util.strToHighlights(card.sentence);
 
 	/**
 	 * @param newString set to undefined if you wish to not edit
@@ -24,7 +27,9 @@ const EditPanel = ({ card, parts, onDelete }: Props) => {
 		newString: string | undefined,
 		nullable: boolean,
 		forField: keyof Card,
-		eventTarget: (HTMLOrSVGElement & ElementContentEditable & Node) | undefined,
+		eventTarget:
+			| (HTMLOrSVGElement & ElementContentEditable & Node)
+			| undefined,
 	) => {
 		eventTarget?.blur();
 
@@ -42,9 +47,15 @@ const EditPanel = ({ card, parts, onDelete }: Props) => {
 		} else {
 			let filtered = realValue(newString);
 
-			if ((filtered !== undefined || nullable) && previousValue !== filtered) {
+			if (
+				(filtered !== undefined || nullable) &&
+				previousValue !== filtered
+			) {
 				/* first add the current value to history */
-				history.push({ field: forField, value: card[forField] as string | undefined });
+				history.push({
+					field: forField,
+					value: card[forField] as string | undefined,
+				});
 
 				/* modify card with new value */
 				(card[forField] as string | undefined) = filtered;
@@ -63,7 +74,11 @@ const EditPanel = ({ card, parts, onDelete }: Props) => {
 	const isEditing = (field: string) => {
 		return editing[field]?.editing ?? false;
 	};
-	const setEditingField = (field: string, initial: string | undefined, value: boolean) => {
+	const setEditingField = (
+		field: string,
+		initial: string | undefined,
+		value: boolean,
+	) => {
 		editing[field] = { initial, editing: value };
 		setEditing({ ...editing });
 	};
@@ -74,40 +89,74 @@ const EditPanel = ({ card, parts, onDelete }: Props) => {
 	};
 
 	const databaseChange = (id: number, obj: { [key: string]: any }) => {
-		util.patchRequest<MessageResponse>('/api/collection', { id: id, ...obj });
+		util.patchRequest<MessageResponse>('/api/collection', {
+			id: id,
+			...obj,
+		});
 	};
 
 	const editDropdown = (part: string | undefined, parts: Part[]) => {
 		let cancelBlur = false;
 		return (
 			<select
-				className={`immr-part-edit ${part === undefined ? 'no-part' : ''}`}
+				className={`immr-part-edit ${
+					part === undefined ? 'no-part' : ''
+				}`}
 				onKeyDown={event => {
-					if (event.code === 'Escape' || (event.code === 'KeyZ' && event.ctrlKey)) {
+					if (
+						event.code === 'Escape' ||
+						(event.code === 'KeyZ' && event.ctrlKey)
+					) {
 						event.stopPropagation();
 						event.preventDefault();
 						cancelBlur = true;
 
-						confirmFieldEdit(undefined, true, 'part', event.currentTarget);
+						confirmFieldEdit(
+							undefined,
+							true,
+							'part',
+							event.currentTarget,
+						);
 					} else if (event.code === 'Enter') {
 						event.preventDefault();
 						cancelBlur = true;
 
-						confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
+						confirmFieldEdit(
+							event.currentTarget.value,
+							true,
+							'part',
+							event.currentTarget,
+						);
 					}
 				}}
 				onChange={event => {
 					cancelBlur = true;
-					confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
+					confirmFieldEdit(
+						event.currentTarget.value,
+						true,
+						'part',
+						event.currentTarget,
+					);
 				}}
 				onBlur={event => {
 					if (!cancelBlur) {
-						confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
+						confirmFieldEdit(
+							event.currentTarget.value,
+							true,
+							'part',
+							event.currentTarget,
+						);
 					}
 					cancelBlur = false;
 				}}
-				onFocus={event => setEditingField('part', realValue(event.currentTarget.value), true)}
-				value={part}
+				onFocus={event =>
+					setEditingField(
+						'part',
+						realValue(event.currentTarget.value),
+						true,
+					)
+				}
+				value={part ?? ''}
 			>
 				{shared.partOptions(parts)}
 			</select>
@@ -137,26 +186,50 @@ const EditPanel = ({ card, parts, onDelete }: Props) => {
 				onKeyDown={event => {
 					if (cancelTyping) return;
 
-					if (event.code === 'Escape' || (event.code === 'KeyZ' && event.ctrlKey)) {
+					if (
+						event.code === 'Escape' ||
+						(event.code === 'KeyZ' && event.ctrlKey)
+					) {
 						event.stopPropagation();
 						event.preventDefault();
 						cancelBlur = true;
 
-						confirmFieldEdit(undefined, nullable, forField, event.currentTarget);
+						confirmFieldEdit(
+							undefined,
+							nullable,
+							forField,
+							event.currentTarget,
+						);
 					} else if (event.code === 'Enter') {
 						event.preventDefault();
 						cancelBlur = true;
 
-						confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField, event.currentTarget);
+						confirmFieldEdit(
+							event.currentTarget.textContent as string,
+							nullable,
+							forField,
+							event.currentTarget,
+						);
 					}
 				}}
 				onBlur={event => {
 					if (!cancelBlur) {
-						confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField, event.currentTarget);
+						confirmFieldEdit(
+							event.currentTarget.textContent as string,
+							nullable,
+							forField,
+							event.currentTarget,
+						);
 					}
 					cancelBlur = false;
 				}}
-				onFocus={event => setEditingField(forField, realValue(event.currentTarget.textContent as string), true)}
+				onFocus={event =>
+					setEditingField(
+						forField,
+						realValue(event.currentTarget.textContent as string),
+						true,
+					)
+				}
 			>
 				{isEditing(forField) ? editingValue ?? '' : displayValue}
 			</p>
@@ -175,22 +248,44 @@ const EditPanel = ({ card, parts, onDelete }: Props) => {
 
 						if (lastEdit === undefined) return;
 
-						(card[lastEdit.field] as string | undefined) = lastEdit.value;
+						(card[lastEdit.field] as string | undefined) =
+							lastEdit.value;
 
 						setHistory(history);
 
-						databaseChange(card.id, { [lastEdit.field]: lastEdit.value });
+						databaseChange(card.id, {
+							[lastEdit.field]: lastEdit.value,
+						});
 					}
 				}}
 			/>
 			<div className="immr-card-row">
-				{editField('big', { fontWeight: 'bold' }, card.word, card.word, false, 'word')}
+				{editField(
+					'big',
+					{ fontWeight: 'bold' },
+					card.word,
+					card.word,
+					false,
+					'word',
+				)}
 				{editDropdown(card.part, parts)}
-				<button className="delete-button" onClick={() => onDelete(card.id)}>
+				<button
+					className="delete-button"
+					onClick={() => onDelete(card.id)}
+				>
 					X
 				</button>
 			</div>
-			<div className="immr-card-row">{editField('small', {}, card.definition, card.definition, false, 'definition')}</div>
+			<div className="immr-card-row">
+				{editField(
+					'small',
+					{},
+					card.definition,
+					card.definition,
+					false,
+					'definition',
+				)}
+			</div>
 
 			{editField(
 				'immr-card-sentence',
@@ -212,24 +307,52 @@ const EditPanel = ({ card, parts, onDelete }: Props) => {
 				'image-container',
 				<input
 					readOnly
-					onFocus={event => setEditingField('picture', realValue(event.currentTarget.value), true)}
+					onFocus={event =>
+						setEditingField(
+							'picture',
+							realValue(event.currentTarget.value),
+							true,
+						)
+					}
 					onBlur={() => setEditingField('picture', '', false)}
 					onKeyDown={event => {
 						if (event.code === 'Delete') {
 							event.preventDefault();
-							confirmFieldEdit('', true, 'picture', event.currentTarget);
+							confirmFieldEdit(
+								'',
+								true,
+								'picture',
+								event.currentTarget,
+							);
 						} else if (event.code === 'Escape') {
 							event.preventDefault();
-							confirmFieldEdit(undefined, true, 'picture', event.currentTarget);
+							confirmFieldEdit(
+								undefined,
+								true,
+								'picture',
+								event.currentTarget,
+							);
 						}
 					}}
 					onPaste={async event => {
 						event.preventDefault();
 
-						const [buffer, filename] = await shared.onPasteImage(event);
+						const [buffer, filename] = await shared.onPasteImage(
+							event,
+						);
 
-						util.imagePostRequest<MessageResponse>(`/api/images/${filename}`, buffer)
-							.then(() => confirmFieldEdit(filename, true, 'picture', event.currentTarget))
+						util.imagePostRequest<MessageResponse>(
+							`/api/images/${filename}`,
+							buffer,
+						)
+							.then(() =>
+								confirmFieldEdit(
+									filename,
+									true,
+									'picture',
+									event.currentTarget,
+								),
+							)
 							.catch(ex => console.log(ex));
 					}}
 				></input>,
