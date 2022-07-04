@@ -91,7 +91,7 @@ fun Route.collectionRouting() {
 					val homonym = Collection.addCard(card)
 
 					val jsonObject = JsonObject()
-					jsonObject.addProperty("url", "/api/collection/homonym/${homonym.id}")
+					jsonObject.addProperty("url", "/cards/homonym/${homonym.id}")
 					jsonObject.addProperty("word", homonym.word())
 
 					okJson(call, senderGson.toJson(jsonObject))

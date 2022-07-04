@@ -1,24 +1,17 @@
-import * as react from 'react';
+import { memo, useEffect } from 'react';
 
-export type Props<K extends keyof WindowEventMap> = {
+type Props<K extends keyof WindowEventMap> = {
 	eventName: K;
-	callBack: (event: WindowEventMap[K]) => void;
+	callback: (event: WindowEventMap[K]) => void;
 };
 
-export class WindowEvent<K extends keyof WindowEventMap> extends react.Component<Props<K>, {}> {
-	constructor(props: Props<K>) {
-		super(props);
-	}
+const WindowEvent = <K extends keyof WindowEventMap>({ eventName, callback }: Props<K>) => {
+	useEffect(() => {
+		window.addEventListener(eventName, callback);
+		return () => window.removeEventListener(eventName, callback);
+	}, []);
 
-	componentWillMount() {
-		window.addEventListener(this.props.eventName, this.props.callBack);
-	}
+	return null;
+};
 
-	componentWillUnmount() {
-		window.removeEventListener(this.props.eventName, this.props.callBack);
-	}
-
-	render() {
-		return null;
-	}
-}
+export default WindowEvent;

@@ -1,9 +1,13 @@
 import * as react from 'react';
 import * as util from './util';
 import { Part } from './types';
-import { WindowEvent } from './windowEvent';
+import WindowEvent from './windowEvent';
 
-export const pictureInput = (className: string, inputElement: react.ReactElement, imageName: string | undefined) => {
+export const pictureInput = (
+	className: string,
+	inputElement: react.ReactElement,
+	imageName: string | undefined,
+) => {
 	return (
 		<div className={className}>
 			{inputElement}
@@ -23,19 +27,26 @@ export const partName = (parts: Part[], partId: string | undefined) => {
 	return parts.find(part => part.id === partId)?.english;
 };
 
-export const partOptions = (parts: Part[], selectedPart: string | undefined) => (
+export const partOptions = (parts: Part[]) => (
 	<>
 		{parts.map(part => (
-			<option selected={part.id === selectedPart} value={part.id}>
+			<option key={part.id} value={part.id}>
 				{part.english}
 			</option>
 		))}
-		<option selected={selectedPart === undefined} value=""></option>
+		<option value=""></option>
 	</>
 );
 
-export const onPasteImage = async (event: react.ClipboardEvent<HTMLInputElement>): Promise<[ArrayBuffer, string]> => {
-	const file = [...event.clipboardData.items].find(item => item.type === 'image/png' || item.type === 'image/jpeg')?.getAsFile() ?? undefined;
+export const onPasteImage = async (
+	event: react.ClipboardEvent<HTMLInputElement>,
+): Promise<[ArrayBuffer, string]> => {
+	const file =
+		[...event.clipboardData.items]
+			.find(
+				item => item.type === 'image/png' || item.type === 'image/jpeg',
+			)
+			?.getAsFile() ?? undefined;
 	if (file === undefined) return Promise.reject();
 
 	const buffer = await file.arrayBuffer();
@@ -43,18 +54,12 @@ export const onPasteImage = async (event: react.ClipboardEvent<HTMLInputElement>
 	return [buffer, 'paste-' + Date.now().toString() + '.jpg'];
 };
 
-export const goToNewPage = (path: string, args: [string, string][]) => {
-	window.location.replace(
-		(window.location.protocol + '//' + window.location.host + path + '?' + args.map(([key, value]) => `${key}=${value}&`).join('')).slice(0, -1),
-	);
-};
-
 export const killCtrlZ = () => (
 	<WindowEvent
 		eventName="keydown"
-		callBack={event => {
+		callback={event => {
 			/* this is some bullshit */
 			if (event.code === 'KeyZ' && event.ctrlKey) event.preventDefault();
 		}}
-	></WindowEvent>
+	/>
 );

@@ -1,46 +1,34 @@
 import * as react from 'react';
-import { WindowEvent } from './windowEvent';
+import WindowEvent from './windowEvent';
 import { Card, EditHistory, Part, Editing, MessageResponse } from './types';
 import * as util from './util';
 import * as shared from './shared';
 
-export type Props = {
+type Props = {
 	card: Card;
 	parts: Part[];
 
 	onDelete: (id: number) => void;
 };
 
-export type State = {
-	editHistory: EditHistory;
-	editing: Editing;
-};
+const EditPanel = ({ card, parts, onDelete }: Props) => {
+	const [editing, setEditing] = react.useState<Editing>({});
+	const [history, setHistory] = react.useState<EditHistory>([]);
 
-export class EditPanel extends react.Component<Props, State> {
-	constructor(props: Props) {
-		super(props);
-
-		this.setState;
-		this.state = {
-			editHistory: [],
-			editing: {},
-		};
-	}
+	const highlights = card.sentence === undefined ? undefined : util.strToHighlights(card.sentence);
 
 	/**
 	 * @param newString set to undefined if you wish to not edit
 	 */
-	confirmFieldEdit(
+	const confirmFieldEdit = (
 		newString: string | undefined,
 		nullable: boolean,
 		forField: keyof Card,
 		eventTarget: (HTMLOrSVGElement & ElementContentEditable & Node) | undefined,
-	) {
+	) => {
 		eventTarget?.blur();
 
-		const card = this.props.card;
-		const history = this.state.editHistory;
-		const previousValue = this.editingInitial(forField);
+		const previousValue = editingInitial(forField);
 
 		if (newString === undefined) {
 			(card[forField] as string | undefined) = previousValue;
@@ -52,7 +40,7 @@ export class EditPanel extends react.Component<Props, State> {
 				(eventTarget as any).textContent = previousValue;
 			}
 		} else {
-			let filtered = this.realValue(newString);
+			let filtered = realValue(newString);
 
 			if ((filtered !== undefined || nullable) && previousValue !== filtered) {
 				/* first add the current value to history */
@@ -61,43 +49,35 @@ export class EditPanel extends react.Component<Props, State> {
 				/* modify card with new value */
 				(card[forField] as string | undefined) = filtered;
 
-				this.databaseChange(card.id, { [forField]: filtered });
+				databaseChange(card.id, { [forField]: filtered });
 			}
 		}
 
 		/* currentCards and editHistory already modified */
-		this.setState(this.setEditing(forField, '', false));
-	}
+		setEditingField(forField, '', false);
+	};
 
-	editingInitial(field: string) {
-		return this.state.editing[field]?.initial;
-	}
-	isEditing(field: string) {
-		return this.state.editing[field]?.editing ?? false;
-	}
-	setEditing(field: string, initial: string | undefined, value: boolean) {
-		this.state.editing[field] = { initial, editing: value };
-		return { editing: this.state.editing };
-	}
+	const editingInitial = (field: string) => {
+		return editing[field]?.initial;
+	};
+	const isEditing = (field: string) => {
+		return editing[field]?.editing ?? false;
+	};
+	const setEditingField = (field: string, initial: string | undefined, value: boolean) => {
+		editing[field] = { initial, editing: value };
+		setEditing({ ...editing });
+	};
 
-	realValue(value: string) {
+	const realValue = (value: string) => {
 		let filtered = value.trim();
 		return filtered?.length === 0 ? undefined : filtered;
-	}
+	};
 
-	databaseChange(id: number, obj: { [key: string]: any }) {
-		util.patchRequest<MessageResponse>(
-			'/api/collection',
-			Object.assign(
-				{
-					id: id,
-				},
-				obj,
-			),
-		).then(([code, data]) => console.log(code, data));
-	}
+	const databaseChange = (id: number, obj: { [key: string]: any }) => {
+		util.patchRequest<MessageResponse>('/api/collection', { id: id, ...obj });
+	};
 
-	editDropdown(part: string | undefined, parts: Part[]) {
+	const editDropdown = (part: string | undefined, parts: Part[]) => {
 		let cancelBlur = false;
 		return (
 			<select
@@ -108,32 +88,40 @@ export class EditPanel extends react.Component<Props, State> {
 						event.preventDefault();
 						cancelBlur = true;
 
-						this.confirmFieldEdit(undefined, true, 'part', event.currentTarget);
+						confirmFieldEdit(undefined, true, 'part', event.currentTarget);
 					} else if (event.code === 'Enter') {
 						event.preventDefault();
 						cancelBlur = true;
 
-						this.confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
+						confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
 					}
 				}}
 				onChange={event => {
 					cancelBlur = true;
-					this.confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
+					confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
 				}}
 				onBlur={event => {
 					if (!cancelBlur) {
-						this.confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
+						confirmFieldEdit(event.currentTarget.value, true, 'part', event.currentTarget);
 					}
 					cancelBlur = false;
 				}}
-				onFocus={event => this.setState(this.setEditing('part', this.realValue(event.currentTarget.value), true))}
+				onFocus={event => setEditingField('part', realValue(event.currentTarget.value), true)}
+				value={part}
 			>
-				{shared.partOptions(parts, part)}
+				{shared.partOptions(parts)}
 			</select>
 		);
-	}
+	};
 
-	editField(className: string, style: react.CSSProperties, editingValue: string | undefined, displayValue: any, nullable: boolean, forField: keyof Card) {
+	const editField = (
+		className: string,
+		style: react.CSSProperties,
+		editingValue: string | undefined,
+		displayValue: any,
+		nullable: boolean,
+		forField: keyof Card,
+	) => {
 		let cancelBlur = false;
 		let cancelTyping = false;
 		return (
@@ -154,102 +142,101 @@ export class EditPanel extends react.Component<Props, State> {
 						event.preventDefault();
 						cancelBlur = true;
 
-						this.confirmFieldEdit(undefined, nullable, forField, event.currentTarget);
+						confirmFieldEdit(undefined, nullable, forField, event.currentTarget);
 					} else if (event.code === 'Enter') {
 						event.preventDefault();
 						cancelBlur = true;
 
-						this.confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField, event.currentTarget);
+						confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField, event.currentTarget);
 					}
 				}}
 				onBlur={event => {
 					if (!cancelBlur) {
-						this.confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField, event.currentTarget);
+						confirmFieldEdit(event.currentTarget.textContent as string, nullable, forField, event.currentTarget);
 					}
 					cancelBlur = false;
 				}}
-				onFocus={event => this.setState(this.setEditing(forField, this.realValue(event.currentTarget.textContent as string), true))}
+				onFocus={event => setEditingField(forField, realValue(event.currentTarget.textContent as string), true)}
 			>
-				{this.isEditing(forField) ? editingValue ?? '' : displayValue}
+				{isEditing(forField) ? editingValue ?? '' : displayValue}
 			</p>
 		);
-	}
+	};
 
-	render() {
-		const { card } = this.props;
-		const highlights = card.sentence === undefined ? undefined : util.strToHighlights(card.sentence);
+	return (
+		<div id="immr-card-panel">
+			<WindowEvent
+				eventName="keydown"
+				callback={event => {
+					if (event.code === 'KeyZ' && event.ctrlKey) {
+						event.preventDefault();
 
-		return (
-			<div id="immr-card-panel">
-				<WindowEvent
-					eventName="keydown"
-					callBack={event => {
-						if (event.code === 'KeyZ' && event.ctrlKey) {
+						const lastEdit = history.pop();
+
+						if (lastEdit === undefined) return;
+
+						(card[lastEdit.field] as string | undefined) = lastEdit.value;
+
+						setHistory(history);
+
+						databaseChange(card.id, { [lastEdit.field]: lastEdit.value });
+					}
+				}}
+			/>
+			<div className="immr-card-row">
+				{editField('big', { fontWeight: 'bold' }, card.word, card.word, false, 'word')}
+				{editDropdown(card.part, parts)}
+				<button className="delete-button" onClick={() => onDelete(card.id)}>
+					X
+				</button>
+			</div>
+			<div className="immr-card-row">{editField('small', {}, card.definition, card.definition, false, 'definition')}</div>
+
+			{editField(
+				'immr-card-sentence',
+				{},
+				card.sentence,
+				highlights === undefined ? (
+					<span />
+				) : (
+					highlights.map(({ part, highlight }, i) => (
+						<span key={i} className={highlight ? 'highlight' : ''}>
+							{part}
+						</span>
+					))
+				),
+				true,
+				'sentence',
+			)}
+			{shared.pictureInput(
+				'image-container',
+				<input
+					readOnly
+					onFocus={event => setEditingField('picture', realValue(event.currentTarget.value), true)}
+					onBlur={() => setEditingField('picture', '', false)}
+					onKeyDown={event => {
+						if (event.code === 'Delete') {
 							event.preventDefault();
-
-							const card = this.props.card;
-							const history = this.state.editHistory;
-							const lastEdit = history.pop();
-
-							if (lastEdit === undefined) return;
-
-							(card[lastEdit.field] as string | undefined) = lastEdit.value;
-
-							this.setState({});
-
-							this.databaseChange(card.id, { [lastEdit.field]: lastEdit.value });
+							confirmFieldEdit('', true, 'picture', event.currentTarget);
+						} else if (event.code === 'Escape') {
+							event.preventDefault();
+							confirmFieldEdit(undefined, true, 'picture', event.currentTarget);
 						}
 					}}
-				></WindowEvent>
-				<div className="immr-card-row">
-					{this.editField('big', { fontWeight: 'bold' }, card.word, card.word, false, 'word')}
-					{this.editDropdown(card.part, this.props.parts)}
-					<button className="delete-button" onClick={() => this.props.onDelete(this.props.card.id)}>
-						X
-					</button>
-				</div>
-				<div className="immr-card-row">{this.editField('small', {}, card.definition, card.definition, false, 'definition')}</div>
+					onPaste={async event => {
+						event.preventDefault();
 
-				{this.editField(
-					'immr-card-sentence',
-					{},
-					card.sentence,
-					highlights === undefined ? <span /> : highlights.map(({ part, highlight }) => <span className={highlight ? 'highlight' : ''}>{part}</span>),
-					true,
-					'sentence',
-				)}
-				{shared.pictureInput(
-					'image-container',
-					<input
-						readOnly
-						onFocus={event => this.setState(this.setEditing('picture', this.realValue(event.currentTarget.value), true))}
-						onBlur={() => this.setState(this.setEditing('picture', '', false))}
-						onKeyDown={event => {
-							if (event.code === 'Delete') {
-								event.preventDefault();
-								this.confirmFieldEdit('', true, 'picture', event.currentTarget);
-							} else if (event.code === 'Escape') {
-								event.preventDefault();
-								this.confirmFieldEdit(undefined, true, 'picture', event.currentTarget);
-							}
-						}}
-						onPaste={async event => {
-							event.preventDefault();
+						const [buffer, filename] = await shared.onPasteImage(event);
 
-							const [buffer, filename] = await shared.onPasteImage(event);
+						util.imagePostRequest<MessageResponse>(`/api/images/${filename}`, buffer)
+							.then(() => confirmFieldEdit(filename, true, 'picture', event.currentTarget))
+							.catch(ex => console.log(ex));
+					}}
+				></input>,
+				card.picture,
+			)}
+		</div>
+	);
+};
 
-							const [code, data] = await util.imagePostRequest<MessageResponse>(`/api/images/${filename}`, buffer);
-
-							if (util.isGood(code, data)) {
-								this.confirmFieldEdit(filename, true, 'picture', event.currentTarget);
-							} else {
-								console.log(data.error);
-							}
-						}}
-					></input>,
-					card.picture,
-				)}
-			</div>
-		);
-	}
-}
+export default EditPanel;

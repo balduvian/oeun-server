@@ -14,8 +14,8 @@ object Collection {
 	init { Homonyms }
 
 	val commands = arrayOf(
-		Command("latest", "/api/collection/latest"),
-		Command("random", "/api/collection/random"),
+		Command("latest", "/cards/latest"),
+		Command("random", "/cards/random"),
 	)
 
 	fun loadAllCards() {
@@ -174,7 +174,7 @@ object Collection {
 				ret.add(OutSearchResult(
 					card.word,
 					arrayListOf(card.id),
-					"/api/collection/homonym/card/${card.id}"
+					"/cards/card/${card.id}"
 				))
 			}
 
@@ -217,7 +217,7 @@ object Collection {
 		}
 
 		return ret.take(limit).map { pre ->
-			OutSearchResult(pre.word, pre.cardIds, "/api/collection/homonym/${pre.homonymId}")
+			OutSearchResult(pre.word, pre.cardIds, "/cards/homonym/${pre.homonymId}")
 		} as ArrayList<OutSearchResult>
 	}
 

@@ -10,27 +10,38 @@ type StorageParts = {
 };
 
 /**
- * @returns either a value or a promise depending on if it can be fast fetched or not
+ * @returns either a value or a promise depending on if it can be fast fetched
  */
-export const getParts = () => {
+export const getParts = (
+	setParts: (parts: Part[]) => void,
+	setError: (error: boolean) => void,
+) => {
 	const data = window.localStorage.getItem(KEY_PARTS);
 
 	let retrievedParts: StorageParts | undefined;
 
 	retrievedParts = data !== null ? parseStorageParts(data) : undefined;
-	if (retrievedParts !== undefined && Date.now() - retrievedParts.cacheTime > STALE_TIME) retrievedParts = undefined;
+	if (
+		retrievedParts !== undefined &&
+		Date.now() - retrievedParts.cacheTime > STALE_TIME
+	)
+		retrievedParts = undefined;
 
 	if (retrievedParts !== undefined) {
-		console.log(`got parts with time: ${retrievedParts.cacheTime} | vs ${Date.now()}`);
-		return retrievedParts.parts;
+		console.log(
+			`got parts with time: ${
+				retrievedParts.cacheTime
+			} | vs ${Date.now()}`,
+		);
+		setParts(retrievedParts.parts);
 	} else {
 		return fetchParts().then(fetchedParts => {
 			if (fetchedParts === undefined) {
-				return [];
+				setError(true);
 			} else {
 				console.log('Fetched new parts');
 				saveParts(fetchedParts);
-				return fetchedParts;
+				setParts(fetchedParts);
 			}
 		});
 	}

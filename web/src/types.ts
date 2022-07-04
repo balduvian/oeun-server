@@ -1,5 +1,28 @@
 import * as react from 'react';
 
+export enum ResultType {
+	HOMONYM,
+	CARD,
+	LATEST,
+	RANDOM,
+	NONE,
+}
+export const resultTypes = () =>
+	[
+		ResultType.HOMONYM,
+		ResultType.CARD,
+		ResultType.LATEST,
+		ResultType.RANDOM,
+		ResultType.NONE,
+	] as const;
+export const resultTypePaths = [
+	'homonym/:id',
+	'card/:id',
+	'latest',
+	'random',
+	'*',
+];
+
 export type Part = {
 	id: string;
 	english: string;

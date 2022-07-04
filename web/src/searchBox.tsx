@@ -1,11 +1,18 @@
-import * as react from 'react';
+import { useState, useRef } from 'react';
 import { SearchSuggestion } from './types';
 import * as util from './util';
-import * as shared from './shared';
+import KorInput from './korInput';
+import { useNavigate } from 'react-router-dom';
+
+enum ResultState {
+	GOOD,
+	NO_RESULTS,
+	ERROR,
+}
 
 export type Props = {
 	searchValue: string;
-	onSearch: (suggestion: SearchSuggestion | undefined) => void;
+	setSearchValue: (value: string) => void;
 };
 
 export type State = {
@@ -13,222 +20,163 @@ export type State = {
 	error: boolean;
 	noResults: boolean;
 	selection: number;
-	searchValue: string;
 };
 
-export class SearchBox extends react.Component<Props, State> {
-	searchRef: react.RefObject<HTMLInputElement>;
+const SearchBox = ({ searchValue, setSearchValue }: Props) => {
+	const waitingOnInput = useRef(false);
+	const typingEventNo = useRef(0);
 
-	currentGoodTypingEventNo: number;
-	waitingOnInput: boolean;
+	const [suggestions, setSuggestions] = useState<
+		SearchSuggestion[] | undefined
+	>(undefined);
+	const [resultState, setResultState] = useState<ResultState>(
+		ResultState.GOOD,
+	);
+	const [selection, setSelection] = useState<number>(0);
 
-	constructor(props: Props) {
-		super(props);
-		this.state = {
-			suggestions: [],
-			error: false,
-			noResults: false,
-			selection: 0,
-			searchValue: props.searchValue,
-		};
+	const navigate = useNavigate();
 
-		this.searchRef = react.createRef();
+	const stateSearchError = () => {
+		setSuggestions([]);
+		setResultState(ResultState.ERROR);
+		setSelection(0);
+	};
 
-		this.currentGoodTypingEventNo = 0;
-		this.waitingOnInput = false;
-	}
+	const clear = () => {
+		setSuggestions(undefined);
+		setResultState(ResultState.GOOD);
+		setSelection(0);
+	};
 
-	private stateSearchError() {
-		return new Promise<void>(acc =>
-			this.setState(
-				{
-					suggestions: [],
-					error: true,
-					noResults: false,
-					selection: 0,
-				},
-				acc,
-			),
+	const setResults = (results: SearchSuggestion[]) => {
+		setSuggestions(results);
+		setResultState(
+			results.length === 0 ? ResultState.NO_RESULTS : ResultState.GOOD,
 		);
-	}
+		setSelection(util.coerceIn(selection, 0, results.length - 1));
+	};
 
-	private stateSearchClear(searchValue: string | undefined = undefined) {
-		let obj: any = {
-			suggestions: [],
-			error: false,
-			noResults: false,
-			selection: 0,
-		};
-		if (searchValue !== undefined) obj.searchValue = searchValue;
-
-		return new Promise<void>(acc => this.setState(obj, acc));
-	}
-
-	private stateSearchResults(results: SearchSuggestion[]) {
-		/* keep selection in bounds */
-		let newSelect = this.state.selection;
-		if (results.length === 0) {
-			newSelect = 0;
-		} else if (newSelect >= results.length) {
-			newSelect = results.length - 1;
-		}
-
-		return new Promise<void>(acc =>
-			this.setState(
-				{
-					suggestions: results,
-					error: false,
-					noResults: results.length === 0,
-					selection: newSelect,
-				},
-				acc,
-			),
-		);
-	}
-
-	private unFocusSearch() {
-		const search = this.searchRef.current;
-		if (search === null) return;
-
-		search.blur();
-	}
-
-	private selectAllSearch() {
-		const search = this.searchRef.current;
-		if (search === null) return;
-
-		search.selectionStart = 0;
-		search.selectionEnd = search.value.length;
-	}
-
-	private makeSearch(query: string) {
+	const makeSearch = (query: string) => {
 		if (query.length === 0) {
 			/* don't need to ask for empty search */
-			return this.stateSearchClear();
+			return Promise.resolve((clear(), []));
 		} else {
 			return util
-				.getRequest<SearchSuggestion[]>(`/api/collection/search/${query.replaceAll('#', '%23')}/10`)
-				.then(([code, data]) => (util.isGood(code, data) ? this.stateSearchResults(data) : this.stateSearchError()));
+				.getRequest<SearchSuggestion[]>(
+					`/api/collection/search/${query.replaceAll('#', '%23')}/10`,
+				)
+				.then(([, data]) => (setResults(data), data))
+				.catch(() => (stateSearchError(), undefined));
 		}
-	}
+	};
 
-	setElBool(target: HTMLOrSVGElement, name: string, value: boolean) {
-		value ? (target.dataset[name] = 't') : delete target.dataset[name];
-	}
-	getElBool(target: HTMLOrSVGElement, name: string) {
-		return target.dataset[name] !== undefined;
-	}
+	const onSearch = (suggestion: SearchSuggestion | undefined) => {
+		if (suggestion === undefined) {
+			navigate('/cards');
+		} else {
+			navigate(suggestion.url);
+		}
+	};
 
-	render() {
-		const { searchValue: initialValue, suggestions: initialSuggestions, selection: initialSelection, noResults: initialNoResults } = this.state;
+	return (
+		<div id="immr-search-area">
+			<div className="search-grid">
+				<KorInput
+					smart={false}
+					onKeyDown={event => {
+						if (suggestions === undefined) return;
 
-		const select = (value: string) => {
-			if (value.length === 0) return this.props.onSearch(undefined);
+						if (event.code === 'ArrowDown') {
+							event.preventDefault();
+							setSelection(
+								Math.min(selection + 1, suggestions.length - 1),
+							);
+						} else if (event.code === 'ArrowUp') {
+							event.preventDefault();
+							setSelection(Math.max(selection - 1, 0));
+						} else if (event.code === 'Escape') {
+							event.preventDefault();
+							event.currentTarget.blur();
+						} else if (event.code === 'Enter') {
+							event.preventDefault();
+							const value = event.currentTarget.value;
 
-			const searchSelection = this.state.selection;
-			const suggestions = this.state.suggestions;
+							if (waitingOnInput.current) {
+								++typingEventNo.current;
 
-			if (searchSelection < 0 || searchSelection >= suggestions.length) return;
-
-			this.props.onSearch(suggestions[searchSelection]);
-		};
-
-		return (
-			<div id="immr-search-area">
-				<div className="search-grid">
-					<input
-						ref={this.searchRef}
-						value={initialValue}
-						id="immr-search"
-						onFocus={event => {
-							/* select everything on click in */
-							this.selectAllSearch();
-							this.makeSearch(event.currentTarget.value);
-						}}
-						onBlur={() => {
-							this.stateSearchClear();
-							console.log('blur');
-						}}
-						onCompositionStart={event => this.setElBool(event.currentTarget, 'composing', true)}
-						onCompositionEnd={event => this.setElBool(event.currentTarget, 'composing', false)}
-						onKeyDown={event => {
-							if (this.getElBool(event.currentTarget, 'composing')) {
-								console.log('prevented');
-								return;
+								makeSearch(value).then(suggestions => {
+									if (suggestions !== undefined) {
+										onSearch(suggestions[selection]);
+									}
+								});
+							} else {
+								onSearch(suggestions[selection]);
 							}
-
-							const suggestions = this.state.suggestions;
-							const searchSelection = this.state.selection;
-							if (suggestions === undefined) return;
-
-							if (event.code === 'ArrowDown') {
-								event.preventDefault();
-								let newSelect = searchSelection + 1;
-								if (newSelect < suggestions.length) {
-									this.setState({ selection: newSelect });
-								}
-							} else if (event.code === 'ArrowUp') {
-								event.preventDefault();
-								let newSelect = searchSelection - 1;
-								if (newSelect >= 0) {
-									this.setState({ selection: newSelect });
-								}
-							} else if (event.code === 'Escape') {
-								event.preventDefault();
-								this.unFocusSearch();
-							} else if (event.code === 'Enter') {
-								event.preventDefault();
-								const value = event.currentTarget.value;
-
-								if (this.waitingOnInput) {
-									++this.currentGoodTypingEventNo;
-									this.makeSearch(value).then(() => select(value));
-								} else {
-									select(value);
-								}
-							}
-						}}
-						onInput={async event => {
+						}
+					}}
+					inputProps={{
+						id: 'immr-search',
+						value: searchValue,
+						onFocus: event => {
+							const search = event.currentTarget;
+							search.selectionStart = 0;
+							search.selectionEnd = search.value.length;
+							makeSearch(search.value);
+						},
+						onBlur: () => {
+							clear();
+						},
+						onInput: async event => {
 							const currentValue = event.currentTarget.value;
-							if (currentValue === this.state.searchValue) return;
+							if (currentValue === searchValue) return;
 
-							this.setState({
-								searchValue: currentValue,
-							});
+							setSearchValue(currentValue);
 
-							const thisNo = ++this.currentGoodTypingEventNo;
-							this.waitingOnInput = true;
+							const thisNo = ++typingEventNo.current;
+							waitingOnInput.current = true;
+
 							const query = event.currentTarget.value;
 
 							/* save search calls */
 							await util.wait(250);
-							if (this.currentGoodTypingEventNo != thisNo) return;
-							this.waitingOnInput = false;
+							if (typingEventNo.current != thisNo) return;
+							waitingOnInput.current = false;
 
-							this.makeSearch(query);
-						}}
-					/>
-					<button id="add-button" onClick={() => shared.goToNewPage('/new', [])}>
-						+
-					</button>
-				</div>
-				{initialSuggestions === undefined || initialNoResults || initialSuggestions.length > 0 ? (
-					<div id="immr-search-suggestions">
-						{initialSuggestions === undefined ? (
-							<div className="immr-search-suggestion error">Something went wrong...</div>
-						) : initialNoResults ? (
-							<div className="immr-search-suggestion error">No results</div>
-						) : (
-							initialSuggestions.map(({ word, ids }, i) => (
-								<div className={`immr-search-suggestion ${i === initialSelection ? 'selected' : ''}`}>
-									{word}
-									<div className="id">{ids.join(' ')}</div>
-								</div>
-							))
-						)}
-					</div>
-				) : null}
+							makeSearch(query);
+						},
+					}}
+				/>
+				<button id="add-button" onClick={() => navigate('/new')}>
+					+
+				</button>
 			</div>
-		);
-	}
-}
+			{suggestions === undefined ? null : (
+				<div id="immr-search-suggestions">
+					{resultState === ResultState.ERROR ? (
+						<div className="immr-search-suggestion error">
+							Something went wrong...
+						</div>
+					) : resultState === ResultState.NO_RESULTS ? (
+						<div className="immr-search-suggestion error">
+							No results
+						</div>
+					) : (
+						suggestions.map(({ word, ids }, i) => (
+							<div
+								className={`immr-search-suggestion ${
+									i === selection ? 'selected' : ''
+								}`}
+								key={word}
+							>
+								{word}
+								<div className="id">{ids.join(' ')}</div>
+							</div>
+						))
+					)}
+				</div>
+			)}
+		</div>
+	);
+};
+
+export default SearchBox;
