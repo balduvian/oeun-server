@@ -23,7 +23,7 @@ const Router = () => {
 			children: [
 				...resultTypes().map(resultType => ({
 					path: resultTypePaths[resultType],
-					element: <CardsPage mode={resultType} />,
+					element: <CardsPage mode={resultType} setWord={setWord} />,
 				})),
 				{
 					path: 'new',

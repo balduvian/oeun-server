@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { Card, MessageResponse, Part, ResultType } from './types';
 import * as util from './util';
 import EditPanel from './editPanel';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { getParts } from './partsBadges';
 import ErrorDisplay from './errorDisplay';
 
 type Props = {
 	mode: ResultType;
+	setWord: (word: string) => void;
 };
 
 const initialGetRequest = (id: string | undefined, mode: ResultType) => {
@@ -30,11 +31,14 @@ const initialGetRequest = (id: string | undefined, mode: ResultType) => {
 	}
 };
 
-const CardsPage = ({ mode }: Props) => {
+const CardsPage = ({ mode, setWord }: Props) => {
 	const [parts, setParts] = useState<Part[]>([]);
 	const [cards, setCards] = useState<Card[]>([]);
+	const [cardsWord, setCardsWord] = useState('');
 	const [collectionSize, setCollectionSize] = useState(0);
 	const [error, setError] = useState(false);
+
+	const navigate = useNavigate();
 
 	const params = useParams();
 
@@ -44,7 +48,10 @@ const CardsPage = ({ mode }: Props) => {
 		const getCards = initialGetRequest(params['id'], mode);
 		if (getCards !== undefined) {
 			getCards
-				.then(([, data]) => setCards(data.cards))
+				.then(([, data]) => {
+					setCardsWord(data.cards[0].word ?? '');
+					setCards(data.cards);
+				})
 				.catch(() => setError(true));
 		} else {
 			util.getRequest<{ value: number }>('/api/collection/size')
@@ -63,27 +70,40 @@ const CardsPage = ({ mode }: Props) => {
 					</div>
 				</div>
 			) : (
-				cards.map(card => (
-					<EditPanel
-						key={card.id}
-						card={card}
-						parts={parts}
-						onDelete={deletedId =>
-							util
-								.deleteRequest<MessageResponse>(
-									`/api/collection/${deletedId}`,
-								)
-								.then(() =>
-									setCards(
-										cards.filter(
-											card => card.id !== deletedId,
+				<>
+					{cards.map(card => (
+						<EditPanel
+							key={card.id}
+							card={card}
+							parts={parts}
+							onDelete={deletedId =>
+								util
+									.deleteRequest<MessageResponse>(
+										`/api/collection/${deletedId}`,
+									)
+									.then(() =>
+										setCards(
+											cards.filter(
+												card => card.id !== deletedId,
+											),
 										),
-									),
-								)
-								.catch(ex => console.log(ex))
-						}
-					/>
-				))
+									)
+									.catch(ex => console.log(ex))
+							}
+						/>
+					))}
+					{mode === ResultType.HOMONYM ? (
+						<button
+							className="add-button"
+							onClick={() => {
+								setWord(cardsWord);
+								navigate('/new');
+							}}
+						>
+							+
+						</button>
+					) : null}
+				</>
 			)}
 		</ErrorDisplay>
 	);
