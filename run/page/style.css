@@ -1,6 +1,7 @@
 :root {
   --immr-background-color: #1f1f1f;
   --immr-active-color: #4287f5;
+  --super-gold: #ffe17d;
   --gold: rgb(205, 182, 103);
   --red: rgb(163, 54, 54);
 
@@ -26,10 +27,6 @@
 .search-grid {
   margin-top: 10px;
   position: relative;
-
-  display: grid;
-  grid-template-columns: 1fr 40px;
-  column-gap: 10px;
 
   width: calc(100% - 40px);
   height: 40px;
@@ -97,6 +94,8 @@
   row-gap: 2.5px;
 
   background-color: white;
+
+  filter: drop-shadow(5px 5px 5px #000)
 }
 
 .immr-search-suggestion {
@@ -113,9 +112,18 @@
   background-color: var(--immr-background-color);
 }
 
+.immr-search-suggestion.add {
+  color: var(--gold);
+}
+
 .immr-search-suggestion.selected {
   background-color: var(--immr-active-color);
   color: black;
+}
+
+.immr-search-suggestion.add.selected {
+  color: var(--immr-background-color);
+  background-color: var(--gold);
 }
 
 .immr-search-suggestion.error {
@@ -147,6 +155,14 @@
 
 .immr-search-suggestion.selected > .id {
   color: black;
+}
+
+.immr-search-suggestion > .add-plus {
+  width: 30px;
+  height: 30px;
+  text-align: center;
+  position: absolute;
+  left: 0;
 }
 
 #immr-panel > #immr-card-panel:last-child {

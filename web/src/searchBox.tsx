@@ -1,34 +1,25 @@
 import { useState, useRef } from 'react';
-import { SearchSuggestion } from './types';
+import { SearchSuggestion, SuggestionSpecial } from './types';
 import * as util from './util';
 import { KorInput } from './korInput';
 import { useNavigate } from 'react-router-dom';
 
 enum ResultState {
 	GOOD,
-	NO_RESULTS,
 	ERROR,
 }
 
-export type Props = {
+type Props = {
 	searchValue: string;
 	setSearchValue: (value: string) => void;
+	setWord: (word: string) => void;
 };
 
-export type State = {
-	suggestions: SearchSuggestion[];
-	error: boolean;
-	noResults: boolean;
-	selection: number;
-};
-
-const SearchBox = ({ searchValue, setSearchValue }: Props) => {
+const SearchBox = ({ searchValue, setSearchValue, setWord }: Props) => {
 	const waitingOnInput = useRef(false);
 	const typingEventNo = useRef(0);
 
-	const [suggestions, setSuggestions] = useState<
-		SearchSuggestion[] | undefined
-	>(undefined);
+	const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
 	const [resultState, setResultState] = useState<ResultState>(
 		ResultState.GOOD,
 	);
@@ -43,17 +34,26 @@ const SearchBox = ({ searchValue, setSearchValue }: Props) => {
 	};
 
 	const clear = (searchValue?: string) => {
-		setSuggestions(undefined);
+		setSuggestions([]);
 		setResultState(ResultState.GOOD);
 		setSelection(0);
 		if (searchValue !== undefined) setSearchValue(searchValue);
 	};
 
-	const setResults = (results: SearchSuggestion[]) => {
+	const setResults = (query: string, results: SearchSuggestion[]) => {
+		/* add the create link */
+		const firstResult = results[0] as SearchSuggestion | undefined;
+		if (firstResult === undefined || firstResult.word !== query) {
+			results.splice(0, 0, {
+				word: query,
+				ids: [],
+				url: '/new',
+				special: SuggestionSpecial.ADD,
+			});
+		}
+
 		setSuggestions(results);
-		setResultState(
-			results.length === 0 ? ResultState.NO_RESULTS : ResultState.GOOD,
-		);
+		setResultState(ResultState.GOOD);
 		setSelection(util.coerceIn(selection, 0, results.length - 1));
 	};
 
@@ -66,14 +66,18 @@ const SearchBox = ({ searchValue, setSearchValue }: Props) => {
 				.getRequest<SearchSuggestion[]>(
 					`/api/collection/search/${query.replaceAll('#', '%23')}/10`,
 				)
-				.then(([, data]) => (setResults(data), data))
+				.then(([, data]) => (setResults(query, data), data))
 				.catch(() => (stateSearchError(), undefined));
 		}
 	};
 
 	const onSearch = (suggestion: SearchSuggestion | undefined) => {
 		(document.activeElement as HTMLElement | null)?.blur();
-		if (suggestion === undefined) {
+		if (suggestion?.special === SuggestionSpecial.ADD) {
+			clear(suggestion.word);
+			setWord(suggestion.word);
+			navigate('/new');
+		} else if (suggestion === undefined) {
 			clear('');
 			navigate('/cards');
 		} else {
@@ -150,34 +154,29 @@ const SearchBox = ({ searchValue, setSearchValue }: Props) => {
 						},
 					}}
 				/>
-				<button
-					id="add-button"
-					onClick={() => {
-						setSearchValue('');
-						navigate('/new');
-					}}
-				>
-					+
-				</button>
 			</div>
-			{suggestions === undefined ? null : (
+			{suggestions.length === 0 &&
+			resultState === ResultState.GOOD ? null : (
 				<div id="immr-search-suggestions">
 					{resultState === ResultState.ERROR ? (
 						<div className="immr-search-suggestion error">
 							Something went wrong...
 						</div>
-					) : resultState === ResultState.NO_RESULTS ? (
-						<div className="immr-search-suggestion error">
-							No results
-						</div>
 					) : (
-						suggestions.map(({ word, ids }, i) => (
+						suggestions.map(({ word, ids, special }, i) => (
 							<div
 								className={`immr-search-suggestion ${
 									i === selection ? 'selected' : ''
+								} ${
+									special === SuggestionSpecial.ADD
+										? 'add'
+										: ''
 								}`}
 								key={word}
 							>
+								{special === SuggestionSpecial.ADD ? (
+									<div className="add-plus">+</div>
+								) : null}
 								{word}
 								<div className="id">{ids.join(' ')}</div>
 							</div>

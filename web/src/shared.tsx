@@ -47,7 +47,8 @@ export const onPasteImage = async (
 				item => item.type === 'image/png' || item.type === 'image/jpeg',
 			)
 			?.getAsFile() ?? undefined;
-	if (file === undefined) return Promise.reject();
+
+	if (file === undefined) throw new Error('Did not paste an image');
 
 	const buffer = await file.arrayBuffer();
 

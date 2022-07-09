@@ -1,11 +1,5 @@
 import * as react from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
-import {
-	ErrorResonse as ErrorResponse,
-	Highlights,
-	NewCard,
-	NewField,
-} from './types';
+import { ErrorResonse as ErrorResponse, Highlights } from './types';
 
 export const OK = 200;
 
@@ -93,21 +87,6 @@ export const strToHighlights = (str: string) => {
 
 	return ret;
 };
-
-const blankNewField = <T>(nullable: boolean): NewField<T> => ({
-	value: undefined,
-	nullable: nullable,
-	error: false,
-	ref: react.createRef(),
-});
-
-export const blankNewCard = (): NewCard => ({
-	word: blankNewField(false),
-	part: blankNewField(true),
-	definition: blankNewField(false),
-	sentence: blankNewField(true),
-	picture: blankNewField(true),
-});
 
 export const setElBool = (
 	target: HTMLOrSVGElement,

@@ -1,5 +1,5 @@
 import * as reactDom from 'react-dom/client';
-import { BrowserRouter, Outlet, Route, useRoutes } from 'react-router-dom';
+import { BrowserRouter, useRoutes } from 'react-router-dom';
 import { useState } from 'react';
 import CardsPage from './cardsPage';
 import { NewPage } from './newPage';
@@ -7,7 +7,8 @@ import { resultTypePaths, resultTypes } from './types';
 import App from './app';
 
 const Router = () => {
-	const [searchValue, setSearchValue] = useState<string>('');
+	const [searchValue, setSearchValue] = useState('');
+	const [word, setWord] = useState('');
 
 	return useRoutes([
 		{
@@ -16,20 +17,23 @@ const Router = () => {
 				<App
 					searchValue={searchValue}
 					setSearchValue={setSearchValue}
+					setWord={setWord}
 				/>
 			),
 			children: [
-				{
-					path: 'cards/',
-					element: <Outlet />,
-					children: resultTypes().map(resultType => ({
-						path: resultTypePaths[resultType],
-						element: <CardsPage mode={resultType} />,
-					})),
-				},
+				...resultTypes().map(resultType => ({
+					path: resultTypePaths[resultType],
+					element: <CardsPage mode={resultType} />,
+				})),
 				{
 					path: 'new',
-					element: <NewPage setSearchValue={setSearchValue} />,
+					element: (
+						<NewPage
+							setSearchValue={setSearchValue}
+							word={word}
+							setWord={setWord}
+						/>
+					),
 				},
 			],
 		},

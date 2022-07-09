@@ -16,11 +16,11 @@ export const resultTypes = () =>
 		ResultType.NONE,
 	] as const;
 export const resultTypePaths = [
-	'homonym/:id',
-	'card/:id',
-	'latest',
-	'random',
-	'*',
+	'cards/homonym/:id',
+	'cards/card/:id',
+	'cards/latest',
+	'cards/random',
+	'cards',
 ];
 
 export type Part = {
@@ -29,10 +29,15 @@ export type Part = {
 	korean: string;
 };
 
+export enum SuggestionSpecial {
+	ADD,
+}
+
 export type SearchSuggestion = {
 	word: string;
 	ids: number[];
 	url: string;
+	special?: SuggestionSpecial;
 };
 
 export type Highlights = { part: string; highlight: boolean }[];
@@ -53,21 +58,6 @@ export type Card = {
 
 export type Editing = {
 	[key: string]: { initial: string | undefined; editing: boolean };
-};
-
-export type NewField<T> = {
-	value: string | undefined;
-	nullable: boolean;
-	error: boolean;
-	ref: react.RefObject<T>;
-};
-
-export type NewCard = {
-	word: NewField<HTMLInputElement>;
-	part: NewField<HTMLSelectElement>;
-	definition: NewField<HTMLInputElement>;
-	sentence: NewField<HTMLInputElement>;
-	picture: NewField<HTMLInputElement>;
 };
 
 export type CardPostResponse = {

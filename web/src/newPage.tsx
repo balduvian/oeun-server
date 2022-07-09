@@ -1,12 +1,5 @@
-import { useEffect, useState } from 'react';
-import {
-	Card,
-	NewCard,
-	Part,
-	NewField,
-	MessageResponse,
-	CardPostResponse,
-} from './types';
+import React, { useEffect, useState } from 'react';
+import { Card, Part, MessageResponse, CardPostResponse } from './types';
 import * as util from './util';
 import * as shared from './shared';
 import { getParts } from './partsBadges';
@@ -16,43 +9,112 @@ import { useNavigate } from 'react-router-dom';
 
 type Props = {
 	setSearchValue: (searchValue: string) => void;
+	word: string;
+	setWord: (word: string) => void;
 };
 
-const newCardField = (
-	newCard: NewCard,
-	cardField: keyof NewCard,
-	prettyName: string,
-) => {
-	const field = newCard[cardField] as NewField<HTMLInputElement>;
-	return (
+type NewCardFieldProps = {
+	value: string;
+	error: boolean;
+	setValue: (value: string) => void;
+	prettyName: string;
+};
+
+const NewCardField = React.memo(
+	({ value, error, setValue, prettyName }: NewCardFieldProps) => (
 		<div className="immr-card-row">
-			<p className={`new-caption ${field.error ? 'error' : ''}`}>
+			<p className={`new-caption ${error ? 'error' : ''}`}>
 				{prettyName}
 			</p>
 			<KorInput
 				smart={true}
-				inputProps={{ className: 'new-card-field', ref: field.ref }}
+				inputProps={{
+					className: 'new-card-field',
+					value: value ?? '',
+					onInput: event => {
+						const newValue = event.currentTarget.value;
+						setValue(newValue);
+					},
+				}}
 			/>
 		</div>
-	);
-};
-
-const newPartField = (newCard: NewCard, parts: Part[]) => (
-	<div className="immr-card-row">
-		<p className="new-caption">Part of speech</p>
-		<select
-			ref={newCard.part.ref}
-			className="new-select"
-			value={newCard.part.value}
-		>
-			{shared.partOptions(parts)}
-		</select>
-	</div>
+	),
 );
 
-export const NewPage = ({ setSearchValue }: Props) => {
+type NewPartFieldProps = {
+	value: string;
+	setValue: (value: string) => void;
+	parts: Part[];
+};
+
+const NewPartField = React.memo(
+	({ value, setValue, parts }: NewPartFieldProps) => (
+		<div className="immr-card-row">
+			<p className="new-caption">Part of speech</p>
+			<select
+				className="new-select"
+				value={value}
+				onChange={event => {
+					setValue(event.currentTarget.value);
+				}}
+			>
+				{shared.partOptions(parts)}
+			</select>
+		</div>
+	),
+);
+
+type NewPictureFieldProps = {
+	value: string;
+	setValue: (value: string) => void;
+};
+
+const NewPictureField = React.memo(
+	({ value, setValue }: NewPictureFieldProps) => (
+		<div className="immr-card-row">
+			<p className="new-caption">Picture</p>
+			{shared.pictureInput(
+				'image-container',
+				<input
+					readOnly
+					onKeyDown={event => {
+						if (event.code === 'Delete') {
+							event.preventDefault();
+							setValue('');
+						}
+					}}
+					onPaste={async event => {
+						event.preventDefault();
+						try {
+							const [buffer, filename] =
+								await shared.onPasteImage(event);
+
+							await util.imagePostRequest<MessageResponse>(
+								`/api/images/${filename}`,
+								buffer,
+							);
+
+							setValue(filename);
+						} catch (err) {
+							console.log(err);
+						}
+					}}
+				/>,
+				value === '' ? undefined : value,
+			)}
+		</div>
+	),
+);
+
+export const NewPage = ({ word, setWord, setSearchValue }: Props) => {
 	const [parts, setParts] = useState<Part[]>([]);
-	const [newCard, setNewCard] = useState<NewCard>(() => util.blankNewCard());
+	const [part, setPart] = useState('');
+	const [definition, setDefinition] = useState('');
+	const [sentence, setSentence] = useState('');
+	const [picture, setPicture] = useState('');
+	const [fieldErrors, setFieldErrors] = useState<
+		[boolean, boolean, boolean, boolean, boolean]
+	>([false, false, false, false, false]);
 	const [error, setError] = useState(false);
 
 	const navigate = useNavigate();
@@ -61,75 +123,51 @@ export const NewPage = ({ setSearchValue }: Props) => {
 		getParts(setParts, setError);
 	}, []);
 
-	const newPictureField = (newCard: NewCard) => (
-		<div className="immr-card-row">
-			<p className="new-caption">Picture</p>
-			{shared.pictureInput(
-				'image-container',
-				<input
-					readOnly
-					ref={newCard.picture.ref}
-					onKeyDown={event => {
-						if (event.code === 'Delete') {
-							event.preventDefault();
+	const clearErrors = () => {
+		setFieldErrors([false, false, false, false, false]);
+	};
 
-							newCard.picture.value = '';
-							setNewCard({ ...newCard });
-						}
-					}}
-					onPaste={async event => {
-						event.preventDefault();
+	const makeFieldError = (i: number) => {
+		setFieldErrors(arr => {
+			arr[i] = true;
+			return [...arr];
+		});
+	};
 
-						const [buffer, filename] = await shared.onPasteImage(
-							event,
-						);
-
-						util.imagePostRequest<MessageResponse>(
-							`/api/images/${filename}`,
-							buffer,
-						)
-							.then(() => {
-								if (newCard.picture.ref.current !== null)
-									newCard.picture.ref.current.value =
-										filename;
-								newCard.picture.value = filename;
-								setNewCard({ ...newCard });
-							})
-							.catch(ex => console.log(ex));
-					}}
-				/>,
-				newCard.picture.value,
-			)}
-		</div>
-	);
+	const realValue = (value: string) => {
+		const trimmed = value.trim();
+		return trimmed === '' ? undefined : trimmed;
+	};
 
 	const create = () => {
+		clearErrors();
 		let foundError = false;
-		const fields = Object.keys(newCard) as (keyof NewCard)[];
 
-		for (const fieldName of fields) {
-			const field = newCard[fieldName];
+		const fields = [
+			[word, false],
+			[part, true],
+			[definition, false],
+			[sentence, true],
+			[picture, true],
+		] as const;
 
-			/* the real value which will be passed */
-			field.value = field.ref.current?.value;
-			if (field.value === '') field.value = undefined;
+		for (let i = 0; i < fields.length; ++i) {
+			const [fieldValue, nullable] = fields[i];
 
-			if (field.value === undefined && !field.nullable) {
-				field.error = true;
+			if (!nullable && realValue(fieldValue) === undefined) {
+				makeFieldError(i);
 				foundError = true;
 			}
 		}
 
-		if (foundError) {
-			setNewCard({ ...newCard });
-		} else {
+		if (!foundError) {
 			const uploadCard: Card = {
 				id: 0,
-				word: newCard.word.value as string,
-				part: newCard.part.value,
-				definition: newCard.definition.value as string,
-				sentence: newCard.sentence.value,
-				picture: newCard.picture.value,
+				word: word,
+				part: realValue(part),
+				definition: definition,
+				sentence: realValue(sentence),
+				picture: realValue(picture),
 				date: new Date(),
 				badges: [],
 			};
@@ -151,11 +189,26 @@ export const NewPage = ({ setSearchValue }: Props) => {
 	return (
 		<ErrorDisplay error={error}>
 			<div id="immr-card-panel">
-				{newCardField(newCard, 'word', 'Word *')}
-				{newPartField(newCard, parts)}
-				{newCardField(newCard, 'definition', 'Definition *')}
-				{newCardField(newCard, 'sentence', 'Sentence')}
-				{newPictureField(newCard)}
+				<NewCardField
+					value={word}
+					error={fieldErrors[0]}
+					setValue={setWord}
+					prettyName="Word *"
+				/>
+				<NewPartField value={part} setValue={setPart} parts={parts} />
+				<NewCardField
+					value={definition}
+					error={fieldErrors[2]}
+					setValue={setDefinition}
+					prettyName="Definition *"
+				/>
+				<NewCardField
+					value={sentence}
+					error={fieldErrors[3]}
+					setValue={setSentence}
+					prettyName="Sentence"
+				/>
+				<NewPictureField value={picture} setValue={setPicture} />
 				<div className="immr-card-row">
 					<div className="button-grid">
 						<button
