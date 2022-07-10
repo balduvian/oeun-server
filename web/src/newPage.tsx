@@ -5,12 +5,12 @@ import * as shared from './shared';
 import { getParts } from './partsBadges';
 import { KorInput } from './korInput';
 import ErrorDisplay from './errorDisplay';
-import { useNavigate } from 'react-router-dom';
 
 type Props = {
 	setSearchValue: (searchValue: string) => void;
 	word: string;
 	setWord: (word: string) => void;
+	setRoute: (route: string) => void;
 };
 
 type NewCardFieldProps = {
@@ -106,7 +106,7 @@ const NewPictureField = React.memo(
 	),
 );
 
-export const NewPage = ({ word, setWord, setSearchValue }: Props) => {
+export const NewPage = ({ word, setWord, setSearchValue, setRoute }: Props) => {
 	const [parts, setParts] = useState<Part[]>([]);
 	const [part, setPart] = useState('');
 	const [definition, setDefinition] = useState('');
@@ -116,8 +116,6 @@ export const NewPage = ({ word, setWord, setSearchValue }: Props) => {
 		[boolean, boolean, boolean, boolean, boolean]
 	>([false, false, false, false, false]);
 	const [error, setError] = useState(false);
-
-	const navigate = useNavigate();
 
 	useEffect(() => {
 		getParts(setParts, setError);
@@ -178,7 +176,7 @@ export const NewPage = ({ word, setWord, setSearchValue }: Props) => {
 			).then(([code, data]) => {
 				if (util.isGood(code, data)) {
 					setSearchValue(data.word);
-					navigate(data.url);
+					setRoute(data.url);
 				} else {
 					setError(true);
 				}
@@ -213,7 +211,7 @@ export const NewPage = ({ word, setWord, setSearchValue }: Props) => {
 					<div className="button-grid">
 						<button
 							className="new-button"
-							onClick={() => navigate('/cards')}
+							onClick={() => setRoute('/cards')}
 						>
 							Cancel
 						</button>

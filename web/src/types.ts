@@ -16,11 +16,11 @@ export const resultTypes = () =>
 		ResultType.NONE,
 	] as const;
 export const resultTypePaths = [
-	'cards/homonym/:id',
-	'cards/card/:id',
-	'cards/latest',
-	'cards/random',
-	'cards',
+	'/cards/homonym/:id',
+	'/cards/card/:id',
+	'/cards/latest',
+	'/cards/random',
+	'*',
 ];
 
 export type Part = {

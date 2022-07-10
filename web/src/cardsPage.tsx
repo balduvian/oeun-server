@@ -2,23 +2,22 @@ import { useEffect, useState } from 'react';
 import { Card, MessageResponse, Part, ResultType } from './types';
 import * as util from './util';
 import EditPanel from './editPanel';
-import { useNavigate, useParams } from 'react-router-dom';
 import { getParts } from './partsBadges';
 import ErrorDisplay from './errorDisplay';
 
 type Props = {
 	mode: ResultType;
+	id: number;
 	setWord: (word: string) => void;
+	setRoute: (route: string) => void;
 };
 
-const initialGetRequest = (id: string | undefined, mode: ResultType) => {
+const initialGetRequest = (id: number, mode: ResultType) => {
 	if (mode === ResultType.CARD) {
-		if (id === undefined) return Promise.reject();
 		return util.getRequest<{ cards: Card[] }>(
 			`/api/collection/homonym/card/${id}`,
 		);
 	} else if (mode === ResultType.HOMONYM) {
-		if (id === undefined) return Promise.reject();
 		return util.getRequest<{ cards: Card[] }>(
 			`/api/collection/homonym/${id}`,
 		);
@@ -31,21 +30,17 @@ const initialGetRequest = (id: string | undefined, mode: ResultType) => {
 	}
 };
 
-const CardsPage = ({ mode, setWord }: Props) => {
+const CardsPage = ({ mode, id, setWord, setRoute }: Props) => {
 	const [parts, setParts] = useState<Part[]>([]);
 	const [cards, setCards] = useState<Card[]>([]);
 	const [cardsWord, setCardsWord] = useState('');
 	const [collectionSize, setCollectionSize] = useState(0);
 	const [error, setError] = useState(false);
 
-	const navigate = useNavigate();
-
-	const params = useParams();
-
 	useEffect(() => {
 		getParts(setParts, setError);
 
-		const getCards = initialGetRequest(params['id'], mode);
+		const getCards = initialGetRequest(id, mode);
 		if (getCards !== undefined) {
 			getCards
 				.then(([, data]) => {
@@ -58,7 +53,7 @@ const CardsPage = ({ mode, setWord }: Props) => {
 				.then(([, data]) => setCollectionSize(data.value))
 				.catch(() => setError(true));
 		}
-	}, [mode, params]);
+	}, [mode, id]);
 
 	return (
 		<ErrorDisplay error={error}>
@@ -97,7 +92,7 @@ const CardsPage = ({ mode, setWord }: Props) => {
 							className="add-button"
 							onClick={() => {
 								setWord(cardsWord);
-								navigate('/new');
+								setRoute('/new');
 							}}
 						>
 							+

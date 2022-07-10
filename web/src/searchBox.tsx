@@ -2,7 +2,6 @@ import { useState, useRef } from 'react';
 import { SearchSuggestion, SuggestionSpecial } from './types';
 import * as util from './util';
 import { KorInput } from './korInput';
-import { useNavigate } from 'react-router-dom';
 
 enum ResultState {
 	GOOD,
@@ -13,9 +12,15 @@ type Props = {
 	searchValue: string;
 	setSearchValue: (value: string) => void;
 	setWord: (word: string) => void;
+	setRoute: (route: string) => void;
 };
 
-const SearchBox = ({ searchValue, setSearchValue, setWord }: Props) => {
+const SearchBox = ({
+	searchValue,
+	setSearchValue,
+	setWord,
+	setRoute,
+}: Props) => {
 	const waitingOnInput = useRef(false);
 	const typingEventNo = useRef(0);
 
@@ -24,8 +29,6 @@ const SearchBox = ({ searchValue, setSearchValue, setWord }: Props) => {
 		ResultState.GOOD,
 	);
 	const [selection, setSelection] = useState<number>(0);
-
-	const navigate = useNavigate();
 
 	const stateSearchError = () => {
 		setSuggestions([]);
@@ -76,13 +79,13 @@ const SearchBox = ({ searchValue, setSearchValue, setWord }: Props) => {
 		if (suggestion?.special === SuggestionSpecial.ADD) {
 			clear(suggestion.word);
 			setWord(suggestion.word);
-			navigate('/new');
+			setRoute('/new');
 		} else if (suggestion === undefined) {
 			clear('');
-			navigate('/cards');
+			setRoute('/cards');
 		} else {
 			clear(suggestion.word);
-			navigate(suggestion.url);
+			setRoute(suggestion.url);
 		}
 	};
 
