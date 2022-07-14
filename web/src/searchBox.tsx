@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
+import { composingEvents, isComposing } from './korInput';
 import { SearchSuggestion, SuggestionSpecial } from './types';
 import * as util from './util';
-import { KorInput } from './korInput';
 
 enum ResultState {
 	GOOD,
@@ -92,9 +92,10 @@ const SearchBox = ({
 	return (
 		<div id="immr-search-area">
 			<div className="search-grid">
-				<KorInput
-					smart={false}
+				<input
+					{...composingEvents}
 					onKeyDown={event => {
+						if (isComposing(event)) return;
 						if (suggestions === undefined) return;
 
 						if (event.code === 'ArrowDown') {
@@ -125,36 +126,34 @@ const SearchBox = ({
 							}
 						}
 					}}
-					inputProps={{
-						id: 'immr-search',
-						value: searchValue,
-						onFocus: event => {
-							const search = event.currentTarget;
-							search.selectionStart = 0;
-							search.selectionEnd = search.value.length;
-							makeSearch(search.value);
-						},
-						onBlur: () => {
-							clear();
-						},
-						onInput: async event => {
-							const currentValue = event.currentTarget.value;
-							if (currentValue === searchValue) return;
+					id="immr-search"
+					value={searchValue}
+					onFocus={event => {
+						const search = event.currentTarget;
+						search.selectionStart = 0;
+						search.selectionEnd = search.value.length;
+						makeSearch(search.value);
+					}}
+					onBlur={() => {
+						clear();
+					}}
+					onInput={async event => {
+						const currentValue = event.currentTarget.value;
+						if (currentValue === searchValue) return;
 
-							setSearchValue(currentValue);
+						setSearchValue(currentValue);
 
-							const thisNo = ++typingEventNo.current;
-							waitingOnInput.current = true;
+						const thisNo = ++typingEventNo.current;
+						waitingOnInput.current = true;
 
-							const query = event.currentTarget.value;
+						const query = event.currentTarget.value;
 
-							/* save search calls */
-							await util.wait(250);
-							if (typingEventNo.current != thisNo) return;
-							waitingOnInput.current = false;
+						/* save search calls */
+						await util.wait(250);
+						if (typingEventNo.current != thisNo) return;
+						waitingOnInput.current = false;
 
-							makeSearch(query);
-						},
+						makeSearch(query);
 					}}
 				/>
 			</div>

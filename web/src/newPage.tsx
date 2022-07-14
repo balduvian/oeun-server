@@ -3,7 +3,12 @@ import { Card, Part, MessageResponse, CardPostResponse } from './types';
 import * as util from './util';
 import * as shared from './shared';
 import { getParts } from './partsBadges';
-import { KorInput } from './korInput';
+import {
+	composingEvents,
+	doBracketing,
+	isComposing,
+	setSelection,
+} from './korInput';
 import ErrorDisplay from './errorDisplay';
 
 type Props = {
@@ -26,15 +31,22 @@ const NewCardField = React.memo(
 			<p className={`new-caption ${error ? 'error' : ''}`}>
 				{prettyName}
 			</p>
-			<KorInput
-				smart={true}
-				inputProps={{
-					className: 'new-card-field',
-					value: value ?? '',
-					onInput: event => {
-						const newValue = event.currentTarget.value;
-						setValue(newValue);
-					},
+			<input
+				{...composingEvents}
+				onKeyDown={event => {
+					if (isComposing(event)) return;
+
+					const bracketing = doBracketing(event);
+					if (bracketing !== undefined) {
+						setSelection(event, bracketing);
+						setValue(bracketing.text);
+					}
+				}}
+				className="new-card-field"
+				value={value ?? ''}
+				onInput={event => {
+					const newValue = event.currentTarget.value;
+					setValue(newValue);
 				}}
 			/>
 		</div>

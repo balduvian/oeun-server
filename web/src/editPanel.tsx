@@ -3,7 +3,12 @@ import WindowEvent from './windowEvent';
 import { Card, EditHistory, Part, Editing, MessageResponse } from './types';
 import * as util from './util';
 import * as shared from './shared';
-import { externalDoBracketing, getSelection, setSelection } from './korInput';
+import {
+	composingEvents,
+	doBracketing,
+	isComposing,
+	setSelection,
+} from './korInput';
 
 type Props = {
 	card: Card;
@@ -173,7 +178,6 @@ const EditPanel = ({ card, parts, onDelete }: Props) => {
 		forField: keyof Card,
 	) => {
 		let cancelBlur = false;
-		let cancelTyping = false;
 		return (
 			<p
 				className={`immr-card-edit ${className}`}
@@ -182,24 +186,13 @@ const EditPanel = ({ card, parts, onDelete }: Props) => {
 				contentEditable
 				suppressContentEditableWarning={true}
 				tabIndex={100}
-				onCompositionStart={() => (cancelTyping = true)}
-				onCompositionEnd={() => (cancelTyping = false)}
+				{...composingEvents}
 				onKeyDown={event => {
-					if (cancelTyping) return;
+					if (isComposing(event)) return;
 
-					const bracketing = externalDoBracketing(
-						event,
-						event.currentTarget.textContent!,
-						getSelection(),
-					);
+					const bracketing = doBracketing(event);
 					if (bracketing !== undefined) {
-						const {
-							text,
-							selection: [start, end],
-						} = bracketing;
-						event.currentTarget.textContent = text;
-						setSelection(event.currentTarget, start, end);
-						event.preventDefault();
+						setSelection(event, bracketing);
 					} else if (
 						event.code === 'Escape' ||
 						(event.code === 'KeyZ' && event.ctrlKey)

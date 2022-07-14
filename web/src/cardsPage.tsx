@@ -49,6 +49,7 @@ const CardsPage = ({ mode, id, setWord, setRoute }: Props) => {
 				})
 				.catch(() => setError(true));
 		} else {
+			setCards([]);
 			util.getRequest<{ value: number }>('/api/collection/size')
 				.then(([, data]) => setCollectionSize(data.value))
 				.catch(() => setError(true));
@@ -76,13 +77,15 @@ const CardsPage = ({ mode, id, setWord, setRoute }: Props) => {
 									.deleteRequest<MessageResponse>(
 										`/api/collection/${deletedId}`,
 									)
-									.then(() =>
-										setCards(
-											cards.filter(
-												card => card.id !== deletedId,
-											),
-										),
-									)
+									.then(() => {
+										const newCards = cards.filter(
+											card => card.id !== deletedId,
+										);
+										setCards(newCards);
+										if (newCards.length === 0) {
+											setRoute('/cards');
+										}
+									})
 									.catch(ex => console.log(ex))
 							}
 						/>
