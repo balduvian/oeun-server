@@ -28,18 +28,12 @@ export const getParts = (
 		retrievedParts = undefined;
 
 	if (retrievedParts !== undefined) {
-		console.log(
-			`got parts with time: ${
-				retrievedParts.cacheTime
-			} | vs ${Date.now()}`,
-		);
 		setParts(retrievedParts.parts);
 	} else {
 		return fetchParts().then(fetchedParts => {
 			if (fetchedParts === undefined) {
 				setError(true);
 			} else {
-				console.log('Fetched new parts');
 				saveParts(fetchedParts);
 				setParts(fetchedParts);
 			}

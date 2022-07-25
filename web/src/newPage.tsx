@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { Card, Part, MessageResponse, CardPostResponse } from './types';
+import React, { useState } from 'react';
+import { Card, Part, MessageResponse, CardPostResponse, Setter } from './types';
 import * as util from './util';
 import * as shared from './shared';
-import { getParts } from './partsBadges';
 import {
 	composingEvents,
 	doBracketing,
 	isComposing,
 	setSelection,
 } from './korInput';
-import ErrorDisplay from './errorDisplay';
 
 type Props = {
 	setSearchValue: (searchValue: string) => void;
 	word: string;
-	setWord: (word: string) => void;
-	setRoute: (route: string) => void;
+	setWord: Setter<string>;
+	goTo: (url: string) => void;
+	parts: Part[];
+	setError: Setter<boolean>;
 };
 
 type NewCardFieldProps = {
@@ -118,8 +118,14 @@ const NewPictureField = React.memo(
 	),
 );
 
-export const NewPage = ({ word, setWord, setSearchValue, setRoute }: Props) => {
-	const [parts, setParts] = useState<Part[]>([]);
+export const NewPage = ({
+	word,
+	setWord,
+	setSearchValue,
+	goTo,
+	parts,
+	setError,
+}: Props) => {
 	const [part, setPart] = useState('');
 	const [definition, setDefinition] = useState('');
 	const [sentence, setSentence] = useState('');
@@ -127,11 +133,6 @@ export const NewPage = ({ word, setWord, setSearchValue, setRoute }: Props) => {
 	const [fieldErrors, setFieldErrors] = useState<
 		[boolean, boolean, boolean, boolean, boolean]
 	>([false, false, false, false, false]);
-	const [error, setError] = useState(false);
-
-	useEffect(() => {
-		getParts(setParts, setError);
-	}, []);
 
 	const clearErrors = () => {
 		setFieldErrors([false, false, false, false, false]);
@@ -188,7 +189,7 @@ export const NewPage = ({ word, setWord, setSearchValue, setRoute }: Props) => {
 			).then(([code, data]) => {
 				if (util.isGood(code, data)) {
 					setSearchValue(data.word);
-					setRoute(data.url);
+					goTo(data.url);
 				} else {
 					setError(true);
 				}
@@ -197,43 +198,41 @@ export const NewPage = ({ word, setWord, setSearchValue, setRoute }: Props) => {
 	};
 
 	return (
-		<ErrorDisplay error={error}>
-			<div id="immr-card-panel">
-				<NewCardField
-					value={word}
-					error={fieldErrors[0]}
-					setValue={setWord}
-					prettyName="Word *"
-				/>
-				<NewPartField value={part} setValue={setPart} parts={parts} />
-				<NewCardField
-					value={definition}
-					error={fieldErrors[2]}
-					setValue={setDefinition}
-					prettyName="Definition *"
-				/>
-				<NewCardField
-					value={sentence}
-					error={fieldErrors[3]}
-					setValue={setSentence}
-					prettyName="Sentence"
-				/>
-				<NewPictureField value={picture} setValue={setPicture} />
-				<div className="immr-card-row">
-					<div className="button-grid">
-						<button
-							className="new-button"
-							onClick={() => setRoute('/cards')}
-						>
-							Cancel
-						</button>
-						<button className="new-button" onClick={create}>
-							Create
-						</button>
-					</div>
+		<div id="immr-card-panel">
+			<NewCardField
+				value={word}
+				error={fieldErrors[0]}
+				setValue={setWord}
+				prettyName="Word *"
+			/>
+			<NewPartField value={part} setValue={setPart} parts={parts} />
+			<NewCardField
+				value={definition}
+				error={fieldErrors[2]}
+				setValue={setDefinition}
+				prettyName="Definition *"
+			/>
+			<NewCardField
+				value={sentence}
+				error={fieldErrors[3]}
+				setValue={setSentence}
+				prettyName="Sentence"
+			/>
+			<NewPictureField value={picture} setValue={setPicture} />
+			<div className="immr-card-row">
+				<div className="button-grid">
+					<button
+						className="new-button"
+						onClick={() => goTo('/cards')}
+					>
+						Cancel
+					</button>
+					<button className="new-button" onClick={create}>
+						Create
+					</button>
 				</div>
 			</div>
-		</ErrorDisplay>
+		</div>
 	);
 };
 

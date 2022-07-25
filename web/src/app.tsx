@@ -6,7 +6,7 @@ type Props = {
 	searchValue: string;
 	setSearchValue: (searchValue: string) => void;
 	setWord: (word: string) => void;
-	setRoute: (route: string) => void;
+	goTo: (url: string) => void;
 	children: ReactNode;
 };
 
@@ -14,7 +14,7 @@ const App = ({
 	searchValue,
 	setSearchValue,
 	setWord,
-	setRoute,
+	goTo,
 	children,
 }: Props) => {
 	return (
@@ -24,7 +24,7 @@ const App = ({
 				searchValue={searchValue}
 				setSearchValue={setSearchValue}
 				setWord={setWord}
-				setRoute={setRoute}
+				goTo={goTo}
 			/>
 			{children}
 		</div>

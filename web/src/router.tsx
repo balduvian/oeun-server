@@ -1,25 +1,31 @@
 import * as reactDom from 'react-dom/client';
-import { useState } from 'react';
-import CardsPage from './cardsPage';
+import { useEffect, useState } from 'react';
+import CardsPage, { onGoCards } from './cardsPage';
 import { NewPage } from './newPage';
-import { resultTypePaths, resultTypes } from './types';
+import { Badge, Card, Part, ResultType } from './types';
 import App from './app';
+import BadgesPage from './badgesPage';
+import { getParts } from './partsBadges';
 
+type Route = {
+	url: string;
+	element: () => JSX.Element | null;
+	onGo: (params: UrlParams) => void;
+};
 type UrlParams = { [key: string]: number };
+type RouteResult = { params: UrlParams; routeIndex: number };
 
-const matchUrl = (url: string, to: string) => {
-	if (to === '*') return {};
-
-	const urlParts = url.split('/');
-	const toParts = to.split('/');
+const matchUrl = (input: string, templateUrl: string) => {
+	const inputParts = input.split('/');
+	const templateParts = templateUrl.split('/');
 
 	const params: UrlParams = {};
 
-	if (urlParts.length !== toParts.length) return undefined;
+	if (inputParts.length !== templateParts.length) return undefined;
 
-	for (let i = 0; i < urlParts.length; ++i) {
-		const urlPart = urlParts[i].toLocaleLowerCase();
-		const toPart = toParts[i].toLocaleLowerCase();
+	for (let i = 0; i < inputParts.length; ++i) {
+		const urlPart = inputParts[i].toLocaleLowerCase();
+		const toPart = templateParts[i].toLocaleLowerCase();
 
 		if (toPart.startsWith(':')) {
 			const num = Number.parseInt(urlPart);
@@ -37,14 +43,18 @@ const matchUrl = (url: string, to: string) => {
 };
 
 const Router = () => {
-	const [route, setRoute] = useState('/');
+	const [routeResult, setRouteResult] = useState<RouteResult | undefined>(
+		undefined,
+	);
 	const [searchValue, setSearchValue] = useState('');
 	const [word, setWord] = useState('');
+	const [parts, setParts] = useState<Part[]>([]);
+	const [badges, setBadges] = useState<Badge[]>([]);
+	const [cards, setCards] = useState<Card[] | undefined>(undefined);
+	const [collectionSize, setCollectionSize] = useState<number>(0);
+	const [error, setError] = useState<boolean>(false);
 
-	const routes: {
-		url: string;
-		element: (params: UrlParams) => JSX.Element;
-	}[] = [
+	const routes: Route[] = [
 		{
 			url: '/new',
 			element: () => (
@@ -52,31 +62,101 @@ const Router = () => {
 					setSearchValue={setSearchValue}
 					word={word}
 					setWord={setWord}
-					setRoute={setRoute}
+					goTo={goTo}
+					parts={parts}
+					setError={setError}
 				/>
 			),
+			onGo: () => {
+				getParts(setParts, setError);
+			},
 		},
-		...resultTypes().map(resultType => ({
-			url: resultTypePaths[resultType],
-			element: (params: UrlParams) => (
-				<CardsPage
-					mode={resultType}
-					id={params['id']}
-					setWord={setWord}
-					setRoute={setRoute}
-				/>
-			),
+		{
+			url: '/badges',
+			element: () => <BadgesPage />,
+			onGo: () => {},
+		},
+		...(
+			[
+				[ResultType.HOMONYM, '/cards/homonym/:id'],
+				[ResultType.CARD, '/cards/card/:id'],
+				[ResultType.LATEST, '/cards/latest'],
+				[ResultType.RANDOM, '/cards/random'],
+				[ResultType.NONE, '/cards'],
+				[ResultType.NONE, '/'],
+			] as const
+		).map(([resultType, url]) => ({
+			url: url,
+			element: () =>
+				cards === undefined ? null : (
+					<CardsPage
+						mode={resultType}
+						setWord={setWord}
+						goTo={goTo}
+						cards={cards}
+						setCards={setCards}
+						word={word}
+						collectionSize={collectionSize}
+						parts={parts}
+					/>
+				),
+			onGo: (params: UrlParams) =>
+				onGoCards(
+					params['id'],
+					resultType,
+					setParts,
+					setError,
+					setWord,
+					setCards,
+					setCollectionSize,
+				),
 		})),
 	];
 
-	const routeToElement = (route: string) => {
-		for (const { url, element } of routes) {
-			const params = matchUrl(route, url);
+	const findMatchingRoute = (url: string): RouteResult | undefined => {
+		for (let i = 0; i < routes.length; ++i) {
+			const params = matchUrl(url, routes[i].url);
 			if (params !== undefined) {
-				return element(params);
+				return { params: params, routeIndex: i };
 			}
 		}
-		return null;
+		return undefined;
+	};
+
+	const goTo = (url: string) => {
+		const result = findMatchingRoute(url);
+		setRouteResult(result);
+		if (result !== undefined) routes[result.routeIndex].onGo(result.params);
+		return undefined;
+	};
+
+	useEffect(() => {
+		const url = window.location.pathname;
+		goTo(url);
+	}, []);
+
+	const getRouteElement = () => {
+		if (error) {
+			<div className="blank-holder">
+				<p>An error occurred</p>
+			</div>;
+		}
+
+		if (routeResult === undefined) {
+			return (
+				<div className="blank-holder">
+					<p>404</p>
+				</div>
+			);
+		}
+
+		return (
+			routes[routeResult.routeIndex].element() ?? (
+				<div className="blank-holder">
+					<p>Loading...</p>
+				</div>
+			)
+		);
 	};
 
 	return (
@@ -84,9 +164,9 @@ const Router = () => {
 			searchValue={searchValue}
 			setSearchValue={setSearchValue}
 			setWord={setWord}
-			setRoute={setRoute}
+			goTo={goTo}
 		>
-			{routeToElement(route)}
+			{getRouteElement()}
 		</App>
 	);
 };

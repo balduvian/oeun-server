@@ -12,15 +12,10 @@ type Props = {
 	searchValue: string;
 	setSearchValue: (value: string) => void;
 	setWord: (word: string) => void;
-	setRoute: (route: string) => void;
+	goTo: (url: string) => void;
 };
 
-const SearchBox = ({
-	searchValue,
-	setSearchValue,
-	setWord,
-	setRoute,
-}: Props) => {
+const SearchBox = ({ searchValue, setSearchValue, setWord, goTo }: Props) => {
 	const waitingOnInput = useRef(false);
 	const typingEventNo = useRef(0);
 
@@ -46,7 +41,11 @@ const SearchBox = ({
 	const setResults = (query: string, results: SearchSuggestion[]) => {
 		/* add the create link */
 		const firstResult = results[0] as SearchSuggestion | undefined;
-		if (firstResult === undefined || firstResult.word !== query) {
+		if (
+			!query.startsWith('!') &&
+			!query.startsWith('#') &&
+			(firstResult === undefined || firstResult.word !== query)
+		) {
 			results.splice(0, 0, {
 				word: query,
 				ids: [],
@@ -79,13 +78,13 @@ const SearchBox = ({
 		if (suggestion?.special === SuggestionSpecial.ADD) {
 			clear(suggestion.word);
 			setWord(suggestion.word);
-			setRoute('/new');
+			goTo('/new');
 		} else if (suggestion === undefined) {
 			clear('');
-			setRoute('/cards');
+			goTo('/cards');
 		} else {
 			clear(suggestion.word);
-			setRoute(suggestion.url);
+			goTo(suggestion.url);
 		}
 	};
 

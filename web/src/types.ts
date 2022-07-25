@@ -1,5 +1,3 @@
-import * as react from 'react';
-
 export enum ResultType {
 	HOMONYM,
 	CARD,
@@ -7,26 +5,17 @@ export enum ResultType {
 	RANDOM,
 	NONE,
 }
-export const resultTypes = () =>
-	[
-		ResultType.HOMONYM,
-		ResultType.CARD,
-		ResultType.LATEST,
-		ResultType.RANDOM,
-		ResultType.NONE,
-	] as const;
-export const resultTypePaths = [
-	'/cards/homonym/:id',
-	'/cards/card/:id',
-	'/cards/latest',
-	'/cards/random',
-	'*',
-];
 
 export type Part = {
 	id: string;
 	english: string;
 	korean: string;
+};
+
+export type Badge = {
+	id: string;
+	name: string;
+	image: string;
 };
 
 export enum SuggestionSpecial {
@@ -77,3 +66,5 @@ export type Homonym = {
 	id: number;
 	cards: Card[];
 };
+
+export type Setter<T> = (value: T) => void;
