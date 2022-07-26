@@ -47,4 +47,17 @@ object Util {
 			status = HttpStatusCode.OK
 		)
 	}
+
+	suspend fun getImagePool(call: ApplicationCall, name: String?): Images? {
+		val pool = if (name == null)
+			null
+		else
+			ImagePool.values().find { imagePool -> imagePool.name.equals(name, true) }
+
+		if (pool == null) {
+			notFound(call, "Image pool of name $name not found")
+			return null
+		}
+		return pool.images
+	}
 }

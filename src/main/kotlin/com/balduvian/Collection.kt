@@ -19,7 +19,7 @@ object Collection {
 	)
 
 	fun loadAllCards() {
-		val directory = File(PATH_CARDS)
+		val directory = File(PATH_CARDS.path)
 		val files = directory.listFiles { _, name -> Card.isCardFile(name) }
 			?: return
 
@@ -72,7 +72,7 @@ object Collection {
 			throw PrettyException("Trying to add duplicate card")
 		}
 
-		CompletableFuture.runAsync { newCard.save(PATH_CARDS) }
+		CompletableFuture.runAsync { newCard.save(PATH_CARDS.path) }
 
 		return homonym
 	}
@@ -88,7 +88,7 @@ object Collection {
 			collectionCard.permuteInto(obj)
 			Homonyms.renameCard(collectionCard, oldWord)
 
-			CompletableFuture.runAsync { collectionCard.save(PATH_CARDS) }
+			CompletableFuture.runAsync { collectionCard.save(PATH_CARDS.path) }
 
 		} catch (ex: Exception) {
 			throw PrettyException("Bad edit object")
@@ -104,8 +104,8 @@ object Collection {
 			val card = cards.removeAt(removeIndex)
 
 			CompletableFuture.runAsync {
-				card.unsave(PATH_CARDS)
-				card.save(PATH_TRASH, true)
+				card.unsave(PATH_CARDS.path)
+				card.save(PATH_TRASH.path, true)
 			}
 		}
 	}

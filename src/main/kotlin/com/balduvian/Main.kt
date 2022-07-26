@@ -1,5 +1,6 @@
 package com.balduvian
 
+import com.balduvian.routes.badgesRouting
 import com.balduvian.routes.collectionRouting
 import com.balduvian.routes.imageRouting
 import com.balduvian.routes.supplementalRouting
@@ -16,6 +17,7 @@ fun main() {
 
 	Directories.setup()
 	Collection.loadAllCards()
+	Badges.loadBadges()
 
 	embeddedServer(Netty, options.port) {
 		routing {
@@ -30,6 +32,7 @@ fun main() {
 			}
 			collectionRouting()
 			imageRouting()
+			badgesRouting()
 			supplementalRouting()
 		}
 	}.start(wait = true)

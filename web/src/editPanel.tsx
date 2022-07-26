@@ -349,7 +349,7 @@ const EditPanel = ({ card, parts, onDelete }: Props) => {
 						);
 
 						util.imagePostRequest<MessageResponse>(
-							`/api/images/${filename}`,
+							`/api/images/cards/${filename}`,
 							buffer,
 						)
 							.then(() =>

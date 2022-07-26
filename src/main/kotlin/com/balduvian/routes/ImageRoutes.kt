@@ -1,7 +1,7 @@
 package com.balduvian.routes
 
-import com.balduvian.Images
 import com.balduvian.Util.badRequest
+import com.balduvian.Util.getImagePool
 import com.balduvian.Util.notFound
 import com.balduvian.Util.ok
 import io.ktor.server.application.*
@@ -12,24 +12,28 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 fun Route.imageRouting() {
-	route("/api/images") {
+	route("/api/images/{pool?}") {
 		get("{name?}") {
+			val r = call.request.uri
+			val pool = getImagePool(call, call.parameters["pool"]) ?: return@get
 			val name = call.parameters["name"] ?: return@get badRequest(call, "Missing name")
-			val image = Images.getImage(name) ?: return@get notFound(call, "image not found")
+			val image = pool.getImage(name) ?: return@get notFound(call, "image not found")
 
 			call.respondBytes(image)
 		}
 		post("{name?}") {
+			val pool = getImagePool(call, call.parameters["pool"]) ?: return@post
 			val name = call.parameters["name"] ?: return@post badRequest(call, "No name provided")
 
 			withContext(Dispatchers.IO) {
-				Images.saveImage(name, call.receiveStream())
+				pool.saveImage(name, call.receiveStream())
 				ok(call, "saved")
 			}
 		}
 		delete("unused") {
 			withContext(Dispatchers.IO) {
-				ok(call, Images.deleteUnused().toString())
+				val pool = getImagePool(call, call.parameters["pool"]) ?: return@withContext
+				ok(call, pool.deleteUnused().toString())
 			}
 		}
 	}

@@ -6,6 +6,7 @@ import java.io.FileWriter
 import java.io.InputStream
 import java.nio.charset.Charset
 import java.util.*
+import kotlin.collections.ArrayList
 
 class Card(
 	var id: Int,
@@ -14,9 +15,8 @@ class Card(
 	var definition: String,
 	var sentence: String?,
 	var picture: String?,
-	/* metadata */
 	var date: Date,
-	var badges: ArrayList<Badge>,
+	var badges: ArrayList<String>,
 ) {
 	fun serialize(pretty: Boolean): String {
 		return if (pretty) {
@@ -25,7 +25,6 @@ class Card(
 			Util.senderGson
 		}.toJson(this)
 	}
-
 
 	private fun filename(directoryPath: String, scramble: Boolean): String {
 		return directoryPath + "card-" + id.toString() + (if (scramble) "-" + UUID.randomUUID().toString() else "") + ".json"
@@ -59,7 +58,7 @@ class Card(
 		val picture = editObject.get("picture")?.asString
 		if (picture != null) this.picture = picture
 
-		val badges = editObject.get("badge")?.asJsonArray?.map { element -> Badge.valueOf(element.asString) } as ArrayList<Badge>?
+		val badges = editObject.get("badge")?.asJsonArray?.map { element -> element.asString } as ArrayList<String>?
 		if (badges != null) this.badges = badges
 	}
 

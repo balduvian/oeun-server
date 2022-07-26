@@ -2,16 +2,19 @@ package com.balduvian
 
 import java.io.File
 
-object Directories {
-	const val PATH_DATA = "./data/"
-	const val PATH_CARDS = "./data/cards/"
-	const val PATH_IMAGES = "./data/images/"
-	const val PATH_TRASH = "./data/trash/"
+enum class Directories(val path: String) {
+	PATH_DATA("./data/"),
+	PATH_CARDS("./data/cards/"),
+	PATH_IMAGES("./data/images/"),
+	PATH_TRASH("./data/trash/"),
+	PATH_BADGES("./data/badges/");
 
-	fun setup() {
-		arrayOf(PATH_DATA, PATH_CARDS, PATH_IMAGES).forEach { path ->
-			val file = File(path)
-			if (!file.exists()) file.mkdir()
+	companion object {
+		fun setup() {
+			values().forEach { directory ->
+				val file = File(directory.path)
+				if (!file.exists()) file.mkdir()
+			}
 		}
 	}
 }

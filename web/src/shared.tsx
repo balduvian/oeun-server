@@ -1,5 +1,4 @@
 import * as react from 'react';
-import * as util from './util';
 import { Part } from './types';
 import WindowEvent from './windowEvent';
 
@@ -12,7 +11,10 @@ export const pictureInput = (
 		<div className={className}>
 			{inputElement}
 			{imageName !== undefined ? (
-				<img className="card-img" src={'/api/images/' + imageName} />
+				<img
+					className="card-img"
+					src={'/api/images/cards/' + imageName}
+				/>
 			) : (
 				<div className="immr-image-placeholder">
 					<span>Paste Image Here</span>

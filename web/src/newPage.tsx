@@ -102,7 +102,7 @@ const NewPictureField = React.memo(
 								await shared.onPasteImage(event);
 
 							await util.imagePostRequest<MessageResponse>(
-								`/api/images/${filename}`,
+								`/api/images/cards/${filename}`,
 								buffer,
 							);
 

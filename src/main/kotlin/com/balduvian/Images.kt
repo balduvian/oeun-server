@@ -1,16 +1,14 @@
 package com.balduvian
 
-import com.balduvian.Directories.PATH_IMAGES
 import java.awt.image.BufferedImage
 import java.io.File
 import java.io.InputStream
 import javax.imageio.ImageIO
 
-object Images {
+class Images(val dirName: String, val cacheSize: Int) {
 	data class CachedImage(val name: String, val data: ByteArray)
 
-	const val CACHE_SIZE = 128
-	val imageCache = ArrayList<CachedImage>(CACHE_SIZE)
+	val imageCache = ArrayList<CachedImage>(cacheSize)
 
 	private fun getCachedImage(name: String): ByteArray? {
 		for (i in imageCache.lastIndex downTo 0) {
@@ -48,18 +46,18 @@ object Images {
 	}
 
 	fun saveImage(name: String, inputStream: InputStream) {
-		ImageIO.write(makeOpaqueImage(inputStream), "JPEG", File(PATH_IMAGES + name))
+		ImageIO.write(makeOpaqueImage(inputStream), "JPEG", File(dirName + name))
 	}
 
 	fun getImage(name: String): ByteArray? {
 		val cached = getCachedImage(name)
 		if (cached != null) return cached
 
-		val file = File(PATH_IMAGES + name)
+		val file = File(dirName + name)
 		if (!file.exists()) return null
 		val newBytes = file.readBytes()
 
-		if (imageCache.size == CACHE_SIZE) {
+		if (imageCache.size == cacheSize) {
 			imageCache.removeAt(0)
 		}
 		imageCache.add(CachedImage(name, newBytes))
@@ -71,7 +69,7 @@ object Images {
 		var count = 0
 		val allUsed = Collection.cards.mapNotNull { card -> card.picture }
 
-		val allFiles = File(PATH_IMAGES).listFiles() ?: throw Exception()
+		val allFiles = File(dirName).listFiles() ?: throw Exception()
 		for (file in allFiles) {
 			if (!allUsed.contains(file.name)) {
 				++count
