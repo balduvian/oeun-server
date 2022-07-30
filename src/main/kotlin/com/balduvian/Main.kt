@@ -25,9 +25,9 @@ fun main() {
 				staticRootFolder = File("page")
 				file("", "index.html")
 				file("cards", "index.html")
-				file("new", "index.html")
+				file("edit", "index.html")
 				file("cards/{...}", "index.html")
-				file("new/{...}", "index.html")
+				file("edit/{...}", "index.html")
 				files(".")
 			}
 			collectionRouting()

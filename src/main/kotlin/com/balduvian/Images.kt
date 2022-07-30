@@ -3,6 +3,7 @@ package com.balduvian
 import java.awt.image.BufferedImage
 import java.io.File
 import java.io.InputStream
+import java.util.Date
 import javax.imageio.ImageIO
 
 class Images(val dirName: String, val cacheSize: Int) {
@@ -78,5 +79,11 @@ class Images(val dirName: String, val cacheSize: Int) {
 		}
 
 		return count
+	}
+
+	companion object {
+		fun imageFilename(): String {
+			return "paste-${Date().time}.jpg"
+		}
 	}
 }

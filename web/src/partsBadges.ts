@@ -30,14 +30,12 @@ export const getParts = (
 	if (retrievedParts !== undefined) {
 		setParts(retrievedParts.parts);
 	} else {
-		return fetchParts().then(fetchedParts => {
-			if (fetchedParts === undefined) {
-				setError(true);
-			} else {
+		return fetchParts()
+			.then(fetchedParts => {
 				saveParts(fetchedParts);
 				setParts(fetchedParts);
-			}
-		});
+			})
+			.catch(() => setError(true));
 	}
 };
 
@@ -55,14 +53,15 @@ const parseStorageParts = (data: string) => {
 	}
 };
 
-const fetchParts = async (): Promise<Part[] | undefined> => {
-	const [code, data] = await util.getRequest<any>('/api/parts');
-	if (!util.isGood(code, data)) return undefined;
+const fetchParts = async (): Promise<Part[]> => {
+	const parts = await util.getRequest<{
+		[key: string]: { english: string; korean: string };
+	}>('/api/parts');
 
-	return Object.keys(data).map(partName => ({
+	return Object.keys(parts).map(partName => ({
 		id: partName,
-		english: data[partName].english as string,
-		korean: data[partName].korean as string,
+		english: parts[partName].english,
+		korean: parts[partName].korean,
 	}));
 };
 

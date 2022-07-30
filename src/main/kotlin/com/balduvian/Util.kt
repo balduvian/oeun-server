@@ -1,6 +1,7 @@
 package com.balduvian
 
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -10,6 +11,10 @@ object Util {
 	val senderGson = GsonBuilder().create()
 	val saverGson = GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create()
 	val readerGson = saverGson
+
+	fun JsonObject.getMaybe(field: String): JsonElement? {
+		return if (this.has(field)) this.get(field) else null
+	}
 
 	suspend fun badRequest(call: ApplicationCall, message: String) {
 		val json = JsonObject()
@@ -41,9 +46,9 @@ object Util {
 		)
 	}
 
-	suspend fun okJson(call: ApplicationCall, json: String) {
+	suspend fun okJson(call: ApplicationCall, json: JsonElement) {
 		call.respondText (
-			json,
+			senderGson.toJson(json),
 			status = HttpStatusCode.OK
 		)
 	}

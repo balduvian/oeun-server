@@ -1,0 +1,141 @@
+:root {
+	--background-color: #121212;
+	--field-color: #2f2f2f;
+	--field-highlight-color: #3f3f3f;
+	--field-disabled-color: #1a1a1a;
+	--text-color: #e6e6e6;
+	--text-select-color: rgb(247, 247, 247);
+	--text-disregard-color: rgb(142, 142, 142);
+	--highlight-color: rgb(53, 132, 251);
+}
+
+.small {
+	font-size: 16px;
+}
+.medium {
+	font-size: 20px;
+}
+.large {
+	font-size: 25px;
+}
+
+.full-width {
+	width: 100%;
+	margin-right: 0;
+}
+
+.eui-button, .eui-input, .eui-picture-placeholder, .eui-select {
+	border: none;
+	outline: none;
+	border-radius: 5px;
+	background-color: var(--field-color);
+	color: var(--text-color);
+	box-sizing: border-box;
+	position: relative;
+	margin-bottom: 0.5em;
+}
+
+.eui-field > .eui-button:last-child,
+.eui-field > .eui-input:last-child,
+.eui-field > .eui-picture-placeholder:last-child,
+.eui-field > .eui-select:last-child {
+	margin-bottom: 0;
+}
+
+.eui-field {
+	width: 100%;
+	height: 100%;
+	position: relative;
+	margin-bottom: 0.5em;
+}
+
+.eui-button {
+	padding: 0em 0.5em;
+	background-color: var(--field-color);
+	border: none;
+	height: 2em;
+	cursor: pointer;
+}
+
+.eui-button:hover {
+	background-color: var(--field-highlight-color);
+	color: var(--text-select-color);
+}
+
+.eui-button:active {
+	background-color: var(--field-disabled-color);
+	color: var(--text-disregard-color);
+	outline: 1px solid var(--highlight-color);
+}
+
+.eui-button:disabled {
+	background-color: var(--field-disabled-color);
+	color: var(--text-disregard-color);
+}
+
+.eui-label {
+	color: var(--text-color);
+	margin-bottom: 0.25em;
+	margin-top: 0;
+}
+
+.eui-input, .eui-select {
+	padding: 0em 0.5em;
+	height: 2em;
+}
+
+.eui-input:focus, .eui-select:focus {
+	outline: 1px solid var(--highlight-color);
+	color: var(--text-select-color);
+}
+
+.eui-input:disabled, .eui-select:disabled {
+	background-color: var(--field-disabled-color);
+	color: var(--text-disregard-color);
+}
+
+.eui-input.error, .eui-select.error {
+	background-color: rgb(216, 84, 84);
+}
+
+.eui-picture-container {
+	position: relative;
+}
+
+.eui-picture-placeholder {
+	padding-top: calc(9 / 16 * 100%);
+}
+
+.eui-picture-placeholder > span {
+	color: var(--text-disregard-color);
+	text-align: center;
+	display: block;
+	position: absolute;
+	transform: translate(-50%, -50%);
+	top: 50%;
+	left: 50%;
+}
+
+.eui-picture-container > input {
+	z-index: 50;
+
+	position: absolute;
+	left: 0;
+	top: 0;
+  
+	color: rgba(0, 0, 0, 0);
+	user-select: none;
+	background: none;
+	border: none;
+	width: 100%;
+	height: 100%;
+	display: block;
+  
+	margin: 0;
+	padding: 0;
+	border-radius: 5px;
+}
+
+.eui-picture-container > input:focus {
+	outline: 5px solid var(--highlight-color);
+}

@@ -6,6 +6,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import java.io.File
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import kotlin.collections.ArrayList
 
@@ -59,40 +60,41 @@ object Collection {
 		}
 	}
 
-	fun addCard(newCard: Card): Homonyms.Homonym {
-		val id = if (cards.isEmpty()) 0 else cards.last().id + 1
-		newCard.id = id
+	fun addCard(uploadCard: Card.UploadCard): Homonyms.Homonym {
+		val id = (cards.lastOrNull()?.id ?: 0) + 1
 
-		/* insert */
+		val card = Card(id, uploadCard.word, uploadCard.part, uploadCard.definition, uploadCard.sentence, uploadCard.picture, Date(), uploadCard.badges)
+
 		val insertIndex = cards.binarySearch { it.id - id }
 		val homonym = if (insertIndex < 0) {
-			cards.add(-insertIndex - 1, newCard)
-			Homonyms.addCard(newCard)
+			cards.add(-insertIndex - 1, card)
+			Homonyms.addCard(card)
 		} else {
 			throw PrettyException("Trying to add duplicate card")
 		}
 
-		CompletableFuture.runAsync { newCard.save(PATH_CARDS.path) }
+		CompletableFuture.runAsync { card.save(PATH_CARDS.path) }
 
 		return homonym
 	}
 
-	fun editCard(editObject: JsonElement) {
-		val obj = editObject.asJsonObject
-		val id = obj.get("id")?.asInt ?: throw PrettyException("No card id to edit")
+	fun editCard(id: Int, uploadCard: Card.UploadCard): Homonyms.Homonym {
+		val collectionCard = getCard(id) ?: throw PrettyException("Card with id=${id} doesn't exist")
 
-		val collectionCard = getCard(id) ?: throw PrettyException("No such card exists")
+		val oldWord = collectionCard.word
+		collectionCard.permuteInto(uploadCard)
+		val homonym = Homonyms.renameCard(collectionCard, oldWord) ?: throw PrettyException("Could not rename card")
 
-		try {
-			val oldWord = collectionCard.word
-			collectionCard.permuteInto(obj)
-			Homonyms.renameCard(collectionCard, oldWord)
+		CompletableFuture.runAsync { collectionCard.save(PATH_CARDS.path) }
 
-			CompletableFuture.runAsync { collectionCard.save(PATH_CARDS.path) }
+		return homonym
+	}
 
-		} catch (ex: Exception) {
-			throw PrettyException("Bad edit object")
-		}
+	fun putCard(uploadCard: Card.UploadCard): Homonyms.Homonym {
+		return if (uploadCard.id == null)
+			addCard(uploadCard)
+		else
+			editCard(uploadCard.id, uploadCard)
 	}
 
 	fun removeCard(id: Int) {
@@ -111,21 +113,6 @@ object Collection {
 	}
 
 	/* ==== SEARCH ==== */
-
-	/**
-	 * a list of all cards without details
-	 */
-	fun serializeBrowseCards(): String {
-		val array = JsonArray(cards.size)
-		for (card in cards) {
-			val obj = JsonObject()
-			obj.addProperty("word", card.word)
-			obj.addProperty("id", card.id)
-			array.add(obj)
-		}
-
-		return Util.senderGson.toJson(array)
-	}
 
 	data class PreSearchResult(
 		val word: String,
@@ -221,7 +208,7 @@ object Collection {
 		} as ArrayList<OutSearchResult>
 	}
 
-	fun serializeSearchResults(results: ArrayList<OutSearchResult>): String {
+	fun serializeSearchResults(results: ArrayList<OutSearchResult>): JsonArray {
 		val array = JsonArray(results.size)
 		for (result in results) {
 			val entry = JsonObject()
@@ -235,7 +222,7 @@ object Collection {
 
 			array.add(entry)
 		}
-		return Util.senderGson.toJson(array)
+		return array
 	}
 
 	private fun matchWordSyllable(_unused: CharSequence, syllable: Syllable?, word: String): Pair<Int, Int> {

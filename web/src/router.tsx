@@ -1,112 +1,105 @@
 import * as reactDom from 'react-dom/client';
 import { useEffect, useState } from 'react';
 import CardsPage, { onGoCards } from './cardsPage';
-import { NewPage } from './newPage';
-import { Badge, Card, Part, ResultType } from './types';
+import { NewPage } from './editPage';
+import {
+	Badge,
+	Card,
+	EditingCard,
+	HistoryEntry,
+	Part,
+	ResultType,
+} from './types';
 import App from './app';
 import BadgesPage from './badgesPage';
 import { getParts } from './partsBadges';
+import { matchUrl, Query, toTemplateURL, UrlParams, URLPart } from './url';
+import { intOrUndefined } from './util';
 
 type Route = {
-	url: string;
+	url: URLPart[];
 	element: () => JSX.Element | null;
-	onGo: (params: UrlParams) => void;
+	onGo: (query: Query, params: UrlParams) => void;
 };
-type UrlParams = { [key: string]: number };
-type RouteResult = { params: UrlParams; routeIndex: number };
 
-const matchUrl = (input: string, templateUrl: string) => {
-	const inputParts = input.split('/');
-	const templateParts = templateUrl.split('/');
-
-	const params: UrlParams = {};
-
-	if (inputParts.length !== templateParts.length) return undefined;
-
-	for (let i = 0; i < inputParts.length; ++i) {
-		const urlPart = inputParts[i].toLocaleLowerCase();
-		const toPart = templateParts[i].toLocaleLowerCase();
-
-		if (toPart.startsWith(':')) {
-			const num = Number.parseInt(urlPart);
-			if (isNaN(num)) {
-				return undefined;
-			} else {
-				params[toPart.slice(1)] = num;
-			}
-		} else if (urlPart !== toPart) {
-			return undefined;
-		}
-	}
-
-	return params;
-};
+type RouteResult = { query: Query; params: UrlParams; routeIndex: number };
 
 const Router = () => {
 	const [routeResult, setRouteResult] = useState<RouteResult | undefined>(
 		undefined,
 	);
 	const [searchValue, setSearchValue] = useState('');
-	const [word, setWord] = useState('');
 	const [parts, setParts] = useState<Part[]>([]);
 	const [badges, setBadges] = useState<Badge[]>([]);
 	const [cards, setCards] = useState<Card[] | undefined>(undefined);
 	const [collectionSize, setCollectionSize] = useState<number>(0);
 	const [error, setError] = useState<boolean>(false);
+	const [editCard, setEditCard] = useState<EditingCard | undefined>(
+		undefined,
+	);
+	const [editHistory, setEditHistory] = useState<HistoryEntry[]>([]);
 
 	const routes: Route[] = [
 		{
-			url: '/new',
-			element: () => (
-				<NewPage
-					setSearchValue={setSearchValue}
-					word={word}
-					setWord={setWord}
-					goTo={goTo}
-					parts={parts}
-					setError={setError}
-				/>
-			),
-			onGo: () => {
+			url: toTemplateURL('/edit'),
+			element: () =>
+				editCard === undefined ? null : (
+					<NewPage
+						setSearchValue={setSearchValue}
+						goTo={goTo}
+						parts={parts}
+						setError={setError}
+						card={editCard}
+						setCard={setEditCard}
+						history={editHistory}
+					/>
+				),
+			onGo: query => {
+				const card: EditingCard = {
+					id: intOrUndefined(query.id),
+					word: query.word ?? '',
+					part: query.part ?? '',
+					definition: query.definition ?? '',
+					sentence: query.sentence ?? '',
+					picture: query.picture ?? '',
+				};
+				setEditCard(card);
+				setEditHistory([]);
 				getParts(setParts, setError);
 			},
 		},
 		{
-			url: '/badges',
+			url: toTemplateURL('/badges'),
 			element: () => <BadgesPage />,
 			onGo: () => {},
 		},
 		...(
 			[
-				[ResultType.HOMONYM, '/cards/homonym/:id'],
-				[ResultType.CARD, '/cards/card/:id'],
-				[ResultType.LATEST, '/cards/latest'],
-				[ResultType.RANDOM, '/cards/random'],
-				[ResultType.NONE, '/cards'],
-				[ResultType.NONE, '/'],
+				[ResultType.HOMONYM, toTemplateURL('/cards/homonym/#id')],
+				[ResultType.CARD, toTemplateURL('/cards/card/#id')],
+				[ResultType.LATEST, toTemplateURL('/cards/latest')],
+				[ResultType.RANDOM, toTemplateURL('/cards/random')],
+				[ResultType.NONE, toTemplateURL('/cards')],
+				[ResultType.NONE, toTemplateURL('/')],
 			] as const
 		).map(([resultType, url]) => ({
 			url: url,
 			element: () =>
 				cards === undefined ? null : (
 					<CardsPage
-						mode={resultType}
-						setWord={setWord}
 						goTo={goTo}
 						cards={cards}
 						setCards={setCards}
-						word={word}
 						collectionSize={collectionSize}
 						parts={parts}
 					/>
 				),
-			onGo: (params: UrlParams) =>
+			onGo: (_: Query, params: UrlParams) =>
 				onGoCards(
-					params['id'],
+					params['id'] as number,
 					resultType,
 					setParts,
 					setError,
-					setWord,
 					setCards,
 					setCollectionSize,
 				),
@@ -115,9 +108,9 @@ const Router = () => {
 
 	const findMatchingRoute = (url: string): RouteResult | undefined => {
 		for (let i = 0; i < routes.length; ++i) {
-			const params = matchUrl(url, routes[i].url);
-			if (params !== undefined) {
-				return { params: params, routeIndex: i };
+			const result = matchUrl(url, routes[i].url);
+			if (result !== undefined) {
+				return { query: result[0], params: result[1], routeIndex: i };
 			}
 		}
 		return undefined;
@@ -126,7 +119,8 @@ const Router = () => {
 	const goTo = (url: string) => {
 		const result = findMatchingRoute(url);
 		setRouteResult(result);
-		if (result !== undefined) routes[result.routeIndex].onGo(result.params);
+		if (result !== undefined)
+			routes[result.routeIndex].onGo(result.query, result.params);
 		return undefined;
 	};
 
@@ -163,7 +157,6 @@ const Router = () => {
 		<App
 			searchValue={searchValue}
 			setSearchValue={setSearchValue}
-			setWord={setWord}
 			goTo={goTo}
 		>
 			{getRouteElement()}

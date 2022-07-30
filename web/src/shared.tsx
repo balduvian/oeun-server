@@ -2,34 +2,11 @@ import * as react from 'react';
 import { Part } from './types';
 import WindowEvent from './windowEvent';
 
-export const pictureInput = (
-	className: string,
-	inputElement: react.ReactElement,
-	imageName: string | undefined,
-) => {
-	return (
-		<div className={className}>
-			{inputElement}
-			{imageName !== undefined ? (
-				<img
-					className="card-img"
-					src={'/api/images/cards/' + imageName}
-				/>
-			) : (
-				<div className="immr-image-placeholder">
-					<span>Paste Image Here</span>
-				</div>
-			)}
-		</div>
-	);
+type PartOptionsProps = {
+	parts: Part[];
 };
 
-export const partName = (parts: Part[], partId: string | undefined) => {
-	if (partId === undefined) return undefined;
-	return parts.find(part => part.id === partId)?.english;
-};
-
-export const partOptions = (parts: Part[]) => (
+export const PartOptions = react.memo(({ parts }: PartOptionsProps) => (
 	<>
 		{parts.map(part => (
 			<option key={part.id} value={part.id}>
@@ -38,24 +15,7 @@ export const partOptions = (parts: Part[]) => (
 		))}
 		<option value=""></option>
 	</>
-);
-
-export const onPasteImage = async (
-	event: react.ClipboardEvent<HTMLInputElement>,
-): Promise<[ArrayBuffer, string]> => {
-	const file =
-		[...event.clipboardData.items]
-			.find(
-				item => item.type === 'image/png' || item.type === 'image/jpeg',
-			)
-			?.getAsFile() ?? undefined;
-
-	if (file === undefined) throw new Error('Did not paste an image');
-
-	const buffer = await file.arrayBuffer();
-
-	return [buffer, 'paste-' + Date.now().toString() + '.jpg'];
-};
+));
 
 export const killCtrlZ = () => (
 	<WindowEvent

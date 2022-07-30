@@ -11,11 +11,10 @@ enum ResultState {
 type Props = {
 	searchValue: string;
 	setSearchValue: (value: string) => void;
-	setWord: (word: string) => void;
 	goTo: (url: string) => void;
 };
 
-const SearchBox = ({ searchValue, setSearchValue, setWord, goTo }: Props) => {
+const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
 	const waitingOnInput = useRef(false);
 	const typingEventNo = useRef(0);
 
@@ -49,7 +48,7 @@ const SearchBox = ({ searchValue, setSearchValue, setWord, goTo }: Props) => {
 			results.splice(0, 0, {
 				word: query,
 				ids: [],
-				url: '/new',
+				url: `/edit?word=${query}`,
 				special: SuggestionSpecial.ADD,
 			});
 		}
@@ -68,7 +67,11 @@ const SearchBox = ({ searchValue, setSearchValue, setWord, goTo }: Props) => {
 				.getRequest<SearchSuggestion[]>(
 					`/api/collection/search/${query.replaceAll('#', '%23')}/10`,
 				)
-				.then(([, data]) => (setResults(query, data), data))
+				.then(
+					suggestions => (
+						setResults(query, suggestions), suggestions
+					),
+				)
 				.catch(() => (stateSearchError(), undefined));
 		}
 	};
@@ -77,8 +80,7 @@ const SearchBox = ({ searchValue, setSearchValue, setWord, goTo }: Props) => {
 		(document.activeElement as HTMLElement | null)?.blur();
 		if (suggestion?.special === SuggestionSpecial.ADD) {
 			clear(suggestion.word);
-			setWord(suggestion.word);
-			goTo('/new');
+			goTo(suggestion.url);
 		} else if (suggestion === undefined) {
 			clear('');
 			goTo('/cards');

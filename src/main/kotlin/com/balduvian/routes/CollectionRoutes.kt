@@ -8,9 +8,9 @@ import com.balduvian.Util.badRequest
 import com.balduvian.Util.notFound
 import com.balduvian.Util.ok
 import com.balduvian.Util.okJson
-import com.balduvian.Util.senderGson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.google.gson.JsonPrimitive
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -21,9 +21,6 @@ import kotlin.random.Random
 
 fun Route.collectionRouting() {
 	route("/api/collection") {
-		get("browse") {
-			call.respond(Collection.serializeBrowseCards())
-		}
 		get("search/{q?}/{limit?}") {
 			val query = call.parameters["q"] ?: ""
 			val limit = call.parameters["limit"]?.toIntOrNull() ?: return@get badRequest(call, "Missing limit")
@@ -37,7 +34,7 @@ fun Route.collectionRouting() {
 
 			val card = Collection.getCard(id) ?: return@get notFound(call, "Could not find card")
 
-			okJson(call, card.serialize(false))
+			okJson(call, card.serialize())
 		}
 		get("homonym/{id?}") {
 			val id = call.parameters["id"]?.toIntOrNull() ?: return@get badRequest(call, "Missing homonym id")
@@ -47,9 +44,7 @@ fun Route.collectionRouting() {
 			okJson(call, homonym.serialize())
 		}
 		get("size") {
-			val obj = JsonObject()
-			obj.addProperty("value", Collection.cards.size)
-			okJson(call, senderGson.toJson(obj))
+			okJson(call, JsonPrimitive(Collection.cards.size))
 		}
 		get("homonym/card/{id?}") {
 			val id = call.parameters["id"] ?: return@get badRequest(call, "Missing id")
@@ -84,38 +79,23 @@ fun Route.collectionRouting() {
 
 			okJson(call, homonym.serialize())
 		}
-		post {
+		put {
 			try {
 				withContext(Dispatchers.IO) {
-					val card = Card.deserialize(call.receiveStream())
-					val homonym = Collection.addCard(card)
+					val uploadCard = Card.UploadCard.deserialize(call.receiveStream())
+					val homonym = Collection.putCard(uploadCard)
 
-					val jsonObject = JsonObject()
-					jsonObject.addProperty("url", "/cards/homonym/${homonym.id}")
-					jsonObject.addProperty("word", homonym.word())
+					val response = JsonObject()
+					response.addProperty("url", "/cards/homonym/${homonym.id}")
+					response.addProperty("word", homonym.word())
 
-					okJson(call, senderGson.toJson(jsonObject))
+					okJson(call, response)
 				}
 			} catch (ex: PrettyException) {
 				badRequest(call, ex.message)
 			} catch (ex: Exception) {
 				ex.printStackTrace()
-				badRequest(call, "Bad card data")
-			}
-		}
-		patch {
-			try {
-				withContext(Dispatchers.IO) {
-					val json = JsonParser.parseReader(call.receiveStream().reader())
-					Collection.editCard(json)
-
-					ok(call, "edited")
-				}
-			} catch (ex: PrettyException) {
-				badRequest(call, ex.message)
-			} catch (ex: Exception) {
-				ex.printStackTrace()
-				badRequest(call, "Bad request")
+				badRequest(call, "bad request")
 			}
 		}
 		delete("{id?}") {

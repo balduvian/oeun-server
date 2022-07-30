@@ -1,11 +1,13 @@
 package com.balduvian
 
+import com.google.gson.JsonObject
+
 object Homonyms {
 	data class Homonym(val id: Int, val cards: ArrayList<Card>) {
 		fun word() = cards.first().word
 
-		fun serialize(): String {
-			return Util.senderGson.toJson(this)
+		fun serialize(): JsonObject {
+			return Util.senderGson.toJsonTree(this) as JsonObject
 		}
 
 		companion object {
@@ -65,11 +67,11 @@ object Homonyms {
 		return internalRemoveCard(homonym, card.id, card.word)
 	}
 
-	private fun internalRemoveCard(homonym: Homonym, id: Int, word: String): Boolean {
-		/* remove the exact card from the homonym */
-		homonym.cards.removeIf { it.id == id }
+	private fun internalRemoveCard(homonym: Homonym, cardId: Int, word: String): Boolean {
+		/* remove the card from the homonym */
+		homonym.cards.removeIf { it.id == cardId }
 
-		/* remove homonym as a whole */
+		/* remove homonym as a whole if that was the last card */
 		if (homonym.cards.isEmpty()) {
 			homonymMap.remove(word)
 			/* do not remove homonym from the list to prevent shifting */
@@ -78,27 +80,22 @@ object Homonyms {
 		return true
 	}
 
-	/** @return if the renaming was successful */
-	fun renameCard(card: Card, oldWord: String): Boolean {
-		if (card.word == oldWord) return false
+	/** @return the new homonym for the card, if renamed or not, null if error */
+	fun renameCard(card: Card, oldWord: String): Homonym? {
+		val oldHomonym = getHomonym(oldWord) ?: return null
+		if (card.word == oldWord) return oldHomonym
 
-		val homonym = internalGetHomonym(card.id) ?: return false
-
-		internalRemoveCard(homonym, card.id, oldWord)
-
-		addCard(card)
-
-		return true
+		internalRemoveCard(oldHomonym, card.id, oldWord)
+		return addCard(card)
 	}
 
-	private fun internalGetHomonym(id: Int): Homonym? {
-		val index = indexOf(id)
-		if (index < 0) return null
-		return homonymList[index]
+	private fun internalGetHomonym(homonymId: Int): Homonym? {
+		val index = indexOf(homonymId)
+		return if (index < 0) null else homonymList[index]
 	}
 
-	fun getHomonym(id: Int): Homonym? {
-		val homonym = internalGetHomonym(id) ?: return null
+	fun getHomonym(homonymId: Int): Homonym? {
+		val homonym = internalGetHomonym(homonymId) ?: return null
 
 		/* in case you queried a deleted homonym somehow */
 		return if (homonym.cards.isEmpty()) null else homonym

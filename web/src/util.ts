@@ -1,12 +1,11 @@
-import * as react from 'react';
-import { ErrorResonse as ErrorResponse, Highlights } from './types';
+import { ErrorResponse as ErrorResponse, Highlights } from './types';
 
 export const OK = 200;
 
-const handle = <T>(res: Response): Promise<[number, T]> =>
+const handle = <T>(res: Response): Promise<T> =>
 	res.json().then((json: T | ErrorResponse) => {
 		if (isGood(res.status, json)) {
-			return [res.status, json];
+			return json;
 		} else {
 			throw json;
 		}
@@ -30,12 +29,17 @@ export const patchRequest = <T>(url: string, data: any) =>
 		handle<T>(res),
 	);
 
+export const putRequest = <T>(url: string, data: any) =>
+	fetch(url, { method: 'PUT', body: JSON.stringify(data) }).then(res =>
+		handle<T>(res),
+	);
+
 export const deleteRequest = <T>(url: string) =>
 	fetch(url, { method: 'DELETE' }).then(res => handle<T>(res));
 
 /* ==== */
 
-export const isGood = <T>(code: number, data: T | ErrorResponse): data is T => {
+const isGood = <T>(code: number, data: T | ErrorResponse): data is T => {
 	return code === OK;
 };
 
@@ -116,3 +120,17 @@ export const makeUrl = (url: string): string => {
 	const { host, protocol } = window.location;
 	return protocol + '//' + host + '/' + url;
 };
+
+export const intOrUndefined = (input: string | undefined) => {
+	if (input === undefined) return undefined;
+	const num = Number.parseInt(input);
+	return isNaN(num) ? undefined : num;
+};
+
+export const makeQueryString = (obj: {
+	[key: string]: string | undefined;
+}): string =>
+	Object.keys(obj)
+		.map(key => (obj[key] === undefined ? undefined : `${key}=${obj[key]}`))
+		.filter((value): value is string => value !== undefined)
+		.join('&');

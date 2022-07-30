@@ -3,6 +3,7 @@ package com.balduvian.routes
 import com.balduvian.Badge
 import com.balduvian.Badges
 import com.balduvian.Util
+import com.google.gson.JsonParser
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
@@ -12,7 +13,7 @@ import kotlinx.coroutines.withContext
 fun Route.badgesRouting() {
 	route("/api/badges") {
 		get {
-			Util.okJson(call, Util.senderGson.toJson(Badges.badgesList))
+			Util.okJson(call, Util.senderGson.toJsonTree(Badges.badgesList))
 		}
 		patch("{oldId?}") {
 			val oldId = call.parameters["oldId"]?.lowercase()

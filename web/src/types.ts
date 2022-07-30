@@ -31,8 +31,7 @@ export type SearchSuggestion = {
 
 export type Highlights = { part: string; highlight: boolean }[];
 
-export type HistoryEntry = { field: keyof Card; value: string | undefined };
-export type EditHistory = HistoryEntry[];
+export type HistoryEntry = { field: keyof Card; value: string };
 
 export type Card = {
 	id: number;
@@ -45,8 +44,23 @@ export type Card = {
 	badges: string[];
 };
 
-export type Editing = {
-	[key: string]: { initial: string | undefined; editing: boolean };
+export type UploadCard = {
+	id: number | undefined;
+	word: string;
+	part: string | undefined;
+	definition: string;
+	sentence: string | undefined;
+	picture: string | undefined;
+	badges: string[];
+};
+
+export type EditingCard = {
+	id: number | undefined;
+	word: string;
+	part: string;
+	definition: string;
+	sentence: string;
+	picture: string;
 };
 
 export type CardPostResponse = {
@@ -54,7 +68,7 @@ export type CardPostResponse = {
 	word: string;
 };
 
-export type ErrorResonse = {
+export type ErrorResponse = {
 	error: string;
 };
 

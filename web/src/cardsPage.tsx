@@ -1,19 +1,7 @@
 import { Card, MessageResponse, Part, ResultType, Setter } from './types';
 import * as util from './util';
-import EditPanel from './editPanel';
 import { getParts } from './partsBadges';
-
-type Props = {
-	mode: ResultType;
-	goTo: (url: string) => void;
-
-	cards: Card[];
-	setCards: Setter<Card[]>;
-	word: string;
-	setWord: Setter<string>;
-	collectionSize: number;
-	parts: Part[];
-};
+import CardPanel from './cardPanel';
 
 const initialGetRequest = (id: number, mode: ResultType) => {
 	if (mode === ResultType.CARD) {
@@ -38,7 +26,6 @@ export const onGoCards = (
 	mode: ResultType,
 	setParts: Setter<Part[]>,
 	setError: Setter<boolean>,
-	setWord: Setter<string>,
 	setCards: Setter<Card[] | undefined>,
 	setCollectionSize: Setter<number>,
 ) => {
@@ -48,30 +35,28 @@ export const onGoCards = (
 	const getCards = initialGetRequest(id, mode);
 	if (getCards !== undefined) {
 		getCards
-			.then(([, data]) => {
-				setWord(data.cards[0].word ?? '');
+			.then(data => {
 				setCards(data.cards);
 			})
 			.catch(() => setError(true));
 	} else {
 		setCards([]);
-		util.getRequest<{ value: number }>('/api/collection/size')
-			.then(([, data]) => setCollectionSize(data.value))
+		util.getRequest<number>('/api/collection/size')
+			.then(size => setCollectionSize(size))
 			.catch(() => setError(true));
 	}
 };
 
-const CardsPage = ({
-	mode,
-	setWord,
-	goTo,
-	cards,
-	setCards,
-	word,
-	collectionSize,
-	parts,
-}: Props) => {
-	return cards.length === 0 ? (
+type Props = {
+	goTo: (url: string) => void;
+	cards: Card[];
+	setCards: Setter<Card[]>;
+	collectionSize: number;
+	parts: Part[];
+};
+
+const CardsPage = ({ goTo, cards, setCards, collectionSize, parts }: Props) =>
+	cards.length === 0 ? (
 		<div className="blank-holder">
 			<div className="image-holder">
 				<div className="size-display">{`${collectionSize} Cards`}</div>
@@ -81,7 +66,7 @@ const CardsPage = ({
 	) : (
 		<>
 			{cards.map(card => (
-				<EditPanel
+				<CardPanel
 					key={card.id}
 					card={card}
 					parts={parts}
@@ -94,28 +79,18 @@ const CardsPage = ({
 								const newCards = cards.filter(
 									card => card.id !== deletedId,
 								);
-								setCards(newCards);
 								if (newCards.length === 0) {
 									goTo('/cards');
+								} else {
+									setCards(newCards);
 								}
 							})
-							.catch(ex => console.log(ex))
+							.catch(console.error)
 					}
+					goTo={goTo}
 				/>
 			))}
-			{mode === ResultType.HOMONYM ? (
-				<button
-					className="add-button"
-					onClick={() => {
-						setWord(word);
-						goTo('/new');
-					}}
-				>
-					+
-				</button>
-			) : null}
 		</>
 	);
-};
 
 export default CardsPage;

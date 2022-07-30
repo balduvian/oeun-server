@@ -1,6 +1,8 @@
 package com.balduvian
 
+import com.balduvian.Util.getMaybe
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import java.io.File
 import java.io.FileWriter
 import java.io.InputStream
@@ -18,12 +20,34 @@ class Card(
 	var date: Date,
 	var badges: ArrayList<String>,
 ) {
-	fun serialize(pretty: Boolean): String {
-		return if (pretty) {
-			Util.saverGson
-		} else {
-			Util.senderGson
-		}.toJson(this)
+	class UploadCard(
+		val id: Int?,
+		val word: String,
+		val part: Part?,
+		val definition: String,
+		val sentence: String?,
+		val picture: String?,
+		val badges: ArrayList<String>,
+	) {
+		companion object {
+			fun deserialize(stream: InputStream): UploadCard {
+				val obj = JsonParser.parseReader(stream.reader()).asJsonObject
+
+				return UploadCard(
+					obj.getMaybe("id")?.asInt,
+					obj.get("word").asString,
+					Part.values().find { it.name == obj.getMaybe("part")?.asString },
+					obj.get("definition").asString,
+					obj.getMaybe("sentence")?.asString,
+					obj.getMaybe("picture")?.asString,
+					obj.getAsJsonArray("badges").map { it.asString } as ArrayList<String>,
+				)
+			}
+		}
+	}
+
+	fun serialize(): JsonObject {
+		return Util.senderGson.toJsonTree(this) as JsonObject
 	}
 
 	private fun filename(directoryPath: String, scramble: Boolean): String {
@@ -33,7 +57,7 @@ class Card(
 	fun save(directoryPath: String, scramble: Boolean = false) {
 		val file = File(filename(directoryPath, scramble))
 		val fileWriter = FileWriter(file, Charset.forName("UTF-8"))
-		fileWriter.write(serialize(true))
+		fileWriter.write(Util.saverGson.toJson(serialize()))
 		fileWriter.close()
 	}
 
@@ -42,29 +66,17 @@ class Card(
 		file.delete()
 	}
 
-	fun permuteInto(editObject: JsonObject) {
-		val word = editObject.get("word")?.asString
-		if (word != null) this.word = word
-
-		val part = editObject.get("part")?.asString?.let { Part.valueOf(it) }
-		if (part != null) this.part = part
-
-		val definition = editObject.get("definition")?.asString
-		if (definition != null) this.definition = definition
-
-		val sentence = editObject.get("sentence")?.asString
-		if (sentence != null) this.sentence = sentence
-
-		val picture = editObject.get("picture")?.asString
-		if (picture != null) this.picture = picture
-
-		val badges = editObject.get("badge")?.asJsonArray?.map { element -> element.asString } as ArrayList<String>?
-		if (badges != null) this.badges = badges
+	fun permuteInto(uploadCard: UploadCard) {
+		this.word = uploadCard.word
+		this.part = uploadCard.part
+		this.definition = uploadCard.definition
+		this.sentence = uploadCard.sentence
+		this.picture = uploadCard.picture
+		this.badges = uploadCard.badges
 	}
 
 	companion object {
-		/* sample card name: card-3782.json */
-
+		/** sample card name: card-3782.json */
 		fun isCardFile(name: String): Boolean {
 			return name.startsWith("card-") && name.endsWith(".json")
 		}
