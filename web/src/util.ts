@@ -126,11 +126,3 @@ export const intOrUndefined = (input: string | undefined) => {
 	const num = Number.parseInt(input);
 	return isNaN(num) ? undefined : num;
 };
-
-export const makeQueryString = (obj: {
-	[key: string]: string | undefined;
-}): string =>
-	Object.keys(obj)
-		.map(key => (obj[key] === undefined ? undefined : `${key}=${obj[key]}`))
-		.filter((value): value is string => value !== undefined)
-		.join('&');

@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { createGo, Go } from './go';
 import { composingEvents, isComposing } from './korInput';
 import { SearchSuggestion, SuggestionSpecial } from './types';
 import * as util from './util';
@@ -11,7 +12,7 @@ enum ResultState {
 type Props = {
 	searchValue: string;
 	setSearchValue: (value: string) => void;
-	goTo: (url: string) => void;
+	goTo: (go: Go) => void;
 };
 
 const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
@@ -80,13 +81,13 @@ const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
 		(document.activeElement as HTMLElement | null)?.blur();
 		if (suggestion?.special === SuggestionSpecial.ADD) {
 			clear(suggestion.word);
-			goTo(suggestion.url);
+			goTo(createGo(suggestion.url));
 		} else if (suggestion === undefined) {
 			clear('');
-			goTo('/cards');
+			goTo(createGo('/cards'));
 		} else {
 			clear(suggestion.word);
-			goTo(suggestion.url);
+			goTo(createGo(suggestion.url));
 		}
 	};
 

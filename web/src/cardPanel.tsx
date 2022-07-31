@@ -2,6 +2,7 @@ import React, * as react from 'react';
 import { Card, Part } from './types';
 import * as util from './util';
 import { EbetPictureInput } from './ebetUi';
+import { createGo, Go } from './go';
 
 type CardFieldProps = {
 	className: string;
@@ -32,7 +33,7 @@ type Props = {
 	card: Card;
 	parts: Part[];
 	onDelete: (id: number) => void;
-	goTo: (url: string) => void;
+	goTo: (go: Go) => void;
 };
 
 type HighlightsProps = {
@@ -76,14 +77,14 @@ const CardPanel = ({ card, parts, onDelete, goTo }: Props) => {
 					className="card-button edit"
 					onClick={() =>
 						goTo(
-							`/edit?${util.makeQueryString({
+							createGo('/edit', {
 								id: card.id.toString(),
 								word: card.word,
 								part: card.part,
 								definition: card.definition,
 								sentence: card.sentence,
 								picture: card.picture,
-							})}`,
+							}),
 						)
 					}
 				>
@@ -93,9 +94,9 @@ const CardPanel = ({ card, parts, onDelete, goTo }: Props) => {
 					className="card-button add"
 					onClick={() =>
 						goTo(
-							`/edit?${util.makeQueryString({
+							createGo('/edit', {
 								word: card.word,
-							})}`,
+							}),
 						)
 					}
 				>

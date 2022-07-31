@@ -46,7 +46,12 @@ const breakUpUrl = (input: string): InputURL => {
 						string,
 						string | undefined,
 					];
-					return value !== undefined ? { [key]: value } : undefined;
+					return value !== undefined
+						? {
+								[decodeURIComponent(key)]:
+									decodeURIComponent(value),
+						  }
+						: undefined;
 				})
 				.filter(pair => pair !== undefined) ?? []),
 		),

@@ -1,11 +1,12 @@
 import { ReactNode } from 'react';
+import { Go } from './go';
 import SearchBox from './searchBox';
 import { killCtrlZ } from './shared';
 
 type Props = {
 	searchValue: string;
 	setSearchValue: (searchValue: string) => void;
-	goTo: (url: string) => void;
+	goTo: (go: Go) => void;
 	children: ReactNode;
 };
 

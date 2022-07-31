@@ -2,6 +2,7 @@ import { Card, MessageResponse, Part, ResultType, Setter } from './types';
 import * as util from './util';
 import { getParts } from './partsBadges';
 import CardPanel from './cardPanel';
+import { createGo, Go } from './go';
 
 const initialGetRequest = (id: number, mode: ResultType) => {
 	if (mode === ResultType.CARD) {
@@ -48,7 +49,7 @@ export const onGoCards = (
 };
 
 type Props = {
-	goTo: (url: string) => void;
+	goTo: (go: Go) => void;
 	cards: Card[];
 	setCards: Setter<Card[]>;
 	collectionSize: number;
@@ -80,7 +81,7 @@ const CardsPage = ({ goTo, cards, setCards, collectionSize, parts }: Props) =>
 									card => card.id !== deletedId,
 								);
 								if (newCards.length === 0) {
-									goTo('/cards');
+									goTo(createGo('/cards'));
 								} else {
 									setCards(newCards);
 								}

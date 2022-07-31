@@ -23,6 +23,7 @@ import {
 	EbetPictureInput,
 	EbetSelect,
 } from './ebetUi';
+import { createGo, Go } from './go';
 
 type NewCardFieldProps = {
 	value: string;
@@ -88,7 +89,7 @@ const realValue = (value: string) => {
 
 type Props = {
 	setSearchValue: (searchValue: string) => void;
-	goTo: (url: string) => void;
+	goTo: (go: Go) => void;
 	parts: Part[];
 	setError: Setter<boolean>;
 	card: EditingCard;
@@ -124,7 +125,7 @@ export const NewPage = ({
 			util.putRequest<CardPostResponse>('/api/collection', uploadCard)
 				.then(({ word, url }) => {
 					setSearchValue(word);
-					goTo(url);
+					goTo(createGo(url));
 				})
 				.catch(() => setError(true));
 		}
@@ -188,7 +189,10 @@ export const NewPage = ({
 				/>
 			</EbetFormField>
 			<div className="button-grid">
-				<EbetButton text="Cancel" onClick={() => goTo('/cards')} />
+				<EbetButton
+					text="Cancel"
+					onClick={() => goTo(createGo('/cards'))}
+				/>
 				<EbetButton text="Confirm" onClick={confirm} />
 			</div>
 		</div>

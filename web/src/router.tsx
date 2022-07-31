@@ -15,6 +15,7 @@ import BadgesPage from './badgesPage';
 import { getParts } from './partsBadges';
 import { matchUrl, Query, toTemplateURL, UrlParams, URLPart } from './url';
 import { intOrUndefined } from './util';
+import { createGo, Go } from './go';
 
 type Route = {
 	url: URLPart[];
@@ -38,6 +39,11 @@ const Router = () => {
 		undefined,
 	);
 	const [editHistory, setEditHistory] = useState<HistoryEntry[]>([]);
+
+	useEffect(() => {
+		const url = window.location.pathname;
+		goTo(createGo(url));
+	}, []);
 
 	const routes: Route[] = [
 		{
@@ -116,18 +122,17 @@ const Router = () => {
 		return undefined;
 	};
 
-	const goTo = (url: string) => {
+	const goTo = (go: Go) => {
+		const url = go.url;
 		const result = findMatchingRoute(url);
-		setRouteResult(result);
-		if (result !== undefined)
-			routes[result.routeIndex].onGo(result.query, result.params);
-		return undefined;
-	};
 
-	useEffect(() => {
-		const url = window.location.pathname;
-		goTo(url);
-	}, []);
+		if (result !== undefined) {
+			routes[result.routeIndex].onGo(result.query, result.params);
+		}
+
+		window.history.pushState({}, '', window.location.origin + url);
+		setRouteResult(result);
+	};
 
 	const getRouteElement = () => {
 		if (error) {
