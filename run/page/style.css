@@ -1,3 +1,5 @@
+@font-face { font-family: Handwritten; src: url('/handwritten-improved.ttf'); }
+
 :root {
   --immr-background-color: #1f1f1f;
   --immr-active-color: #4287f5;
@@ -6,8 +8,11 @@
   --red: rgb(163, 54, 54);
   --blu: rgb(56, 90, 174);
   --gre: rgb(50, 198, 151);
-  
-  font-family: Arial, Helvetica, sans-serif;
+  --lblu: rgb(59, 196, 230);
+}
+
+input, button, p, div, span, select {
+  font-family: Handwritten;
 }
 
 #immr-panel {
@@ -54,7 +59,7 @@
   border-radius: 10px;
 
   background-color: white;
-  font-size: 20px;
+  font-size: 30px;
   font-weight: bold;
 }
 
@@ -110,7 +115,7 @@
 
   height: 30px;
   line-height: 30px;
-  font-size: 20px;
+  font-size: 30px;
   color: white;
 
   background-color: var(--immr-background-color);
@@ -181,6 +186,10 @@
   height: auto;
 }
 
+#immr-card-panel > h2 {
+  color: white;
+}
+
 .immr-card-row {
   position: relative;
   width: 100%;
@@ -198,7 +207,7 @@
 }
 
 .immr-card-row > p.big {
-  font-size: 20px;
+  font-size: 30px;
   line-height: 25px;
 }
 
@@ -235,12 +244,6 @@
   transform: translate(-50%, -50%);
   top: 50%;
   left: 50%;
-}
-
-.immr-card-sentence > .highlight {
-  background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .immr-card-line {
@@ -303,9 +306,16 @@
   color: white;
   padding: 0;
   width: 100%;
-  font-size: 15px;
+  font-size: 25px;
   line-height: 20px;
   text-align: center;
+}
+
+.immr-card-sentence > .highlight {
+  background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+  font-weight: bold;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .image-container {
@@ -443,9 +453,8 @@ img {
 
   background-color: transparent;
 
-  line-height: 22px;
   text-align: center;
-  font-size: 10px;
+  font-size: 15px;
 
   border-width: 1px;
   border-style: solid;
@@ -480,5 +489,14 @@ img {
 }
 .card-button.add:hover {
   background-color: var(--gre);
+  color: white;
+}
+
+.card-button.anki {
+  color: var(--lblu);
+  border-color: var(--lblu);
+}
+.card-button.anki:hover, .card-button.anki:disabled {
+  background-color: var(--lblu);
   color: white;
 }

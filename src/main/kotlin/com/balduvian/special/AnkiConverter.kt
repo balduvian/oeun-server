@@ -132,7 +132,8 @@ object AnkiConverter {
 				sentence.ifEmpty { null },
 				image.ifEmpty { null },
 				date,
-				arrayListOf("legacy")
+				arrayListOf("legacy"),
+				false,
 			)
 
 			card.save("C:\\Users\\Emmet\\Programming\\lang\\java\\skybranch\\run\\data\\cards\\")

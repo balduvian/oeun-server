@@ -1,5 +1,6 @@
 package com.balduvian
 
+import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.io.File
 import java.io.InputStream
@@ -28,26 +29,57 @@ class Images(val dirName: String, val cacheSize: Int) {
 		return null
 	}
 
-	private fun makeOpaqueImage(inputStream: InputStream): BufferedImage {
-		val image = ImageIO.read(inputStream)
+	private fun cropImage(inputStream: InputStream, toWidth: Int, toHeight: Int): BufferedImage {
+		val inputImage = ImageIO.read(inputStream)
+		val newImage = BufferedImage(toWidth, toHeight, BufferedImage.TYPE_INT_RGB)
 
-		if (image.transparency == BufferedImage.OPAQUE) return image
+		if (inputImage.width == toWidth && inputImage.height == toHeight) {
+			val pixelsCopy = IntArray(toWidth * toHeight)
+			inputImage.getRGB(0, 0, toWidth, toHeight, pixelsCopy, 0, toWidth)
+			newImage.setRGB(0, 0, toWidth, toHeight, pixelsCopy, 0, toWidth)
 
-		/* reduce transparency */
-		val width = image.width
-		val height = image.height
+		} else {
+			val idealRatio = toWidth.toFloat() / toHeight.toFloat()
+			val imageRatio = inputImage.width.toFloat() / inputImage.height.toFloat()
 
-		val pixelsCopy = IntArray(width * height)
-		image.getRGB(0, 0, width, height, pixelsCopy, 0, width)
+			val viewWidth: Int
+			val viewHeight: Int
+			val offX: Int
+			val offY: Int
 
-		val opqueImage = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
-		opqueImage.setRGB(0, 0, width, height, pixelsCopy, 0, width)
+			if (imageRatio > idealRatio) {
+				viewHeight = inputImage.height
+				viewWidth = (idealRatio * viewHeight).toInt()
+				offY = 0
+				offX = (inputImage.width - viewWidth) / 2
+			} else {
+				viewWidth = inputImage.width
+				viewHeight = ((1.0f / idealRatio) * viewWidth).toInt()
+				offX = 0
+				offY = (inputImage.height - viewHeight) / 2
+			}
 
-		return opqueImage
+			val graphics = newImage.createGraphics()
+			graphics.setRenderingHint(
+				RenderingHints.KEY_INTERPOLATION,
+				RenderingHints.VALUE_INTERPOLATION_BILINEAR
+			)
+			graphics.drawImage(
+				inputImage,
+				0, 0,
+				toWidth, toHeight,
+				offX, offY,
+				offX + viewWidth, offY + viewHeight,
+				null
+			)
+			graphics.dispose()
+		}
+
+		return newImage
 	}
 
 	fun saveImage(name: String, inputStream: InputStream) {
-		ImageIO.write(makeOpaqueImage(inputStream), "JPEG", File(dirName + name))
+		ImageIO.write(cropImage(inputStream, 608, 342), "JPEG", File(dirName + name))
 	}
 
 	fun getImage(name: String): ByteArray? {

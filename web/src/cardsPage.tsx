@@ -60,7 +60,7 @@ const CardsPage = ({ goTo, cards, setCards, collectionSize, parts }: Props) =>
 	cards.length === 0 ? (
 		<div className="blank-holder">
 			<div className="image-holder">
-				<div className="size-display">{`${collectionSize} Cards`}</div>
+				<div className="size-display">{`카드 ${collectionSize}장`}</div>
 				<img src="/blank.svg" />
 			</div>
 		</div>
@@ -87,6 +87,23 @@ const CardsPage = ({ goTo, cards, setCards, collectionSize, parts }: Props) =>
 								}
 							})
 							.catch(console.error)
+					}
+					onAnki={ankiId =>
+						util
+							.postRequest<MessageResponse>(
+								`/api/anki/${ankiId}`,
+								{},
+							)
+							.then(() => {
+								const modifyCard = cards.find(
+									card => card.id === ankiId,
+								);
+								if (modifyCard !== undefined) {
+									modifyCard.inAnki = true;
+								}
+
+								setCards([...cards]);
+							})
 					}
 					goTo={goTo}
 				/>

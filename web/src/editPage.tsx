@@ -3,12 +3,10 @@ import {
 	Part,
 	CardPostResponse,
 	Setter,
-	HistoryEntry,
 	EditingCard,
 	UploadCard,
 } from './types';
 import * as util from './util';
-import * as shared from './shared';
 import {
 	composingEvents,
 	doBracketing,
@@ -94,7 +92,6 @@ type Props = {
 	setError: Setter<boolean>;
 	card: EditingCard;
 	setCard: Setter<EditingCard>;
-	history: HistoryEntry[];
 };
 
 export const NewPage = ({
@@ -104,7 +101,6 @@ export const NewPage = ({
 	setError,
 	card,
 	setCard,
-	history,
 }: Props) => {
 	const realWord = realValue(card.word);
 	const realDefinition = realValue(card.definition);
@@ -120,6 +116,7 @@ export const NewPage = ({
 				sentence: realValue(card.sentence),
 				picture: realValue(card.picture),
 				badges: [],
+				inAnki: card.inAnki,
 			};
 
 			util.putRequest<CardPostResponse>('/api/collection', uploadCard)
@@ -186,6 +183,13 @@ export const NewPage = ({
 							console.log(err);
 						}
 					}}
+				/>
+			</EbetFormField>
+			<EbetFormField>
+				<EbetButton
+					text={card.inAnki ? 'In anki' : 'Not in Anki'}
+					onClick={() => updateField('inAnki', false)}
+					disabled={!card.inAnki}
 				/>
 			</EbetFormField>
 			<div className="button-grid">

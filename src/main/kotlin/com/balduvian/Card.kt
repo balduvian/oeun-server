@@ -19,6 +19,7 @@ class Card(
 	var picture: String?,
 	var date: Date,
 	var badges: ArrayList<String>,
+	var inAnki: Boolean?,
 ) {
 	class UploadCard(
 		val id: Int?,
@@ -28,6 +29,7 @@ class Card(
 		val sentence: String?,
 		val picture: String?,
 		val badges: ArrayList<String>,
+		val inAnki: Boolean?,
 	) {
 		companion object {
 			fun deserialize(stream: InputStream): UploadCard {
@@ -41,6 +43,7 @@ class Card(
 					obj.getMaybe("sentence")?.asString,
 					obj.getMaybe("picture")?.asString,
 					obj.getAsJsonArray("badges").map { it.asString } as ArrayList<String>,
+					obj.getMaybe("inAnki")?.asBoolean,
 				)
 			}
 		}
@@ -73,6 +76,7 @@ class Card(
 		this.sentence = uploadCard.sentence
 		this.picture = uploadCard.picture
 		this.badges = uploadCard.badges
+		this.inAnki = uploadCard.inAnki
 	}
 
 	companion object {

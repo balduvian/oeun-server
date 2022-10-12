@@ -17,6 +17,7 @@ object Collection {
 	val commands = arrayOf(
 		Command("latest", "/cards/latest"),
 		Command("random", "/cards/random"),
+		Command("settings", "/settings"),
 	)
 
 	fun loadAllCards() {
@@ -63,7 +64,7 @@ object Collection {
 	fun addCard(uploadCard: Card.UploadCard): Homonyms.Homonym {
 		val id = (cards.lastOrNull()?.id ?: 0) + 1
 
-		val card = Card(id, uploadCard.word, uploadCard.part, uploadCard.definition, uploadCard.sentence, uploadCard.picture, Date(), uploadCard.badges)
+		val card = Card(id, uploadCard.word, uploadCard.part, uploadCard.definition, uploadCard.sentence, uploadCard.picture, Date(), uploadCard.badges, uploadCard.inAnki)
 
 		val insertIndex = cards.binarySearch { it.id - id }
 		val homonym = if (insertIndex < 0) {
@@ -88,6 +89,11 @@ object Collection {
 		CompletableFuture.runAsync { collectionCard.save(PATH_CARDS.path) }
 
 		return homonym
+	}
+
+	fun setCardAnki(card: Card) {
+		card.inAnki = true
+		CompletableFuture.runAsync { card.save(PATH_CARDS.path) }
 	}
 
 	fun putCard(uploadCard: Card.UploadCard): Homonyms.Homonym {

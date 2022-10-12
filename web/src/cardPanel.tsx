@@ -29,13 +29,6 @@ const PartField = react.memo(({ part, parts }: PartFieldProps) => (
 	</p>
 ));
 
-type Props = {
-	card: Card;
-	parts: Part[];
-	onDelete: (id: number) => void;
-	goTo: (go: Go) => void;
-};
-
 type HighlightsProps = {
 	sentence: string | undefined;
 };
@@ -57,7 +50,15 @@ const Highlights = React.memo(({ sentence }: HighlightsProps) => {
 	);
 });
 
-const CardPanel = ({ card, parts, onDelete, goTo }: Props) => {
+type Props = {
+	card: Card;
+	parts: Part[];
+	onDelete: (id: number) => void;
+	onAnki: (id: number) => void;
+	goTo: (go: Go) => void;
+};
+
+const CardPanel = ({ card, parts, onDelete, onAnki, goTo }: Props) => {
 	return (
 		<div id="immr-card-panel">
 			<div className="immr-card-row">
@@ -84,6 +85,7 @@ const CardPanel = ({ card, parts, onDelete, goTo }: Props) => {
 								definition: card.definition,
 								sentence: card.sentence,
 								picture: card.picture,
+								inAnki: card.inAnki ? 'true' : 'false',
 							}),
 						)
 					}
@@ -101,6 +103,13 @@ const CardPanel = ({ card, parts, onDelete, goTo }: Props) => {
 					}
 				>
 					+
+				</button>
+				<button
+					disabled={card.inAnki}
+					className="card-button anki"
+					onClick={() => onAnki(card.id)}
+				>
+					★
 				</button>
 			</div>
 			<div className="immr-card-row">

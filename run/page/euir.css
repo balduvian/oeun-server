@@ -19,6 +19,16 @@
 	font-size: 25px;
 }
 
+.small.eui-input {
+	font-size: 20px;
+}
+.medium.eui-input {
+	font-size: 30px;
+}
+.large.eui-input {
+	font-size: 40px;
+}
+
 .full-width {
 	width: 100%;
 	margin-right: 0;
@@ -81,7 +91,7 @@
 
 .eui-input, .eui-select {
 	padding: 0em 0.5em;
-	height: 2em;
+	height: 40px;
 }
 
 .eui-input:focus, .eui-select:focus {

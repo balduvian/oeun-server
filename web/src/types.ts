@@ -42,6 +42,7 @@ export type Card = {
 	picture: string | undefined;
 	date: Date;
 	badges: string[];
+	inAnki: boolean | undefined;
 };
 
 export type UploadCard = {
@@ -52,6 +53,7 @@ export type UploadCard = {
 	sentence: string | undefined;
 	picture: string | undefined;
 	badges: string[];
+	inAnki: boolean | undefined;
 };
 
 export type EditingCard = {
@@ -61,6 +63,7 @@ export type EditingCard = {
 	definition: string;
 	sentence: string;
 	picture: string;
+	inAnki: boolean;
 };
 
 export type CardPostResponse = {

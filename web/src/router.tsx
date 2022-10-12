@@ -2,20 +2,20 @@ import * as reactDom from 'react-dom/client';
 import { useEffect, useState } from 'react';
 import CardsPage, { onGoCards } from './cardsPage';
 import { NewPage } from './editPage';
-import {
-	Badge,
-	Card,
-	EditingCard,
-	HistoryEntry,
-	Part,
-	ResultType,
-} from './types';
+import { Badge, Card, EditingCard, Part, ResultType } from './types';
 import App from './app';
 import BadgesPage from './badgesPage';
 import { getParts } from './partsBadges';
 import { matchUrl, Query, toTemplateURL, UrlParams, URLPart } from './url';
 import { intOrUndefined } from './util';
 import { createGo, Go } from './go';
+import SettingsPage from './settingsPage';
+import {
+	dummySettings,
+	pullSettings,
+	pushSettings,
+	Settings,
+} from './settings';
 
 type Route = {
 	url: URLPart[];
@@ -32,13 +32,13 @@ const Router = () => {
 	const [searchValue, setSearchValue] = useState('');
 	const [parts, setParts] = useState<Part[]>([]);
 	const [badges, setBadges] = useState<Badge[]>([]);
+	const [settings, setSettings] = useState<Settings>(dummySettings());
 	const [cards, setCards] = useState<Card[] | undefined>(undefined);
 	const [collectionSize, setCollectionSize] = useState<number>(0);
 	const [error, setError] = useState<boolean>(false);
 	const [editCard, setEditCard] = useState<EditingCard | undefined>(
 		undefined,
 	);
-	const [editHistory, setEditHistory] = useState<HistoryEntry[]>([]);
 
 	useEffect(() => {
 		const url = window.location.pathname;
@@ -57,7 +57,6 @@ const Router = () => {
 						setError={setError}
 						card={editCard}
 						setCard={setEditCard}
-						history={editHistory}
 					/>
 				),
 			onGo: query => {
@@ -68,9 +67,9 @@ const Router = () => {
 					definition: query.definition ?? '',
 					sentence: query.sentence ?? '',
 					picture: query.picture ?? '',
+					inAnki: query.inAnki === 'true',
 				};
 				setEditCard(card);
-				setEditHistory([]);
 				getParts(setParts, setError);
 			},
 		},
@@ -78,6 +77,21 @@ const Router = () => {
 			url: toTemplateURL('/badges'),
 			element: () => <BadgesPage />,
 			onGo: () => {},
+		},
+		{
+			url: toTemplateURL('/settings'),
+			element: () => (
+				<SettingsPage
+					settings={settings}
+					setSettings={newSettings => {
+						pushSettings(newSettings);
+						setSettings({ ...newSettings });
+					}}
+				/>
+			),
+			onGo: () => {
+				pullSettings().then(settings => setSettings(settings));
+			},
 		},
 		...(
 			[
