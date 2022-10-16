@@ -92,6 +92,7 @@ type Props = {
 	setError: Setter<boolean>;
 	card: EditingCard;
 	setCard: Setter<EditingCard>;
+	uploadCardImage: (buffer: ArrayBuffer | string) => Promise<string>;
 };
 
 export const NewPage = ({
@@ -101,6 +102,7 @@ export const NewPage = ({
 	setError,
 	card,
 	setCard,
+	uploadCardImage,
 }: Props) => {
 	const realWord = realValue(card.word);
 	const realDefinition = realValue(card.definition);
@@ -174,10 +176,7 @@ export const NewPage = ({
 						try {
 							updateField(
 								'picture',
-								await util.imagePostRequest<string>(
-									'/api/images/cards',
-									buffer,
-								),
+								await uploadCardImage(buffer),
 							);
 						} catch (err) {
 							console.log(err);

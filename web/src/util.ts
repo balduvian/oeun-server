@@ -16,7 +16,7 @@ const handle = <T>(res: Response): Promise<T> =>
 export const getRequest = <T>(url: string) =>
 	fetch(url).then(res => handle<T>(res));
 
-export const imagePostRequest = <T>(url: string, data: ArrayBuffer) =>
+export const imagePostRequest = <T>(url: string, data: ArrayBuffer | string) =>
 	fetch(url, { method: 'POST', body: data }).then(res => handle<T>(res));
 
 export const postRequest = <T>(url: string, data: any) =>

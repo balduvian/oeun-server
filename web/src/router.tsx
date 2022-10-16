@@ -7,7 +7,7 @@ import App from './app';
 import BadgesPage from './badgesPage';
 import { getParts } from './partsBadges';
 import { matchUrl, Query, toTemplateURL, UrlParams, URLPart } from './url';
-import { intOrUndefined } from './util';
+import { imagePostRequest, intOrUndefined } from './util';
 import { createGo, Go } from './go';
 import SettingsPage from './settingsPage';
 import {
@@ -45,6 +45,26 @@ const Router = () => {
 		goTo(createGo(url));
 	}, []);
 
+	const uploadCardImage = (data: ArrayBuffer | string) =>
+		imagePostRequest<string>('/api/images/cards', data);
+
+	const stripJustdataPart = (data: string): string => {
+		const index = data.indexOf('base64,');
+		if (index === -1) return data;
+		return data.substring(index + 7);
+	};
+
+	const base64ToBuffer = (base64: string): ArrayBuffer => {
+		var binaryImg = window.atob(base64);
+		var length = binaryImg.length;
+		var buffer = new ArrayBuffer(length);
+		var array = new Uint8Array(buffer);
+		for (var i = 0; i < length; i++) {
+			array[i] = binaryImg.charCodeAt(i);
+		}
+		return buffer;
+	};
+
 	const routes: Route[] = [
 		{
 			url: toTemplateURL('/edit'),
@@ -57,6 +77,7 @@ const Router = () => {
 						setError={setError}
 						card={editCard}
 						setCard={setEditCard}
+						uploadCardImage={uploadCardImage}
 					/>
 				),
 			onGo: query => {
@@ -69,8 +90,34 @@ const Router = () => {
 					picture: query.picture ?? '',
 					inAnki: query.inAnki === 'true',
 				};
+
 				setEditCard(card);
 				getParts(setParts, setError);
+
+				if (card.picture === '') {
+					const extensionId = 'bkbabekjphecklchaomdggeniajjbdka';
+
+					chrome.runtime.sendMessage(
+						extensionId,
+						{ name: 'takeScreenshot', value: undefined },
+						async response => {
+							const base64 = response.value as string | undefined;
+							if (base64 === undefined) return;
+
+							uploadCardImage(
+								base64ToBuffer(stripJustdataPart(base64)),
+							)
+								.then(newPicture =>
+									setEditCard(card =>
+										card === undefined
+											? undefined
+											: { ...card, picture: newPicture },
+									),
+								)
+								.catch(ex => console.error(ex));
+						},
+					);
+				}
 			},
 		},
 		{
