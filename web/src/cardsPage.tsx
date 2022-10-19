@@ -3,6 +3,7 @@ import * as util from './util';
 import { getParts } from './partsBadges';
 import CardPanel from './cardPanel';
 import { createGo, Go } from './go';
+import { CardDisplay } from './cardDisplay';
 
 const initialGetRequest = (id: number, mode: ResultType) => {
 	if (mode === ResultType.CARD) {
@@ -60,8 +61,7 @@ const CardsPage = ({ goTo, cards, setCards, collectionSize, parts }: Props) =>
 	cards.length === 0 ? (
 		<div className="blank-holder">
 			<div className="image-holder">
-				<div className="size-display">{`카드 ${collectionSize}장`}</div>
-				<img src="/blank.svg" />
+				<CardDisplay cards={collectionSize} />
 			</div>
 		</div>
 	) : (
