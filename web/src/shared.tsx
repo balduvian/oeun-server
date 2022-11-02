@@ -21,7 +21,6 @@ export const killCtrlZ = () => (
 	<WindowEvent
 		eventName="keydown"
 		callback={event => {
-			/* this is some bullshit */
 			if (event.code === 'KeyZ' && event.ctrlKey) event.preventDefault();
 		}}
 	/>

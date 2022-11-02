@@ -3,9 +3,11 @@ package com.balduvian
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
+import java.io.File
 
 object Util {
 	val senderGson = GsonBuilder().create()
@@ -65,4 +67,15 @@ object Util {
 		}
 		return pool.images
 	}
+}
+
+fun main() {
+	val directory = File("C:\\Users\\Emmet\\Programming\\lang\\java\\oeun-server\\run\\data\\cards")
+	val numWords = directory.listFiles { file -> file.extension == "json" }.sumOf { file ->
+		val obj = JsonParser.parseReader(file.reader()).asJsonObject
+		val sentence = (obj.get("sentence") ?: return@sumOf 0).asString
+		sentence.split(' ').size
+	}
+
+	println("Total words: $numWords")
 }

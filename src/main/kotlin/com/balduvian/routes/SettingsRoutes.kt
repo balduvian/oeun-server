@@ -2,6 +2,7 @@ package com.balduvian.routes
 
 import com.balduvian.*
 import com.balduvian.Collection
+import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -19,10 +20,14 @@ fun Route.settingsRouting() {
 				withContext(Dispatchers.IO) {
 					val options = JsonParser.parseReader(call.receiveStream().reader()).asJsonObject
 
-					fun realValue(value: String) = value.trim().ifEmpty { null }
+					fun realValue(value: JsonElement): String? {
+						if (value.isJsonNull) return null
+						return value.asString.trim().ifEmpty { null }
+					}
 
-					options.get("deckName")?.let { Settings.options.deckName = realValue(it.asString) }
-					options.get("modelName")?.let { Settings.options.modelName = realValue(it.asString) }
+					options.get("deckName")?.let { Settings.options.deckName = realValue(it) }
+					options.get("modelName")?.let { Settings.options.modelName = realValue(it) }
+					options.get("extensionId")?.let { Settings.options.extensionId = realValue(it) }
 
 					Settings.options.save()
 

@@ -20,6 +20,7 @@ export type Badge = {
 
 export enum SuggestionSpecial {
 	ADD,
+	HOME,
 }
 
 export type SearchSuggestion = {

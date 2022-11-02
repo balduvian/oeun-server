@@ -22,8 +22,11 @@ const SettingsInput = ({ label, value, onChange }: SettingsInputProps) => (
 
 type Props = {
 	settings: Settings;
-	setSettings: Setter<Settings>;
+	setSettings: Setter<Partial<Settings>>;
 };
+
+export const blankToNull = (input: string) =>
+	input.length === 0 ? null : input;
 
 export const SettingsPage = ({ settings, setSettings }: Props) => {
 	return (
@@ -31,16 +34,24 @@ export const SettingsPage = ({ settings, setSettings }: Props) => {
 			<h2>Anki Connect Settings</h2>
 			<SettingsInput
 				label="Deck Name"
-				value={settings.deckName}
+				value={settings.deckName ?? ''}
 				onChange={value =>
-					setSettings({ ...settings, deckName: value })
+					setSettings({ deckName: blankToNull(value) })
 				}
 			/>
 			<SettingsInput
 				label="Model Name"
-				value={settings.modelName}
+				value={settings.modelName ?? ''}
 				onChange={value =>
-					setSettings({ ...settings, modelName: value })
+					setSettings({ modelName: blankToNull(value) })
+				}
+			/>
+			<h2>Ebetshot Settings</h2>
+			<SettingsInput
+				label="Extension ID"
+				value={settings.extensionId ?? ''}
+				onChange={value =>
+					setSettings({ extensionId: blankToNull(value) })
 				}
 			/>
 		</div>

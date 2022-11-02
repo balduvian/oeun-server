@@ -3,11 +3,83 @@ import { createGo, Go } from './go';
 import { composingEvents, isComposing } from './korInput';
 import { SearchSuggestion, SuggestionSpecial } from './types';
 import * as util from './util';
+import WindowEvent from './windowEvent';
 
 enum ResultState {
 	GOOD,
 	ERROR,
 }
+
+type State = {
+	suggestions: SearchSuggestion[];
+	state: ResultState;
+	selection: number;
+	shown: boolean;
+};
+type StateMayShown = Omit<State, 'shown'> & { shown?: boolean };
+
+const stateSearchError = (): State => ({
+	suggestions: [],
+	state: ResultState.ERROR,
+	selection: 0,
+	shown: true,
+});
+
+const stateResults = (
+	{ selection }: State,
+	query: string,
+	results: SearchSuggestion[],
+): StateMayShown => {
+	/* add the create link */
+	const firstResult = results[0] as SearchSuggestion | undefined;
+	if (
+		!query.startsWith('!') &&
+		!query.startsWith('#') &&
+		(firstResult === undefined || firstResult.word !== query)
+	)
+		results.splice(0, 0, {
+			word: query,
+			ids: [],
+			url: `/edit?word=${query}`,
+			special: SuggestionSpecial.ADD,
+		});
+
+	return {
+		suggestions: results,
+		state: ResultState.GOOD,
+		selection: util.coerceIn(selection, 0, results.length - 1),
+	};
+};
+
+const makeSearch = async (
+	state: State,
+	query: string,
+): Promise<StateMayShown> => {
+	/* don't need to ask for empty search */
+	if (query.length === 0)
+		return {
+			suggestions: [
+				{
+					word: 'Home',
+					ids: [],
+					url: '/cards',
+					special: SuggestionSpecial.HOME,
+				},
+			],
+			state: ResultState.GOOD,
+			selection: 0,
+		};
+	else
+		try {
+			const suggestions = await util.getRequest<SearchSuggestion[]>(
+				`/api/collection/search/${encodeURIComponent(query)}/10`,
+			);
+
+			return stateResults(state, query, suggestions);
+		} catch {
+			return stateSearchError();
+		}
+};
 
 type Props = {
 	searchValue: string;
@@ -16,98 +88,90 @@ type Props = {
 };
 
 const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
+	const inputRef = useRef<HTMLInputElement>(null);
 	const waitingOnInput = useRef(false);
 	const typingEventNo = useRef(0);
 
-	const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
-	const [resultState, setResultState] = useState<ResultState>(
-		ResultState.GOOD,
-	);
-	const [selection, setSelection] = useState<number>(0);
+	const [state, setState] = useState<State>({
+		suggestions: [],
+		state: ResultState.GOOD,
+		selection: 0,
+		shown: false,
+	});
 
-	const stateSearchError = () => {
-		setSuggestions([]);
-		setResultState(ResultState.ERROR);
-		setSelection(0);
-	};
-
-	const clear = (searchValue?: string) => {
-		setSuggestions([]);
-		setResultState(ResultState.GOOD);
-		setSelection(0);
+	const setClear = (searchValue?: string) => {
+		setState({
+			suggestions: [],
+			state: ResultState.GOOD,
+			selection: 0,
+			shown: false,
+		});
 		if (searchValue !== undefined) setSearchValue(searchValue);
 	};
 
-	const setResults = (query: string, results: SearchSuggestion[]) => {
-		/* add the create link */
-		const firstResult = results[0] as SearchSuggestion | undefined;
-		if (
-			!query.startsWith('!') &&
-			!query.startsWith('#') &&
-			(firstResult === undefined || firstResult.word !== query)
-		) {
-			results.splice(0, 0, {
-				word: query,
-				ids: [],
-				url: `/edit?word=${query}`,
-				special: SuggestionSpecial.ADD,
-			});
-		}
+	const setShown = () =>
+		setState(state => ({
+			...state,
+			shown: true,
+		}));
 
-		setSuggestions(results);
-		setResultState(ResultState.GOOD);
-		setSelection(util.coerceIn(selection, 0, results.length - 1));
+	const setHide = () => {
+		setState(state => ({ ...state, shown: false }));
 	};
 
-	const makeSearch = (query: string) => {
-		if (query.length === 0) {
-			/* don't need to ask for empty search */
-			return Promise.resolve((clear(), []));
-		} else {
-			return util
-				.getRequest<SearchSuggestion[]>(
-					`/api/collection/search/${query.replaceAll('#', '%23')}/10`,
-				)
-				.then(
-					suggestions => (
-						setResults(query, suggestions), suggestions
-					),
-				)
-				.catch(() => (stateSearchError(), undefined));
-		}
-	};
+	const setSearch = (suggestion: SearchSuggestion | undefined) => {
+		inputRef.current?.blur();
 
-	const onSearch = (suggestion: SearchSuggestion | undefined) => {
-		(document.activeElement as HTMLElement | null)?.blur();
 		if (suggestion?.special === SuggestionSpecial.ADD) {
-			clear(suggestion.word);
+			setClear(suggestion.word);
 			goTo(createGo(suggestion.url));
-		} else if (suggestion === undefined) {
-			clear('');
+		} else if (
+			suggestion?.special === SuggestionSpecial.HOME ||
+			suggestion === undefined
+		) {
+			setClear('');
 			goTo(createGo('/cards'));
 		} else {
-			clear(suggestion.word);
+			setClear(suggestion.word);
 			goTo(createGo(suggestion.url));
 		}
 	};
 
 	return (
 		<div id="immr-search-area">
+			<WindowEvent
+				eventName="keydown"
+				callback={event => {
+					if (event.code === 'KeyF' && event.ctrlKey) {
+						event.preventDefault();
+						inputRef.current?.focus();
+					}
+				}}
+			/>
 			<div className="search-grid">
 				<input
+					ref={inputRef}
 					{...composingEvents}
 					onKeyDown={event => {
 						if (isComposing(event)) return;
-						if (suggestions === undefined) return;
+						if (state.suggestions === undefined) return;
 
 						if (event.code === 'ArrowDown') {
 							event.preventDefault();
-							setSelection(
-								Math.min(selection + 1, suggestions.length - 1),
-							);
+							setState(({ suggestions, selection, ...rest }) => ({
+								suggestions,
+								selection: Math.min(
+									state.selection + 1,
+									suggestions.length - 1,
+								),
+								...rest,
+							}));
 						} else if (event.code === 'ArrowUp') {
 							event.preventDefault();
-							setSelection(Math.max(selection - 1, 0));
+							setState(({ selection, ...rest }) => ({
+								selection: Math.max(state.selection - 1, 0),
+								...rest,
+							}));
 						} else if (event.code === 'Escape') {
 							event.preventDefault();
 							event.currentTarget.blur();
@@ -118,13 +182,21 @@ const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
 							if (waitingOnInput.current) {
 								++typingEventNo.current;
 
-								makeSearch(value).then(suggestions => {
-									if (suggestions !== undefined) {
-										onSearch(suggestions[selection]);
-									}
+								makeSearch(state, value).then(newState => {
+									if (newState.suggestions.length === 0)
+										setState(({ shown }) => ({
+											shown,
+											...newState,
+										}));
+									else
+										setSearch(
+											newState.suggestions[
+												newState.selection
+											],
+										);
 								});
 							} else {
-								onSearch(suggestions[selection]);
+								setSearch(state.suggestions[state.selection]);
 							}
 						}
 					}}
@@ -134,11 +206,17 @@ const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
 						const search = event.currentTarget;
 						search.selectionStart = 0;
 						search.selectionEnd = search.value.length;
-						makeSearch(search.value);
+						if (state.suggestions.length === 0) {
+							setShown();
+							makeSearch(state, searchValue).then(newState =>
+								setState(({ shown }) => ({
+									shown,
+									...newState,
+								})),
+							);
+						} else setShown();
 					}}
-					onBlur={() => {
-						clear();
-					}}
+					onBlur={() => setHide()}
 					onInput={async event => {
 						const currentValue = event.currentTarget.value;
 						if (currentValue === searchValue) return;
@@ -146,31 +224,37 @@ const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
 						setSearchValue(currentValue);
 
 						const thisNo = ++typingEventNo.current;
+						const wasWaiting = waitingOnInput.current;
 						waitingOnInput.current = true;
 
 						const query = event.currentTarget.value;
 
 						/* save search calls */
-						await util.wait(250);
+						if (query.length > 0 && !wasWaiting)
+							await util.wait(100);
 						if (typingEventNo.current != thisNo) return;
 						waitingOnInput.current = false;
 
-						makeSearch(query);
+						makeSearch(state, query).then(newState =>
+							setState(({ shown }) => ({
+								shown,
+								...newState,
+							})),
+						);
 					}}
 				/>
 			</div>
-			{suggestions.length === 0 &&
-			resultState === ResultState.GOOD ? null : (
+			{!state.shown ? null : (
 				<div id="immr-search-suggestions">
-					{resultState === ResultState.ERROR ? (
+					{state.state === ResultState.ERROR ? (
 						<div className="immr-search-suggestion error">
 							Something went wrong...
 						</div>
 					) : (
-						suggestions.map(({ word, ids, special }, i) => (
+						state.suggestions.map(({ word, ids, special }, i) => (
 							<div
 								className={`immr-search-suggestion ${
-									i === selection ? 'selected' : ''
+									i === state.selection ? 'selected' : ''
 								} ${
 									special === SuggestionSpecial.ADD
 										? 'add'
@@ -180,6 +264,8 @@ const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
 							>
 								{special === SuggestionSpecial.ADD ? (
 									<div className="add-plus">+</div>
+								) : special === SuggestionSpecial.HOME ? (
+									<div className="add-plus">H</div>
 								) : null}
 								{word}
 								<div className="id">{ids.join(' ')}</div>

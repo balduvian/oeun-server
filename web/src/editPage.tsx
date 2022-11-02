@@ -95,7 +95,7 @@ type Props = {
 	uploadCardImage: (buffer: ArrayBuffer | string) => Promise<string>;
 };
 
-export const NewPage = ({
+export const EditPage = ({
 	setSearchValue,
 	goTo,
 	parts,
@@ -202,4 +202,4 @@ export const NewPage = ({
 	);
 };
 
-export default NewPage;
+export default EditPage;

@@ -12,6 +12,7 @@ object Settings {
 		var port: Int,
 		var deckName: String?,
 		var modelName: String?,
+		var extensionId: String?,
 	) {
 		fun save() {
 			val file = File(OPTIONS_PATH)
@@ -28,7 +29,7 @@ object Settings {
 		return if (file.exists()) {
 			Util.readerGson.fromJson(File(OPTIONS_PATH).reader(), Options::class.java)
 		} else {
-			val defaultOptions = Options(DEFAULT_PORT, "", "")
+			val defaultOptions = Options(DEFAULT_PORT, null, null, null)
 
 			defaultOptions.save()
 

@@ -1,7 +1,7 @@
 import * as reactDom from 'react-dom/client';
 import { useEffect, useState } from 'react';
 import CardsPage, { onGoCards } from './cardsPage';
-import { NewPage } from './editPage';
+import { EditPage } from './editPage';
 import { Badge, Card, EditingCard, Part, ResultType } from './types';
 import App from './app';
 import BadgesPage from './badgesPage';
@@ -70,7 +70,7 @@ const Router = () => {
 			url: toTemplateURL('/edit'),
 			element: () =>
 				editCard === undefined ? null : (
-					<NewPage
+					<EditPage
 						setSearchValue={setSearchValue}
 						goTo={goTo}
 						parts={parts}
@@ -94,9 +94,9 @@ const Router = () => {
 				setEditCard(card);
 				getParts(setParts, setError);
 
-				if (card.picture === '') {
-					const extensionId = 'bkbabekjphecklchaomdggeniajjbdka';
+				const extensionId = settings.extensionId;
 
+				if (extensionId !== null && card.picture === '') {
 					chrome.runtime.sendMessage(
 						extensionId,
 						{ name: 'takeScreenshot', value: undefined },
@@ -132,7 +132,7 @@ const Router = () => {
 					settings={settings}
 					setSettings={newSettings => {
 						pushSettings(newSettings);
-						setSettings({ ...newSettings });
+						setSettings({ ...settings, ...newSettings });
 					}}
 				/>
 			),
@@ -159,6 +159,7 @@ const Router = () => {
 						setCards={setCards}
 						collectionSize={collectionSize}
 						parts={parts}
+						settings={settings}
 					/>
 				),
 			onGo: (_: Query, params: UrlParams) =>

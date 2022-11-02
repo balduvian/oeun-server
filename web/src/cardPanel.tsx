@@ -54,7 +54,7 @@ type Props = {
 	card: Card;
 	parts: Part[];
 	onDelete: (id: number) => void;
-	onAnki: (id: number) => void;
+	onAnki: ((id: number) => void) | undefined;
 	goTo: (go: Go) => void;
 };
 
@@ -104,13 +104,15 @@ const CardPanel = ({ card, parts, onDelete, onAnki, goTo }: Props) => {
 				>
 					+
 				</button>
-				<button
-					disabled={card.inAnki}
-					className="card-button anki"
-					onClick={() => onAnki(card.id)}
-				>
-					★
-				</button>
+				{onAnki === undefined ? null : (
+					<button
+						disabled={card.inAnki}
+						className="card-button anki"
+						onClick={() => onAnki(card.id)}
+					>
+						★
+					</button>
+				)}
 			</div>
 			<div className="immr-card-row">
 				<CardField

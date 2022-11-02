@@ -4,6 +4,8 @@ import { getParts } from './partsBadges';
 import CardPanel from './cardPanel';
 import { createGo, Go } from './go';
 import { CardDisplay } from './cardDisplay';
+import { Settings } from './settings';
+import SettingsPage from './settingsPage';
 
 const initialGetRequest = (id: number, mode: ResultType) => {
 	if (mode === ResultType.CARD) {
@@ -55,9 +57,17 @@ type Props = {
 	setCards: Setter<Card[]>;
 	collectionSize: number;
 	parts: Part[];
+	settings: Settings;
 };
 
-const CardsPage = ({ goTo, cards, setCards, collectionSize, parts }: Props) =>
+const CardsPage = ({
+	goTo,
+	cards,
+	setCards,
+	collectionSize,
+	parts,
+	settings,
+}: Props) =>
 	cards.length === 0 ? (
 		<div className="blank-holder">
 			<div className="image-holder">
@@ -88,22 +98,26 @@ const CardsPage = ({ goTo, cards, setCards, collectionSize, parts }: Props) =>
 							})
 							.catch(console.error)
 					}
-					onAnki={ankiId =>
-						util
-							.postRequest<MessageResponse>(
-								`/api/anki/${ankiId}`,
-								{},
-							)
-							.then(() => {
-								const modifyCard = cards.find(
-									card => card.id === ankiId,
-								);
-								if (modifyCard !== undefined) {
-									modifyCard.inAnki = true;
-								}
+					onAnki={
+						settings.deckName === null ||
+						settings.modelName === null
+							? undefined
+							: ankiId =>
+									util
+										.postRequest<MessageResponse>(
+											`/api/anki/${ankiId}`,
+											{},
+										)
+										.then(() => {
+											const modifyCard = cards.find(
+												card => card.id === ankiId,
+											);
+											if (modifyCard !== undefined) {
+												modifyCard.inAnki = true;
+											}
 
-								setCards([...cards]);
-							})
+											setCards([...cards]);
+										})
 					}
 					goTo={goTo}
 				/>

@@ -1,11 +1,17 @@
+import { LogLevel } from 'ts-loader/dist/logger';
 import { getRequest, patchRequest } from './util';
 
 export type Settings = {
-	deckName: string;
-	modelName: string;
+	deckName: string | null;
+	modelName: string | null;
+	extensionId: string | null;
 };
 
-export const dummySettings = (): Settings => ({ deckName: '', modelName: '' });
+export const dummySettings = (): Settings => ({
+	deckName: null,
+	modelName: null,
+	extensionId: null,
+});
 
 export const pullSettings = () => getRequest<Settings>('/api/settings');
 
