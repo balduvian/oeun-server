@@ -6,6 +6,7 @@ const config: webpack.Configuration = {
 	entry: {
 		index: './src/router.tsx',
 	},
+	devtool: 'source-map',
 	module: {
 		rules: [
 			{

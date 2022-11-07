@@ -18,8 +18,8 @@ export const CardDisplay = ({ cards }: Props) => (
 				gradientTransform="translate(6.2 6.2) rotate(180)"
 				gradientUnits="userSpaceOnUse"
 			>
-				<stop offset="0" stop-color="#414042" />
-				<stop offset="1" stop-color="#1f1f1f" />
+				<stop offset="0" stopColor="#414042" />
+				<stop offset="1" stopColor="#1f1f1f" />
 			</linearGradient>
 			<linearGradient
 				id="linear-gradient-2"

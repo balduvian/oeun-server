@@ -1,4 +1,3 @@
-import { LogLevel } from 'ts-loader/dist/logger';
 import { getRequest, patchRequest } from './util';
 
 export type Settings = {

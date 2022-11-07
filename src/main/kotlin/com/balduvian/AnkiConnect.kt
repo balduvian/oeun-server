@@ -14,7 +14,7 @@ object AnkiConnect {
 	val PORT = 8765
 
 	fun ankiFormat(string: String): String {
-		return string.replace(Regex("\\*\\*(.+)\\*\\*"), "<b>$1</b>")
+		return string.replace(Regex("\\*\\*(.+?)\\*\\*"), "<b>$1</b>")
 	}
 
 	fun createRequestObj(action: String, params: JsonElement): JsonObject {

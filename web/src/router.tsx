@@ -40,8 +40,13 @@ const Router = () => {
 		undefined,
 	);
 
+	const mergeSettings = (newSettings: Partial<Settings>) => {
+		setSettings(settings => ({ ...settings, ...newSettings }));
+	};
+
 	useEffect(() => {
 		const url = window.location.pathname;
+		pullSettings().then(settings => mergeSettings(settings));
 		goTo(createGo(url));
 	}, []);
 
