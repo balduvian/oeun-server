@@ -12,6 +12,7 @@
 
 /run/data/.git
 /run/data
+/run/*.bat
 
 *.jar
 *.js.map
