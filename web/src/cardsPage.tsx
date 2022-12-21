@@ -1,11 +1,19 @@
-import { Card, MessageResponse, Part, ResultType, Setter } from './types';
+import {
+	Card,
+	DeleteResponse,
+	MessageResponse,
+	Part,
+	ResultType,
+	Setter,
+} from './types';
 import * as util from './util';
 import { getParts } from './partsBadges';
-import CardPanel from './cardPanel';
+import CardPanel, { AnkiMode } from './cardPanel';
 import { createGo, Go } from './go';
 import { CardDisplay } from './cardDisplay';
 import { Settings } from './settings';
-import SettingsPage from './settingsPage';
+import React from 'react';
+import { warn } from './toast';
 
 const initialGetRequest = (id: number, mode: ResultType) => {
 	if (mode === ResultType.CARD) {
@@ -67,8 +75,8 @@ const CardsPage = ({
 	collectionSize,
 	parts,
 	settings,
-}: Props) =>
-	cards.length === 0 ? (
+}: Props) => {
+	return cards.length === 0 ? (
 		<div className="blank-holder">
 			<div className="image-holder">
 				<CardDisplay cards={collectionSize} />
@@ -83,10 +91,11 @@ const CardsPage = ({
 					parts={parts}
 					onDelete={deletedId =>
 						util
-							.deleteRequest<MessageResponse>(
+							.deleteRequest<DeleteResponse>(
 								`/api/collection/${deletedId}`,
 							)
-							.then(() => {
+							.then(({ warnings }) => {
+								warnings.forEach(warning => warn(warning));
 								const newCards = cards.filter(
 									card => card.id !== deletedId,
 								);
@@ -102,21 +111,27 @@ const CardsPage = ({
 						settings.deckName === null ||
 						settings.modelName === null
 							? undefined
-							: ankiId =>
+							: (ankiId, mode) =>
 									util
-										.postRequest<MessageResponse>(
-											`/api/anki/${ankiId}`,
+										.postRequest<Card>(
+											mode === AnkiMode.ADD
+												? `/api/anki/add/${ankiId}`
+												: `/api/anki/sync/${ankiId}`,
 											{},
 										)
-										.then(() => {
-											const modifyCard = cards.find(
-												card => card.id === ankiId,
-											);
-											if (modifyCard !== undefined) {
-												modifyCard.inAnki = true;
+										.then(updatedCard => {
+											const replaceIndex =
+												cards.findIndex(
+													card =>
+														card.id ===
+														updatedCard.id,
+												);
+											if (replaceIndex !== -1) {
+												const list = [...cards];
+												list[replaceIndex] =
+													updatedCard;
+												setCards(list);
 											}
-
-											setCards([...cards]);
 										})
 					}
 					goTo={goTo}
@@ -124,5 +139,6 @@ const CardsPage = ({
 			))}
 		</>
 	);
+};
 
 export default CardsPage;

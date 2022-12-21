@@ -1,6 +1,13 @@
 @font-face {
-  font-family: Handwritten;
-  src: url("/handwritten-improved.ttf");
+  font-family: NotoSans;
+  src: url("/NotoSans-Regular.ttf");
+  font-weight: normal;
+}
+
+@font-face {
+  font-family: NotoSans;
+  src: url("/NotoSans-Bold.ttf");
+  font-weight: bold;
 }
 
 :root {
@@ -12,6 +19,7 @@
   --blu: rgb(56, 90, 174);
   --gre: rgb(50, 198, 151);
   --lblu: rgb(59, 196, 230);
+  --dblu: rgb(55, 115, 130);
 }
 
 input,
@@ -20,7 +28,7 @@ p,
 div,
 span,
 select {
-  font-family: Handwritten;
+  font-family: NotoSans;
 }
 
 #immr-panel {
@@ -67,7 +75,7 @@ select {
   border-radius: 10px;
 
   background-color: white;
-  font-size: 30px;
+  font-size: 20px;
   font-weight: bold;
 }
 
@@ -123,7 +131,7 @@ select {
 
   height: 30px;
   line-height: 30px;
-  font-size: 30px;
+  font-size: 20px;
   color: white;
 
   background-color: var(--immr-background-color);
@@ -215,7 +223,7 @@ select {
 }
 
 .immr-card-row > p.big {
-  font-size: 30px;
+  font-size: 20px;
   line-height: 25px;
 }
 
@@ -314,7 +322,7 @@ select {
   color: white;
   padding: 0;
   width: 100%;
-  font-size: 25px;
+  font-size: 15px;
   line-height: 20px;
   text-align: center;
 }
@@ -492,8 +500,12 @@ img {
   border-color: var(--lblu);
 }
 .card-button.anki:hover,
-.card-button.anki:disabled {
+.card-button.anki.active {
   background-color: var(--lblu);
+  color: white;
+}
+.card-button.anki.loading {
+  background-color: var(--dblu);
   color: white;
 }
 
@@ -524,7 +536,7 @@ img {
   height: 100%;
 
   line-height: 100px;
-  font-size: 60px;
+  font-size: 40px;
   color: #fff;
   font-weight: 700;
   text-align: center;

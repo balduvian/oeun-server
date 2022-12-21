@@ -10,23 +10,13 @@
 }
 
 .small {
-	font-size: 16px;
+	font-size: 14px;
 }
 .medium {
-	font-size: 20px;
+	font-size: 18px;
 }
 .large {
-	font-size: 25px;
-}
-
-.small.eui-input {
-	font-size: 20px;
-}
-.medium.eui-input {
-	font-size: 30px;
-}
-.large.eui-input {
-	font-size: 40px;
+	font-size: 22px;
 }
 
 .full-width {

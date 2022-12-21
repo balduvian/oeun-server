@@ -39,7 +39,7 @@ const stateResults = (
 	)
 		results.splice(0, 0, {
 			word: query,
-			ids: [],
+			numbers: [],
 			url: `/edit?word=${query}`,
 			special: SuggestionSpecial.ADD,
 		});
@@ -61,7 +61,7 @@ const makeSearch = async (
 			suggestions: [
 				{
 					word: 'Home',
-					ids: [],
+					numbers: [],
 					url: '/cards',
 					special: SuggestionSpecial.HOME,
 				},
@@ -251,26 +251,30 @@ const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
 							Something went wrong...
 						</div>
 					) : (
-						state.suggestions.map(({ word, ids, special }, i) => (
-							<div
-								className={`immr-search-suggestion ${
-									i === state.selection ? 'selected' : ''
-								} ${
-									special === SuggestionSpecial.ADD
-										? 'add'
-										: ''
-								}`}
-								key={word}
-							>
-								{special === SuggestionSpecial.ADD ? (
-									<div className="add-plus">+</div>
-								) : special === SuggestionSpecial.HOME ? (
-									<div className="add-plus">H</div>
-								) : null}
-								{word}
-								<div className="id">{ids.join(' ')}</div>
-							</div>
-						))
+						state.suggestions.map(
+							({ word, numbers, special }, i) => (
+								<div
+									className={`immr-search-suggestion ${
+										i === state.selection ? 'selected' : ''
+									} ${
+										special === SuggestionSpecial.ADD
+											? 'add'
+											: ''
+									}`}
+									key={word}
+								>
+									{special === SuggestionSpecial.ADD ? (
+										<div className="add-plus">+</div>
+									) : special === SuggestionSpecial.HOME ? (
+										<div className="add-plus">H</div>
+									) : null}
+									{word}
+									<div className="id">
+										{numbers.join(' ')}
+									</div>
+								</div>
+							),
+						)
 					)}
 				</div>
 			)}

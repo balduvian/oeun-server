@@ -50,15 +50,22 @@ const Highlights = React.memo(({ sentence }: HighlightsProps) => {
 	);
 });
 
+export enum AnkiMode {
+	ADD,
+	SYNC,
+}
+
 type Props = {
 	card: Card;
 	parts: Part[];
 	onDelete: (id: number) => void;
-	onAnki: ((id: number) => void) | undefined;
+	onAnki: ((id: number, mode: AnkiMode) => Promise<void>) | undefined;
 	goTo: (go: Go) => void;
 };
 
 const CardPanel = ({ card, parts, onDelete, onAnki, goTo }: Props) => {
+	const [ankiLoading, setAnkiLoading] = React.useState(false);
+
 	return (
 		<div id="immr-card-panel">
 			<div className="immr-card-row">
@@ -85,7 +92,8 @@ const CardPanel = ({ card, parts, onDelete, onAnki, goTo }: Props) => {
 								definition: card.definition,
 								sentence: card.sentence,
 								picture: card.picture,
-								inAnki: card.inAnki ? 'true' : 'false',
+								anki:
+									card.anki !== undefined ? 'true' : 'false',
 							}),
 						)
 					}
@@ -106,11 +114,21 @@ const CardPanel = ({ card, parts, onDelete, onAnki, goTo }: Props) => {
 				</button>
 				{onAnki === undefined ? null : (
 					<button
-						disabled={card.inAnki}
-						className="card-button anki"
-						onClick={() => onAnki(card.id)}
+						disabled={ankiLoading}
+						className={`card-button anki ${
+							card.anki === undefined ? '' : 'active'
+						} ${ankiLoading ? 'loading' : ''}`}
+						onClick={() => {
+							setAnkiLoading(true);
+							onAnki(
+								card.id,
+								card.anki === undefined
+									? AnkiMode.ADD
+									: AnkiMode.SYNC,
+							).finally(() => setAnkiLoading(false));
+						}}
 					>
-						★
+						{card.anki !== undefined || ankiLoading ? '↻' : '★'}
 					</button>
 				)}
 			</div>
@@ -129,7 +147,11 @@ const CardPanel = ({ card, parts, onDelete, onAnki, goTo }: Props) => {
 				/>
 			</div>
 			<EbetPictureInput
-				src={`/api/images/cards/${card.picture}`}
+				src={
+					card.picture === undefined
+						? undefined
+						: `/api/images/cards/${card.picture}`
+				}
 				disabled
 			/>
 		</div>

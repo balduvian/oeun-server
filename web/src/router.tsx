@@ -93,7 +93,7 @@ const Router = () => {
 					definition: query.definition ?? '',
 					sentence: query.sentence ?? '',
 					picture: query.picture ?? '',
-					inAnki: query.inAnki === 'true',
+					anki: query.anki === 'true',
 				};
 
 				setEditCard(card);

@@ -43,11 +43,12 @@ object Collection {
 		}
 
 		cards.sortBy { it.id }
-		cardsDateOrder.sortBy { it.date }
+		cardsDateOrder.sortBy { it.date.toInstant() }
 	}
 
 	fun findDateCardIndex(date: ZonedDateTime): Int? {
-		val index = cards.binarySearch { it.date.compareTo(date) }
+		val instant = date.toInstant()
+		val index = cardsDateOrder.binarySearch { it.date.toInstant().compareTo(instant) }
 		return if (index < 0) null else index
 	}
 
@@ -80,10 +81,10 @@ object Collection {
 		val collectionCard = getCard(id) ?: throw PrettyException("Card with id=${id} doesn't exist")
 
 		val ankiData = collectionCard.anki
-		val isInAnki = uploadCard.anki != null
+		val isInAnki = uploadCard.anki
 
 		val oldWord = collectionCard.word
-		collectionCard.permuteInto(uploadCard, updateAnki = false)
+		collectionCard.permuteInto(uploadCard)
 		val homonym = Homonyms.renameCard(collectionCard, oldWord) ?: throw PrettyException("Could not rename card")
 
 		val warnings = Warnings.make()
@@ -181,7 +182,7 @@ object Collection {
 		if (phrase.startsWith('!')) {
 			return commands.zip(commands.indices).mapNotNull { (command, i) ->
 				if (command.commandName.startsWith(phrase.subSequence(1, phrase.length))) {
-					OutSearchResult('!' + command.commandName, arrayListOf(i), command.url)
+					OutSearchResult('!' + command.commandName, arrayListOf(i + 1), command.url)
 				} else {
 					null
 				}

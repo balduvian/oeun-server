@@ -32,7 +32,7 @@ fun Route.ankiRouting() {
 				val ankiId = AnkiConnect.addCardToAnki(deckName, modelName, card)
 				Collection.setCardAnki(card, ankiId)
 
-				Util.ok(call, "added")
+				Util.okJson(call, card.serialize())
 			}
 		}
 		post("sync/{id?}") {
@@ -43,7 +43,7 @@ fun Route.ankiRouting() {
 				val ankiId = AnkiConnect.editCardInAnki(deckName, modelName, card)
 				if (ankiId != card.anki?.id) Collection.setCardAnki(card, ankiId)
 
-				Util.ok(call, "synced")
+				Util.okJson(call, card.serialize())
 			}
 		}
 		post("sync") {

@@ -1,7 +1,7 @@
 import React from 'react';
 import {
 	Part,
-	CardPostResponse,
+	CardPutResponse,
 	Setter,
 	EditingCard,
 	UploadCard,
@@ -22,6 +22,7 @@ import {
 	EbetSelect,
 } from './ebetUi';
 import { createGo, Go } from './go';
+import { warn } from './toast';
 
 type NewCardFieldProps = {
 	value: string;
@@ -104,6 +105,8 @@ export const EditPage = ({
 	setCard,
 	uploadCardImage,
 }: Props) => {
+	const [wasInAnki] = React.useState(card.anki);
+
 	const realWord = realValue(card.word);
 	const realDefinition = realValue(card.definition);
 	const realPicture = realValue(card.picture);
@@ -118,13 +121,14 @@ export const EditPage = ({
 				sentence: realValue(card.sentence),
 				picture: realValue(card.picture),
 				badges: [],
-				inAnki: card.inAnki,
+				anki: card.anki,
 			};
 
-			util.putRequest<CardPostResponse>('/api/collection', uploadCard)
-				.then(({ word, url }) => {
+			util.putRequest<CardPutResponse>('/api/collection', uploadCard)
+				.then(({ word, url, warnings }) => {
 					setSearchValue(word);
 					goTo(createGo(url));
+					warnings.forEach(warning => warn(warning));
 				})
 				.catch(() => setError(true));
 		}
@@ -184,13 +188,18 @@ export const EditPage = ({
 					}}
 				/>
 			</EbetFormField>
-			<EbetFormField>
-				<EbetButton
-					text={card.inAnki ? 'In anki' : 'Not in Anki'}
-					onClick={() => updateField('inAnki', false)}
-					disabled={!card.inAnki}
-				/>
-			</EbetFormField>
+			{wasInAnki ? (
+				<EbetFormField>
+					<EbetButton
+						text={
+							card.anki
+								? 'Remove from Anki'
+								: 'Will be removed from anki'
+						}
+						onClick={() => updateField('anki', !card.anki)}
+					/>
+				</EbetFormField>
+			) : null}
 			<div className="button-grid">
 				<EbetButton
 					text="Cancel"

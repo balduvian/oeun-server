@@ -25,7 +25,7 @@ export enum SuggestionSpecial {
 
 export type SearchSuggestion = {
 	word: string;
-	ids: number[];
+	numbers: number[];
 	url: string;
 	special?: SuggestionSpecial;
 };
@@ -34,6 +34,11 @@ export type Highlights = { part: string; highlight: boolean }[];
 
 export type HistoryEntry = { field: keyof Card; value: string };
 
+export type AnkiData = {
+	id: number;
+	added: string;
+};
+
 export type Card = {
 	id: number;
 	word: string;
@@ -41,9 +46,8 @@ export type Card = {
 	definition: string;
 	sentence: string | undefined;
 	picture: string | undefined;
-	date: Date;
 	badges: string[];
-	inAnki: boolean | undefined;
+	anki: AnkiData | undefined;
 };
 
 export type UploadCard = {
@@ -54,7 +58,7 @@ export type UploadCard = {
 	sentence: string | undefined;
 	picture: string | undefined;
 	badges: string[];
-	inAnki: boolean | undefined;
+	anki: boolean;
 };
 
 export type EditingCard = {
@@ -64,12 +68,13 @@ export type EditingCard = {
 	definition: string;
 	sentence: string;
 	picture: string;
-	inAnki: boolean;
+	anki: boolean;
 };
 
-export type CardPostResponse = {
+export type CardPutResponse = {
 	url: string;
 	word: string;
+	warnings: string[];
 };
 
 export type ErrorResponse = {
@@ -78,6 +83,10 @@ export type ErrorResponse = {
 
 export type MessageResponse = {
 	message: string;
+};
+
+export type DeleteResponse = {
+	warnings: string[];
 };
 
 export type Homonym = {

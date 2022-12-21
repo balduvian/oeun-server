@@ -34,7 +34,7 @@ class Card(
 		val sentence: String?,
 		val picture: String?,
 		val badges: ArrayList<String>,
-		val anki: AnkiData?,
+		val anki: Boolean,
 	) {
 		companion object {
 			fun deserialize(stream: InputStream): UploadCard {
@@ -48,12 +48,7 @@ class Card(
 					obj.getMaybe("sentence")?.asString,
 					obj.getMaybe("picture")?.asString,
 					obj.getAsJsonArray("badges").map { it.asString } as ArrayList<String>,
-					obj.getMaybe("anki")?.asJsonObject?.let {
-						AnkiData(
-							it.get("id").asLong,
-							ZonedDateTime.parse(it.get("added").asString)
-						)
-					},
+					obj.get("anki").asBoolean
 				)
 			}
 		}
@@ -79,14 +74,13 @@ class Card(
 		file.delete()
 	}
 
-	fun permuteInto(uploadCard: UploadCard, updateAnki: Boolean) {
+	fun permuteInto(uploadCard: UploadCard) {
 		this.word = uploadCard.word
 		this.part = uploadCard.part
 		this.definition = uploadCard.definition
 		this.sentence = uploadCard.sentence
 		this.picture = uploadCard.picture
 		this.badges = uploadCard.badges
-		if (updateAnki) this.anki = uploadCard.anki
 	}
 
 	companion object {
