@@ -7,7 +7,7 @@ object Homonyms {
 		fun word() = cards.first().word
 
 		fun serialize(): JsonObject {
-			return Util.senderGson.toJsonTree(this) as JsonObject
+			return JsonUtil.senderGson.toJsonTree(this) as JsonObject
 		}
 
 		companion object {

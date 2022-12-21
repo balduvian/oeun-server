@@ -9,11 +9,9 @@ import com.balduvian.Util.notFound
 import com.balduvian.Util.ok
 import com.balduvian.Util.okJson
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import io.ktor.server.application.*
 import io.ktor.server.request.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -57,18 +55,18 @@ fun Route.collectionRouting() {
 			okJson(call, homonym.serialize())
 		}
 		get("latest") {
-			if (Collection.cards.isEmpty()) return@get okJson(call, Homonyms.Homonym.empty().serialize())
+			if (Collection.cardsDateOrder.isEmpty()) return@get okJson(call, Homonyms.Homonym.empty().serialize())
 
-			val highest = Collection.cards.lastIndex
+			val highest = Collection.cardsDateOrder.lastIndex
 			val lowest = (highest - 9).coerceAtLeast(0)
 
-			val cards = ArrayList<Card>(highest - lowest + 1)
+			val sendCards = ArrayList<Card>(highest - lowest + 1)
 
 			for (i in highest downTo lowest) {
-				cards.add(Collection.cards[i])
+				sendCards.add(Collection.cardsDateOrder[i])
 			}
 
-			okJson(call, Homonyms.Homonym(0, cards).serialize())
+			okJson(call, Homonyms.Homonym(0, sendCards).serialize())
 		}
 		get("random") {
 			if (Collection.cards.isEmpty()) return@get okJson(call, Homonyms.Homonym.empty().serialize())
@@ -83,11 +81,12 @@ fun Route.collectionRouting() {
 			try {
 				withContext(Dispatchers.IO) {
 					val uploadCard = Card.UploadCard.deserialize(call.receiveStream())
-					val homonym = Collection.putCard(uploadCard)
+					val (homonym, warnings) = Collection.putCard(uploadCard)
 
 					val response = JsonObject()
 					response.addProperty("url", "/cards/homonym/${homonym.id}")
 					response.addProperty("word", homonym.word())
+					response.add("warnings", warnings.serialize())
 
 					okJson(call, response)
 				}
@@ -102,9 +101,13 @@ fun Route.collectionRouting() {
 			val id = call.parameters["id"]?.toIntOrNull() ?: return@delete badRequest(call, "Missing card id")
 
 			try {
-				Collection.removeCard(id)
+				val warnings = Collection.removeCard(id)
 
-				ok(call, "deleted")
+				val response = JsonObject()
+				response.add("warnings", warnings.serialize())
+
+				okJson(call, response)
+
 			} catch (ex: Exception) {
 				badRequest(call, "Could not delete card")
 			}

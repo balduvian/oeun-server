@@ -1,7 +1,9 @@
 package com.balduvian.routes
 
-import com.balduvian.*
-import com.balduvian.Collection
+import com.balduvian.JsonUtil
+import com.balduvian.PrettyException
+import com.balduvian.Settings
+import com.balduvian.Util
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import io.ktor.server.application.*
@@ -13,7 +15,7 @@ import kotlinx.coroutines.withContext
 fun Route.settingsRouting() {
 	route("/api/settings") {
 		get {
-			Util.okJson(call, Util.senderGson.toJsonTree(Settings.options))
+			Util.okJson(call, JsonUtil.senderGson.toJsonTree(Settings.options))
 		}
 		patch {
 			try {

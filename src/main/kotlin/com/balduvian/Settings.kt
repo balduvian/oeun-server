@@ -18,8 +18,13 @@ object Settings {
 			val file = File(OPTIONS_PATH)
 
 			val writer = file.writer()
-			writer.write(Util.saverGson.toJson(this))
+			writer.write(JsonUtil.saverGson.toJson(this))
 			writer.close()
+		}
+
+		fun getDeckModelName(): Pair<String, String> {
+			return (deckName ?: throw NotFoundException("No Deck Name specified")) to
+				(modelName ?: throw NotFoundException("No Model Name specified"))
 		}
 	}
 
@@ -27,7 +32,7 @@ object Settings {
 		val file = File(OPTIONS_PATH)
 
 		return if (file.exists()) {
-			Util.readerGson.fromJson(File(OPTIONS_PATH).reader(), Options::class.java)
+			JsonUtil.readerGson.fromJson(File(OPTIONS_PATH).reader(), Options::class.java)
 		} else {
 			val defaultOptions = Options(DEFAULT_PORT, null, null, null)
 

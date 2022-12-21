@@ -1,12 +1,12 @@
 package com.balduvian
 
 import com.balduvian.Util.getMaybe
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
+import com.google.gson.*
 import java.io.File
 import java.io.FileWriter
 import java.io.InputStream
 import java.nio.charset.Charset
+import java.time.ZonedDateTime
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -17,10 +17,15 @@ class Card(
 	var definition: String,
 	var sentence: String?,
 	var picture: String?,
-	var date: Date,
+	var date: ZonedDateTime,
 	var badges: ArrayList<String>,
-	var inAnki: Boolean?,
+	var anki: AnkiData?,
 ) {
+	data class AnkiData(
+		var id: Long,
+		val added: ZonedDateTime,
+	)
+
 	class UploadCard(
 		val id: Int?,
 		val word: String,
@@ -29,7 +34,7 @@ class Card(
 		val sentence: String?,
 		val picture: String?,
 		val badges: ArrayList<String>,
-		val inAnki: Boolean?,
+		val anki: AnkiData?,
 	) {
 		companion object {
 			fun deserialize(stream: InputStream): UploadCard {
@@ -38,29 +43,34 @@ class Card(
 				return UploadCard(
 					obj.getMaybe("id")?.asInt,
 					obj.get("word").asString,
-					Part.values().find { it.name == obj.getMaybe("part")?.asString },
+					obj.getMaybe("part")?.asString?.let { Part.valueOf(it) },
 					obj.get("definition").asString,
 					obj.getMaybe("sentence")?.asString,
 					obj.getMaybe("picture")?.asString,
 					obj.getAsJsonArray("badges").map { it.asString } as ArrayList<String>,
-					obj.getMaybe("inAnki")?.asBoolean,
+					obj.getMaybe("anki")?.asJsonObject?.let {
+						AnkiData(
+							it.get("id").asLong,
+							ZonedDateTime.parse(it.get("added").asString)
+						)
+					},
 				)
 			}
 		}
 	}
 
 	fun serialize(): JsonObject {
-		return Util.senderGson.toJsonTree(this) as JsonObject
+		return JsonUtil.senderGson.toJsonTree(this) as JsonObject
 	}
 
 	private fun filename(directoryPath: String, scramble: Boolean): String {
-		return directoryPath + "card-" + id.toString() + (if (scramble) "-" + UUID.randomUUID().toString() else "") + ".json"
+		return directoryPath + "card_" + (if (scramble) UUID.randomUUID().toString() else id.toString()) + ".json"
 	}
 
 	fun save(directoryPath: String, scramble: Boolean = false) {
 		val file = File(filename(directoryPath, scramble))
 		val fileWriter = FileWriter(file, Charset.forName("UTF-8"))
-		fileWriter.write(Util.saverGson.toJson(serialize()))
+		fileWriter.write(JsonUtil.saverGson.toJson(serialize()))
 		fileWriter.close()
 	}
 
@@ -69,24 +79,38 @@ class Card(
 		file.delete()
 	}
 
-	fun permuteInto(uploadCard: UploadCard) {
+	fun permuteInto(uploadCard: UploadCard, updateAnki: Boolean) {
 		this.word = uploadCard.word
 		this.part = uploadCard.part
 		this.definition = uploadCard.definition
 		this.sentence = uploadCard.sentence
 		this.picture = uploadCard.picture
 		this.badges = uploadCard.badges
-		this.inAnki = uploadCard.inAnki
+		if (updateAnki) this.anki = uploadCard.anki
 	}
 
 	companion object {
-		/** sample card name: card-3782.json */
+		fun fromUpload(id: Int, uploadCard: UploadCard): Card {
+			return Card(
+				id,
+				uploadCard.word,
+				uploadCard.part,
+				uploadCard.definition,
+				uploadCard.sentence,
+				uploadCard.picture,
+				ZonedDateTime.now(),
+				uploadCard.badges,
+				null
+			)
+		}
+
+		/** sample card name: card_-33789782.json */
 		fun isCardFile(name: String): Boolean {
-			return name.startsWith("card-") && name.endsWith(".json")
+			return name.startsWith("card_") && name.endsWith(".json")
 		}
 
 		fun deserialize(stream: InputStream): Card {
-			return Util.readerGson.fromJson(stream.reader(), Card::class.java)
+			return JsonUtil.readerGson.fromJson(stream.reader(), Card::class.java)
 		}
 	}
 }

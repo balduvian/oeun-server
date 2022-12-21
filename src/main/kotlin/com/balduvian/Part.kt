@@ -30,7 +30,7 @@ enum class Part(val english: String, val korean: String) {
 				obj.addProperty("korean", part.korean)
 				list.add(part.name, obj)
 			}
-			serializedList = Util.senderGson.toJson(list)
+			serializedList = JsonUtil.senderGson.toJson(list)
 		}
 	}
 }

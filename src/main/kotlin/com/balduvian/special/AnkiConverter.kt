@@ -1,6 +1,5 @@
 package com.balduvian.special
 
-import com.balduvian.Badge
 import com.balduvian.Card
 import com.balduvian.Part
 import com.balduvian.special.AnkiConverter.loadAnkiFile
@@ -8,7 +7,8 @@ import com.balduvian.special.AnkiConverter.parseAnkiFile
 import java.io.File
 import java.nio.charset.Charset
 import java.time.Instant
-import java.util.*
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 object AnkiConverter {
 	fun loadAnkiFile(path: String): CharArray {
@@ -122,7 +122,8 @@ object AnkiConverter {
 				null
 			}
 
-			val date = Date.from(Instant.ofEpochMilli(timestamp))
+
+			val date = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault())
 
 			val card = Card(
 				id++,
@@ -133,7 +134,7 @@ object AnkiConverter {
 				image.ifEmpty { null },
 				date,
 				arrayListOf("legacy"),
-				false,
+				null,
 			)
 
 			card.save("C:\\Users\\Emmet\\Programming\\lang\\java\\skybranch\\run\\data\\cards\\")

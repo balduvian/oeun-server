@@ -19,7 +19,7 @@ object Badges {
 			val ret = ArrayList<Badge>()
 
 			for (element in jsonArray) {
-				ret.add(Util.readerGson.fromJson(element, Badge::class.java))
+				ret.add(JsonUtil.readerGson.fromJson(element, Badge::class.java))
 			}
 
 			return ret

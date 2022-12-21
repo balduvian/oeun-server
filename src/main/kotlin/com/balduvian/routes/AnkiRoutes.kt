@@ -2,34 +2,52 @@ package com.balduvian.routes
 
 import com.balduvian.*
 import com.balduvian.Collection
-import com.google.gson.JsonParser
 import io.ktor.server.application.*
-import io.ktor.server.request.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+
+suspend inline fun handleError(call: ApplicationCall, crossinline run: suspend (call: ApplicationCall) -> Unit) {
+	try {
+		run(call)
+	} catch (ex: RequestException) {
+		Util.errorResponse(call, ex.message, ex.code)
+	} catch (ex: Throwable) {
+		ex.printStackTrace()
+		Util.errorResponse(call, ex.message ?: "Unknown error", 500)
+	}
+}
 
 fun Route.ankiRouting() {
+	fun getCard(call: ApplicationCall): Card {
+		val id = call.parameters["id"] ?: throw BadRequestException("Missing id")
+		val idNo = id.toIntOrNull() ?: throw BadRequestException("Bad id")
+		return Collection.getCard(idNo) ?: throw BadRequestException("Card not found")
+	}
+
 	route("/api/anki") {
-		post("{id?}") {
-			try {
-				val id = call.parameters["id"] ?: return@post Util.badRequest(call, "Missing id")
-				val idNo = id.toIntOrNull() ?: return@post Util.badRequest(call, "Bad id")
-				val card = Collection.getCard(idNo) ?: return@post Util.notFound(call, "Card not found")
+		post("add/{id?}") {
+			handleError(call) {
+				val card = getCard(call)
+				val (deckName, modelName) = Settings.options.getDeckModelName()
 
-				val deckName = Settings.options.deckName ?: return@post Util.notFound(call, "No Deck Name specified")
-				val modelName = Settings.options.modelName ?: return@post Util.notFound(call, "No Model Name specified")
+				val ankiId = AnkiConnect.addCardToAnki(deckName, modelName, card)
+				Collection.setCardAnki(card, ankiId)
 
-				AnkiConnect.request(AnkiConnect.createRequestObj("addNote", AnkiConnect.createNoteParams(deckName, modelName, card)))
-
-				Collection.setCardAnki(card)
-
-				Util.ok(call, "anki'd")
-
-			} catch (ex: Exception) {
-				ex.printStackTrace()
-				Util.badRequest(call, "Bad anki data")
+				Util.ok(call, "added")
 			}
+		}
+		post("sync/{id?}") {
+			handleError(call) {
+				val card = getCard(call)
+				val (deckName, modelName) = Settings.options.getDeckModelName()
+
+				val ankiId = AnkiConnect.editCardInAnki(deckName, modelName, card)
+				if (ankiId != card.anki?.id) Collection.setCardAnki(card, ankiId)
+
+				Util.ok(call, "synced")
+			}
+		}
+		post("sync") {
+			Util.badRequest(call, "Not implemented")
 		}
 	}
 }
