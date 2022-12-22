@@ -1,0 +1,192 @@
+
+:root {
+	--card-height: 14rem;
+}
+
+.card-panel {
+	display: grid;
+    height: 14rem;
+    width: calc(100% - 2rem);
+    margin-top: 1rem;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid var(--gold);
+    border-radius: 0.25rem;
+    overflow: hidden;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-blend-mode: overlay;
+    position: relative;
+    max-width: 40rem;
+    box-sizing: border-box;
+}
+
+.card-panel p {
+	margin: 0;
+}
+
+.card-fields {
+	display: grid;
+    grid-template-rows: 2rem 1.5rem 1fr;
+    row-gap: 0.25rem;
+    padding: 0.5rem;
+    position: relative;
+}
+
+.card-field-row {
+	filter: drop-shadow(2px 4px 6px black);
+}
+
+.card-field-row.top {
+	display: flex;
+	column-gap: 0.5em;
+}
+
+.card-word {
+	color: white;
+	font-weight: bold;
+	font-size: 1.5rem;
+	line-height: 2rem;
+}
+
+.card-part {
+	color: white;
+    font-size: 1.0rem;
+    line-height: 2rem;
+}
+
+.card-part.no-part {
+	border: 1px solid var(--gold);
+	box-sizing: border-box;
+	height: 2rem;
+	width: 4rem;
+	border-radius: 0.25rem;
+}
+
+.card-definition {
+	color: white;
+    font-size: 1.0rem;
+    line-height: 1.5rem;
+}
+
+.card-sentence {
+	color: white;
+	line-height: 1.5rem;
+}
+
+.card-sentence > .highlight {
+	font-weight: bold;
+}
+
+/* image */
+
+.card-image-side {
+	aspect-ratio: 16 / 9;
+	height: var(--card-height);
+	width: auto;
+}
+
+.card-back {
+	box-sizing: border-box;
+
+	background-color: var(--field-disabled-color);
+    aspect-ratio: 16 / 9;
+    height: var(--card-height);
+    width: auto;
+    margin-left: auto;
+    margin-right: auto;
+
+	border-radius: 0.25rem;
+	overflow: hidden;
+
+	position: relative;
+}
+
+.card-back.empty {
+	border: 1px solid var(--gold);
+}
+
+.card-image {
+	height: var(--card-height);
+    object-fit: contain;
+    aspect-ratio: 16 / 9;
+    width: auto;
+}
+
+/* buttons */
+
+.card-button-holder {
+	position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: fit-content;
+    height: 1.5rem;
+    display: flex;
+    flex-direction: row-reverse;
+    column-gap: 0.5rem;
+}
+
+.card-button {
+	width: 1.5rem;
+	height: 1.5rem;
+  
+	background-color: var(--field-disabled-color);
+  
+	text-align: center;
+	font-size: 1.0rem;
+  
+	box-sizing: border-box;
+	border-width: 1px;
+	border-style: solid;
+	border-radius: 0.25rem;
+  
+	cursor: pointer;
+
+	line-height: 1.0rem;
+	padding: 0;
+
+	filter: drop-shadow(0 0 0.75rem black);
+  }
+  
+  .card-button.delete {
+	color: var(--red);
+	border-color: var(--red);
+  }
+  .card-button.delete:hover {
+	background-color: var(--red);
+	color: white;
+  }
+  
+  .card-button.edit {
+	color: var(--blu);
+	border-color: var(--blu);
+  }
+  .card-button.edit:hover {
+	background-color: var(--blu);
+	color: white;
+  }
+  
+  .card-button.add {
+	color: var(--gre);
+	border-color: var(--gre);
+  }
+  .card-button.add:hover {
+	background-color: var(--gre);
+	color: white;
+  }
+  
+  .card-button.anki {
+	color: var(--lblu);
+	border-color: var(--lblu);
+  }
+  .card-button.anki:hover,
+  .card-button.anki.active {
+	background-color: var(--lblu);
+	color: white;
+  }
+  .card-button.anki.loading {
+	background-color: var(--dblu);
+	color: white;
+  }
+  

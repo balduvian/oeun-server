@@ -84,11 +84,12 @@ const CardsPage = ({
 		</div>
 	) : (
 		<>
-			{cards.map(card => (
+			{cards.map((card, index) => (
 				<CardPanel
 					key={card.id}
 					card={card}
 					parts={parts}
+					index={index}
 					onDelete={deletedId =>
 						util
 							.deleteRequest<DeleteResponse>(

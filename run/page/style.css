@@ -190,6 +190,8 @@ select {
   left: 0;
 }
 
+/* */
+
 #immr-panel > #immr-card-panel:last-child {
   margin-bottom: 20px;
 }
@@ -206,37 +208,6 @@ select {
   color: white;
 }
 
-.immr-card-row {
-  position: relative;
-  width: 100%;
-  height: auto;
-  margin-bottom: 0.5em;
-}
-
-.immr-card-row > p {
-  padding: 0;
-  margin: 0;
-  color: white;
-  display: inline-block;
-  text-align: left;
-  position: relative;
-}
-
-.immr-card-row > p.big {
-  font-size: 20px;
-  line-height: 25px;
-}
-
-.immr-card-row > p.small {
-  font-size: 15px;
-  line-height: 20px;
-}
-
-.immr-card-row > p.center {
-  text-align: center;
-  padding-right: 0;
-}
-
 .card-img {
   position: relative;
   width: 100%;
@@ -244,124 +215,7 @@ select {
   border-radius: 5px;
 }
 
-.immr-image-placeholder {
-  position: relative;
-  padding-top: calc(9 / 16 * 100%);
-  background-color: #2f2f2f;
-  border-radius: 5px;
-}
-
-.immr-image-placeholder > span {
-  color: gray;
-  text-align: center;
-  display: block;
-
-  position: absolute;
-  transform: translate(-50%, -50%);
-  top: 50%;
-  left: 50%;
-}
-
-.immr-card-line {
-  background-color: gray;
-  height: 2px;
-  width: 75%;
-  margin-left: auto;
-  margin-right: auto;
-  border-radius: 1px;
-}
-
-.immr-card-edit {
-  padding: 0;
-  margin: 0;
-  color: white;
-  display: inline-block;
-  text-align: left;
-  position: relative;
-}
-
-.immr-card-edit:focus {
-  outline: 2.5px solid var(--immr-active-color);
-
-  background-color: white;
-  color: black;
-  border-radius: 2.5px;
-}
-
-/* PART EDIT */
-
-.immr-card-row > .immr-part-edit {
-  margin: 0;
-  padding: 0;
-  position: absolute;
-  height: 100%;
-
-  border: none;
-  background: none;
-  color: var(--gold);
-  margin-left: 10px;
-
-  border-radius: 5px;
-
-  font-size: 15px;
-
-  appearance: none;
-  padding-left: 2.5px;
-  line-height: 25px;
-}
-
-.immr-card-row > .immr-part-edit.no-part {
-  outline: 1px solid var(--gold);
-  appearance: auto;
-  width: 100px;
-}
-
-/* SENTENCE */
-
-.immr-card-sentence {
-  color: white;
-  padding: 0;
-  width: 100%;
-  font-size: 15px;
-  line-height: 20px;
-  text-align: center;
-}
-
-.immr-card-sentence > .highlight {
-  background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-  font-weight: bold;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.image-container {
-  position: relative;
-}
-
-.image-container > input {
-  z-index: 50;
-
-  position: absolute;
-  left: 0;
-  top: 0;
-
-  color: rgba(0, 0, 0, 0);
-  user-select: none;
-  background: none;
-  border: none;
-  width: 100%;
-  height: 100%;
-  display: block;
-
-  margin: 0;
-  padding: 0;
-
-  border-radius: 5px;
-}
-
-.image-container > input:focus {
-  outline: 5px solid var(--immr-active-color);
-}
+/* */
 
 img {
   display: block;
@@ -396,14 +250,6 @@ img {
 
 .new-card-field:focus {
   outline: 5px solid var(--immr-active-color);
-}
-
-.immr-card-row > p.new-caption {
-  margin-bottom: 5px;
-}
-
-.new-caption.error {
-  color: red;
 }
 
 .new-select {
@@ -447,66 +293,6 @@ img {
   margin-left: auto;
   margin-right: auto;
   position: relative;
-}
-
-.card-button {
-  float: right;
-  width: 25px;
-  height: 25px;
-
-  background-color: transparent;
-
-  text-align: center;
-  font-size: 15px;
-
-  border-width: 1px;
-  border-style: solid;
-  box-sizing: border-box;
-  border-radius: 5px;
-
-  margin-left: 5px;
-  cursor: pointer;
-}
-
-.card-button.delete {
-  color: var(--red);
-  border-color: var(--red);
-}
-.card-button.delete:hover {
-  background-color: var(--red);
-  color: white;
-}
-
-.card-button.edit {
-  color: var(--blu);
-  border-color: var(--blu);
-}
-.card-button.edit:hover {
-  background-color: var(--blu);
-  color: white;
-}
-
-.card-button.add {
-  color: var(--gre);
-  border-color: var(--gre);
-}
-.card-button.add:hover {
-  background-color: var(--gre);
-  color: white;
-}
-
-.card-button.anki {
-  color: var(--lblu);
-  border-color: var(--lblu);
-}
-.card-button.anki:hover,
-.card-button.anki.active {
-  background-color: var(--lblu);
-  color: white;
-}
-.card-button.anki.loading {
-  background-color: var(--dblu);
-  color: white;
 }
 
 /* SVG */
