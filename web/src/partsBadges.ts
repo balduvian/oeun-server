@@ -55,13 +55,12 @@ const parseStorageParts = (data: string) => {
 
 const fetchParts = async (): Promise<Part[]> => {
 	const parts = await util.getRequest<{
-		[key: string]: { english: string; korean: string };
+		[key: string]: { english: string; korean: string; keybind: string };
 	}>('/api/parts');
 
 	return Object.keys(parts).map(partName => ({
 		id: partName,
-		english: parts[partName].english,
-		korean: parts[partName].korean,
+		...parts[partName],
 	}));
 };
 

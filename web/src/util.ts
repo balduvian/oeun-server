@@ -126,3 +126,5 @@ export const intOrUndefined = (input: string | undefined) => {
 	const num = Number.parseInt(input);
 	return isNaN(num) ? undefined : num;
 };
+
+export const mod = (a: number, b: number) => ((a % b) + b) % b;

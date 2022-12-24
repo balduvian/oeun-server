@@ -7,6 +7,7 @@
 	--text-select-color: rgb(247, 247, 247);
 	--text-disregard-color: rgb(142, 142, 142);
 	--highlight-color: rgb(53, 132, 251);
+	--highlight-super-color: rgb(53, 192, 251);
 }
 
 .small {
@@ -56,12 +57,10 @@
 	height: 2em;
 	cursor: pointer;
 }
-
 .eui-button:hover {
 	background-color: var(--field-highlight-color);
 	color: var(--text-select-color);
 }
-
 .eui-button:active {
 	background-color: var(--field-disabled-color);
 	color: var(--text-disregard-color);
@@ -71,6 +70,13 @@
 .eui-button:disabled {
 	background-color: var(--field-disabled-color);
 	color: var(--text-disregard-color);
+}
+
+.eui-button.positive {
+	background-color: var(--highlight-color);
+}
+.eui-button:hover.positive {
+	background-color: var(--highlight-super-color);
 }
 
 .eui-label {

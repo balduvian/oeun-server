@@ -37,24 +37,29 @@ type ButtonProps = {
 	size?: Size;
 	disabled?: boolean;
 	fullWidth?: boolean;
+	positive?: boolean;
 	text: string;
 	onClick: () => void;
+	events?: JSX.IntrinsicElements['button'];
 };
 
 export const EbetButton = ({
 	size,
 	disabled,
 	fullWidth = true,
+	positive = false,
 	text,
 	onClick,
+	events = {},
 }: ButtonProps) => {
 	return (
 		<button
-			className={`${size ?? 'small'}  ${
-				fullWidth ? 'full-width' : ''
+			className={`${size ?? 'small'}  ${fullWidth ? 'full-width' : ''} ${
+				positive ? 'positive' : ''
 			} eui-button`}
 			onClick={onClick}
 			disabled={disabled ?? false}
+			{...events}
 		>
 			{text}
 		</button>

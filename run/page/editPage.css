@@ -1,0 +1,30 @@
+.part-dropdown {
+	position: absolute;
+    z-index: 100;
+    width: 20rem;
+    background-color: var(--field-color);
+    top: calc(100% + 0.5rem);
+    left: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    row-gap: 0.25rem;
+    padding: 0.25rem;
+    box-sizing: border-box;
+    border-radius: 0.5rem;
+    border: 1px solid var(--immr-active-color);
+    color: white;
+}
+
+.part-entry {
+	display: grid;
+    grid-template-columns: 2rem 1fr;
+    border-radius: 0.25rem;
+    cursor: pointer;
+	padding: 0.25rem;
+	text-align: center;
+}
+
+.part-entry.selected {
+    background-color: var(--field-highlight-color);
+    color: var(--gold);
+}

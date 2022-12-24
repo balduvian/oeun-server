@@ -10,6 +10,7 @@ export type Part = {
 	id: string;
 	english: string;
 	korean: string;
+	keybind: string;
 };
 
 export type Badge = {
