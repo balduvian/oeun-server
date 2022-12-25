@@ -255,7 +255,7 @@ export const EditPage = ({
 	};
 
 	return (
-		<div id="immr-card-panel">
+		<div className="standard-sheet">
 			<NewCardField
 				value={card.word}
 				error={realEmpty(card.word)}

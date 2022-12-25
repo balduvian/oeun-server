@@ -10,7 +10,7 @@
 		"src/page/settingsPage.tsx",
 		"src/component/cardDisplay.tsx",
 		"src/component/cardPanel.tsx",
-		"src/component/searchBox.tsx",
+		"src/component/header.tsx",
 		"src/component/badgeHolder.tsx"
 	],
 	"compilerOptions": {

@@ -1,8 +1,4 @@
 
-:root {
-	--card-height: 14rem;
-}
-
 .card-panel {
 	display: grid;
     height: 14rem;
@@ -44,14 +40,14 @@
 }
 
 .card-word {
-	color: white;
+	color: var(--text);
 	font-weight: bold;
 	font-size: 1.5rem;
 	line-height: 2rem;
 }
 
 .card-part {
-	color: white;
+	color: var(--text);
     font-size: 1.0rem;
     line-height: 2rem;
 }
@@ -65,53 +61,18 @@
 }
 
 .card-definition {
-	color: white;
+	color: var(--text);
     font-size: 1.0rem;
     line-height: 1.5rem;
 }
 
 .card-sentence {
-	color: white;
+	color: var(--text);
 	line-height: 1.5rem;
 }
 
 .card-sentence > .highlight {
 	font-weight: bold;
-}
-
-/* image */
-
-.card-image-side {
-	aspect-ratio: 16 / 9;
-	height: var(--card-height);
-	width: auto;
-}
-
-.card-back {
-	box-sizing: border-box;
-
-	background-color: var(--field-disabled-color);
-    aspect-ratio: 16 / 9;
-    height: var(--card-height);
-    width: auto;
-    margin-left: auto;
-    margin-right: auto;
-
-	border-radius: 0.25rem;
-	overflow: hidden;
-
-	position: relative;
-}
-
-.card-back.empty {
-	border: 1px solid var(--gold);
-}
-
-.card-image {
-	height: var(--card-height);
-    object-fit: contain;
-    aspect-ratio: 16 / 9;
-    width: auto;
 }
 
 /* buttons */
@@ -132,7 +93,7 @@
 	width: 1.5rem;
 	height: 1.5rem;
   
-	background-color: var(--field-disabled-color);
+	background-color: var(--field-dark);
   
 	text-align: center;
 	font-size: 1.0rem;
@@ -156,7 +117,7 @@
   }
   .card-button.delete:hover {
 	background-color: var(--red);
-	color: white;
+	color: var(--text);
   }
   
   .card-button.edit {
@@ -165,7 +126,7 @@
   }
   .card-button.edit:hover {
 	background-color: var(--blu);
-	color: white;
+	color: var(--text);
   }
   
   .card-button.add {
@@ -174,7 +135,7 @@
   }
   .card-button.add:hover {
 	background-color: var(--gre);
-	color: white;
+	color: var(--text);
   }
   
   .card-button.anki {
@@ -184,10 +145,10 @@
   .card-button.anki:hover,
   .card-button.anki.active {
 	background-color: var(--lblu);
-	color: white;
+	color: var(--text);
   }
   .card-button.anki.loading {
 	background-color: var(--dblu);
-	color: white;
+	color: var(--text);
   }
   

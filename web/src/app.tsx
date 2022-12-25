@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Go } from './go';
-import SearchBox from './component/searchBox';
+import Header from './component/header';
 import { ToastHolder } from './toast';
 import { Footer } from './component/footer';
 import { CollectionSize } from './types';
@@ -21,14 +21,14 @@ const App = ({
 	children,
 }: Props) => {
 	return (
-		<div id="immr-panel">
+		<div className="app-container">
 			<ToastHolder />
-			<SearchBox
+			<Header
 				searchValue={searchValue}
 				setSearchValue={setSearchValue}
 				goTo={goTo}
 			/>
-			{children}
+			<div className="page-content">{children}</div>
 			<Footer collectionSize={collectionSize} />
 		</div>
 	);

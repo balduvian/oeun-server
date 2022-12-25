@@ -1,14 +1,3 @@
-:root {
-	--background-color: #121212;
-	--field-color: #2f2f2f;
-	--field-highlight-color: #3f3f3f;
-	--field-disabled-color: #1a1a1a;
-	--text-color: #e6e6e6;
-	--text-select-color: rgb(247, 247, 247);
-	--text-disregard-color: rgb(142, 142, 142);
-	--highlight-color: rgb(53, 132, 251);
-	--highlight-super-color: rgb(53, 192, 251);
-}
 
 .small {
 	font-size: 14px;
@@ -29,8 +18,8 @@
 	border: none;
 	outline: none;
 	border-radius: 5px;
-	background-color: var(--field-color);
-	color: var(--text-color);
+	background-color: var(--field);
+	color: var(--text);
 	box-sizing: border-box;
 	position: relative;
 	margin-bottom: 0.5em;
@@ -45,42 +34,42 @@
 
 .eui-field {
 	width: 100%;
-	height: 100%;
+	height: fit-content;
 	position: relative;
 	margin-bottom: 0.5em;
 }
 
 .eui-button {
 	padding: 0em 0.5em;
-	background-color: var(--field-color);
+	background-color: var(--field);
 	border: none;
 	height: 2em;
 	cursor: pointer;
 }
 .eui-button:hover {
-	background-color: var(--field-highlight-color);
-	color: var(--text-select-color);
+	background-color: var(--field-light);
+	color: var(--text-light);
 }
 .eui-button:active {
-	background-color: var(--field-disabled-color);
-	color: var(--text-disregard-color);
-	outline: 1px solid var(--highlight-color);
+	background-color: var(--field-dark);
+	color: var(--text-dark);
+	outline: 1px solid var(--positive);
 }
 
 .eui-button:disabled {
-	background-color: var(--field-disabled-color);
-	color: var(--text-disregard-color);
+	background-color: var(--field-dark);
+	color: var(--text-dark);
 }
 
 .eui-button.positive {
-	background-color: var(--highlight-color);
+	background-color: var(--positive);
 }
 .eui-button:hover.positive {
-	background-color: var(--highlight-super-color);
+	background-color: var(--positive-light);
 }
 
 .eui-label {
-	color: var(--text-color);
+	color: var(--text);
 	margin-bottom: 0.25em;
 	margin-top: 0;
 }
@@ -91,13 +80,13 @@
 }
 
 .eui-input:focus, .eui-select:focus {
-	outline: 1px solid var(--highlight-color);
-	color: var(--text-select-color);
+	outline: 1px solid var(--positive);
+	color: var(--text-light);
 }
 
 .eui-input:disabled, .eui-select:disabled {
-	background-color: var(--field-disabled-color);
-	color: var(--text-disregard-color);
+	background-color: var(--field-dark);
+	color: var(--text-dark);
 }
 
 .eui-input.error, .eui-select.error {
@@ -113,7 +102,7 @@
 }
 
 .eui-picture-placeholder > span {
-	color: var(--text-disregard-color);
+	color: var(--text-dark);
 	text-align: center;
 	display: block;
 	position: absolute;
@@ -143,5 +132,5 @@
 }
 
 .eui-picture-container > input:focus {
-	outline: 5px solid var(--highlight-color);
+	outline: 5px solid var(--positive);
 }

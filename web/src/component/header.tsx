@@ -87,7 +87,7 @@ type Props = {
 	goTo: (go: Go) => void;
 };
 
-const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
+const Header = ({ searchValue, setSearchValue, goTo }: Props) => {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const waitingOnInput = useRef(false);
 	const typingEventNo = useRef(0);
@@ -138,7 +138,7 @@ const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
 	};
 
 	return (
-		<div id="immr-search-area">
+		<div className="header">
 			<WindowEvent
 				eventName="keydown"
 				callback={event => {
@@ -148,8 +148,9 @@ const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
 					}
 				}}
 			/>
-			<div className="search-grid">
+			<div className="search-container">
 				<input
+					className="search"
 					ref={inputRef}
 					{...composingEvents}
 					onKeyDown={event => {
@@ -200,7 +201,6 @@ const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
 							}
 						}
 					}}
-					id="immr-search"
 					value={searchValue}
 					onFocus={event => {
 						const search = event.currentTarget;
@@ -216,7 +216,7 @@ const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
 							);
 						} else setShown();
 					}}
-					onBlur={() => setHide()}
+					//onBlur={() => setHide()}
 					onInput={async event => {
 						const currentValue = event.currentTarget.value;
 						if (currentValue === searchValue) return;
@@ -243,43 +243,46 @@ const SearchBox = ({ searchValue, setSearchValue, goTo }: Props) => {
 						);
 					}}
 				/>
-			</div>
-			{!state.shown ? null : (
-				<div id="immr-search-suggestions">
-					{state.state === ResultState.ERROR ? (
-						<div className="immr-search-suggestion error">
-							Something went wrong...
-						</div>
-					) : (
-						state.suggestions.map(
-							({ word, numbers, special }, i) => (
-								<div
-									className={`immr-search-suggestion ${
-										i === state.selection ? 'selected' : ''
-									} ${
-										special === SuggestionSpecial.ADD
-											? 'add'
-											: ''
-									}`}
-									key={word}
-								>
-									{special === SuggestionSpecial.ADD ? (
-										<div className="add-plus">+</div>
-									) : special === SuggestionSpecial.HOME ? (
-										<div className="add-plus">H</div>
-									) : null}
-									{word}
-									<div className="id">
-										{numbers.join(' ')}
+				{!state.shown ? null : (
+					<div className="search-suggestions">
+						{state.state === ResultState.ERROR ? (
+							<div className="search-suggestion error">
+								Something went wrong...
+							</div>
+						) : (
+							state.suggestions.map(
+								({ word, numbers, special }, i) => (
+									<div
+										className={`search-suggestion ${
+											i === state.selection
+												? 'selected'
+												: ''
+										} ${
+											special === SuggestionSpecial.ADD
+												? 'add'
+												: ''
+										}`}
+										key={word}
+									>
+										{special === SuggestionSpecial.ADD ? (
+											<div className="add-plus">+</div>
+										) : special ===
+										  SuggestionSpecial.HOME ? (
+											<div className="add-plus">H</div>
+										) : null}
+										{word}
+										<div className="id">
+											{numbers.join(' ')}
+										</div>
 									</div>
-								</div>
-							),
-						)
-					)}
-				</div>
-			)}
+								),
+							)
+						)}
+					</div>
+				)}
+			</div>
 		</div>
 	);
 };
 
-export default SearchBox;
+export default Header;

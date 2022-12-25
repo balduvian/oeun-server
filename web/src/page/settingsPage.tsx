@@ -30,7 +30,7 @@ export const blankToNull = (input: string) =>
 
 export const SettingsPage = ({ settings, setSettings }: Props) => {
 	return (
-		<div id="immr-card-panel">
+		<div className="standard-sheet">
 			<h2>Anki Connect Settings</h2>
 			<SettingsInput
 				label="Deck Name"
