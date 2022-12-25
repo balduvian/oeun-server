@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react';
-import { createGo, Go } from './go';
-import { composingEvents, isComposing } from './korInput';
-import { SearchSuggestion, SuggestionSpecial } from './types';
-import * as util from './util';
-import WindowEvent from './windowEvent';
+import { createGo, Go } from '../go';
+import { composingEvents, isComposing } from '../korInput';
+import { SearchSuggestion, SuggestionSpecial } from '../types';
+import * as util from '../util';
+import WindowEvent from '../windowEvent';
 
 enum ResultState {
 	GOOD,

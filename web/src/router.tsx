@@ -1,15 +1,22 @@
 import * as reactDom from 'react-dom/client';
 import { useEffect, useState } from 'react';
-import CardsPage, { onGoCards } from './cardsPage';
-import { EditPage } from './editPage';
-import { Badge, Card, EditingCard, Part, ResultType } from './types';
+import CardsPage, { onGoCards } from './page/cardsPage';
+import { EditPage } from './page/editPage';
+import {
+	Badge,
+	Card,
+	CollectionSize,
+	EditingCard,
+	Part,
+	ResultType,
+} from './types';
 import App from './app';
-import BadgesPage from './badgesPage';
+import BadgesPage from './page/badgesPage';
 import { getParts } from './partsBadges';
 import { matchUrl, Query, toTemplateURL, UrlParams, URLPart } from './url';
 import { imagePostRequest, intOrUndefined } from './util';
 import { createGo, Go } from './go';
-import SettingsPage from './settingsPage';
+import SettingsPage from './page/settingsPage';
 import {
 	dummySettings,
 	pullSettings,
@@ -34,7 +41,9 @@ const Router = () => {
 	const [badges, setBadges] = useState<Badge[]>([]);
 	const [settings, setSettings] = useState<Settings>(dummySettings());
 	const [cards, setCards] = useState<Card[] | undefined>(undefined);
-	const [collectionSize, setCollectionSize] = useState<number>(0);
+	const [collectionSize, setCollectionSize] = useState<
+		CollectionSize | undefined
+	>(undefined);
 	const [error, setError] = useState<boolean>(false);
 	const [editCard, setEditCard] = useState<EditingCard | undefined>(
 		undefined,
@@ -228,6 +237,7 @@ const Router = () => {
 	return (
 		<App
 			searchValue={searchValue}
+			collectionSize={collectionSize}
 			setSearchValue={setSearchValue}
 			goTo={goTo}
 		>

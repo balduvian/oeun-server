@@ -24,6 +24,7 @@ fun Route.ankiRouting() {
 	}
 
 	route("/api/anki") {
+		//TODO send a full cardstate back
 		post("add/{id?}") {
 			handleError(call) {
 				val card = getCard(call)

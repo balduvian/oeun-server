@@ -1,7 +1,7 @@
 import React from 'react';
-import { Card, Part } from './types';
-import * as util from './util';
-import { createGo, Go } from './go';
+import { Card, Part } from '../types';
+import * as util from '../util';
+import { createGo, Go } from '../go';
 
 type HighlightsProps = {
 	sentence: string | undefined;

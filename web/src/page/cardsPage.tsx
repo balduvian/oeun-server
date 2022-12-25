@@ -1,33 +1,31 @@
 import {
 	Card,
+	CardsState,
+	CollectionSize,
 	DeleteResponse,
-	MessageResponse,
 	Part,
 	ResultType,
 	Setter,
-} from './types';
-import * as util from './util';
-import { getParts } from './partsBadges';
-import CardPanel, { AnkiMode } from './cardPanel';
-import { createGo, Go } from './go';
-import { CardDisplay } from './cardDisplay';
-import { Settings } from './settings';
-import React from 'react';
-import { warn } from './toast';
+} from '../types';
+import * as util from '../util';
+import { getParts } from '../partsBadges';
+import CardPanel, { AnkiMode } from '../component/cardPanel';
+import { createGo, Go } from '../go';
+import { CardDisplay } from '../component/cardDisplay';
+import { Settings } from '../settings';
+import { warn } from '../toast';
 
 const initialGetRequest = (id: number, mode: ResultType) => {
 	if (mode === ResultType.CARD) {
-		return util.getRequest<{ cards: Card[] }>(
+		return util.getRequest<CardsState>(
 			`/api/collection/homonym/card/${id}`,
 		);
 	} else if (mode === ResultType.HOMONYM) {
-		return util.getRequest<{ cards: Card[] }>(
-			`/api/collection/homonym/${id}`,
-		);
+		return util.getRequest<CardsState>(`/api/collection/homonym/${id}`);
 	} else if (mode === ResultType.LATEST) {
-		return util.getRequest<{ cards: Card[] }>('/api/collection/latest');
+		return util.getRequest<CardsState>('/api/collection/latest');
 	} else if (mode === ResultType.RANDOM) {
-		return util.getRequest<{ cards: Card[] }>('/api/collection/random');
+		return util.getRequest<CardsState>('/api/collection/random');
 	} else {
 		return undefined;
 	}
@@ -39,7 +37,7 @@ export const onGoCards = (
 	setParts: Setter<Part[]>,
 	setError: Setter<boolean>,
 	setCards: Setter<Card[] | undefined>,
-	setCollectionSize: Setter<number>,
+	setCollectionSize: Setter<CollectionSize>,
 ) => {
 	setCards(undefined);
 	getParts(setParts, setError);
@@ -49,11 +47,12 @@ export const onGoCards = (
 		getCards
 			.then(data => {
 				setCards(data.cards);
+				setCollectionSize(data.collectionSize);
 			})
 			.catch(() => setError(true));
 	} else {
 		setCards([]);
-		util.getRequest<number>('/api/collection/size')
+		util.getRequest<CollectionSize>('/api/collection/size')
 			.then(size => setCollectionSize(size))
 			.catch(() => setError(true));
 	}
@@ -63,7 +62,7 @@ type Props = {
 	goTo: (go: Go) => void;
 	cards: Card[];
 	setCards: Setter<Card[]>;
-	collectionSize: number;
+	collectionSize: CollectionSize | undefined;
 	parts: Part[];
 	settings: Settings;
 };
@@ -79,7 +78,7 @@ const CardsPage = ({
 	return cards.length === 0 ? (
 		<div className="blank-holder">
 			<div className="image-holder">
-				<CardDisplay cards={collectionSize} />
+				<CardDisplay cards={collectionSize?.size} />
 			</div>
 		</div>
 	) : (

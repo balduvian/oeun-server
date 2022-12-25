@@ -1,20 +1,8 @@
 package com.balduvian
 
-import com.google.gson.JsonObject
-
 object Homonyms {
 	data class Homonym(val id: Int, val cards: ArrayList<Card>) {
 		fun word() = cards.first().word
-
-		fun serialize(): JsonObject {
-			return JsonUtil.senderGson.toJsonTree(this) as JsonObject
-		}
-
-		companion object {
-			fun empty(): Homonym {
-				return Homonym(0, ArrayList())
-			}
-		}
 	}
 
 	private val homonymMap: HashMap<String, Homonym> = HashMap(2048)

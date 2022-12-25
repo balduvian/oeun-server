@@ -5,7 +5,6 @@ import com.balduvian.Directories.PATH_TRASH
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
-import java.nio.channels.SeekableByteChannel
 import java.time.ZonedDateTime
 import java.util.concurrent.CompletableFuture
 import kotlin.random.Random
@@ -13,6 +12,12 @@ import kotlin.random.Random
 object Collection {
 	val cards: ArrayList<Card> = ArrayList()
 	val cardsDateOrder: ArrayList<Card> = ArrayList()
+	val addedToday = object : CardsToday() {
+		override fun getDate(card: Card) = card.date
+	}
+	val ankiToday = object : CardsToday() {
+		override fun getDate(card: Card) = card.anki?.added
+	}
 
 	init { Homonyms }
 
@@ -44,6 +49,10 @@ object Collection {
 
 		cards.sortBy { it.id }
 		cardsDateOrder.sortBy { it.date.toInstant() }
+
+		val now = ZonedDateTime.now()
+		addedToday.load(cards, now)
+		ankiToday.load(cards, now)
 	}
 
 	fun findDateCardIndex(date: ZonedDateTime): Int? {
@@ -71,6 +80,7 @@ object Collection {
 		cards.add(insertIndex, card)
 		cardsDateOrder.add(card)
 		val homonym = Homonyms.addCard(card)
+		addedToday.onAddCard(card, card.date)
 
 		CompletableFuture.runAsync { card.save(PATH_CARDS.path) }
 
@@ -94,6 +104,7 @@ object Collection {
 				ankiData.id = AnkiConnect.editCardInAnki(deckName, modelName, collectionCard)
 			} else {
 				AnkiConnect.deleteCardFromAnki(ankiData.id)
+				ankiToday.onRemoveCard(collectionCard, ZonedDateTime.now())
 				collectionCard.anki = null
 			}
 		} catch (ex: Throwable) {
@@ -123,11 +134,18 @@ object Collection {
 		}
 	}
 
+	fun getCollectionSize(): CollectionSize {
+		val now = ZonedDateTime.now()
+		return CollectionSize(cards.size, addedToday.get(now).size, ankiToday.get(now).size)
+	}
+
 	/**
 	 * @param ankiId set to null to remove from anki
 	 */
 	fun setCardAnki(card: Card, ankiId: Long?) {
-		card.anki = ankiId?.let { Card.AnkiData(it, ZonedDateTime.now()) }
+		val now = ZonedDateTime.now()
+		card.anki = ankiId?.let { Card.AnkiData(it, now) }
+		ankiToday.onAddCard(card, now)
 		CompletableFuture.runAsync { card.save(PATH_CARDS.path) }
 	}
 
@@ -139,8 +157,11 @@ object Collection {
 		val card = cards.removeAt(removeIndex)
 		findDateCardIndex(card.date)?.let { cardsDateOrder.removeAt(it) }
 
-		val warnings = Warnings.make()
+		val now = ZonedDateTime.now()
+		addedToday.onRemoveCard(card, now)
+		ankiToday.onRemoveCard(card, now)
 
+		val warnings = Warnings.make()
 		card.anki?.let { (ankiId) ->
 			try {
 				AnkiConnect.deleteCardFromAnki(ankiId)

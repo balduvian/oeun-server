@@ -1,16 +1,25 @@
 import { ReactNode } from 'react';
 import { Go } from './go';
-import SearchBox from './searchBox';
+import SearchBox from './component/searchBox';
 import { ToastHolder } from './toast';
+import { Footer } from './component/footer';
+import { CollectionSize } from './types';
 
 type Props = {
 	searchValue: string;
+	collectionSize: CollectionSize | undefined;
 	setSearchValue: (searchValue: string) => void;
 	goTo: (go: Go) => void;
 	children: ReactNode;
 };
 
-const App = ({ searchValue, setSearchValue, goTo, children }: Props) => {
+const App = ({
+	searchValue,
+	collectionSize,
+	setSearchValue,
+	goTo,
+	children,
+}: Props) => {
 	return (
 		<div id="immr-panel">
 			<ToastHolder />
@@ -20,6 +29,7 @@ const App = ({ searchValue, setSearchValue, goTo, children }: Props) => {
 				goTo={goTo}
 			/>
 			{children}
+			<Footer collectionSize={collectionSize} />
 		</div>
 	);
 };

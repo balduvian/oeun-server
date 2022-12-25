@@ -1,20 +1,17 @@
 package com.balduvian.routes
 
-import com.balduvian.Card
-import com.balduvian.PrettyException
+import com.balduvian.*
 import com.balduvian.Collection
-import com.balduvian.Homonyms
 import com.balduvian.Util.badRequest
 import com.balduvian.Util.notFound
-import com.balduvian.Util.ok
 import com.balduvian.Util.okJson
 import com.google.gson.JsonObject
-import com.google.gson.JsonPrimitive
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.time.ZonedDateTime
 import kotlin.random.Random
 
 fun Route.collectionRouting() {
@@ -39,10 +36,10 @@ fun Route.collectionRouting() {
 
 			val homonym = Homonyms.getHomonym(id) ?: return@get notFound(call, "Could not find that homonym")
 
-			okJson(call, homonym.serialize())
+			okJson(call, CardsState(Collection.getCollectionSize(), homonym.cards).serialize())
 		}
 		get("size") {
-			okJson(call, JsonPrimitive(Collection.cards.size))
+			okJson(call, Collection.getCollectionSize().serialize())
 		}
 		get("homonym/card/{id?}") {
 			val id = call.parameters["id"] ?: return@get badRequest(call, "Missing id")
@@ -52,10 +49,13 @@ fun Route.collectionRouting() {
 
 			val homonym = Homonyms.getHomonym(card.word) ?: return@get notFound(call, "Homonym not found")
 
-			okJson(call, homonym.serialize())
+			okJson(call, CardsState(Collection.getCollectionSize(), homonym.cards).serialize())
 		}
 		get("latest") {
-			if (Collection.cardsDateOrder.isEmpty()) return@get okJson(call, Homonyms.Homonym.empty().serialize())
+			val collectionSize = Collection.getCollectionSize()
+
+			if (Collection.cardsDateOrder.isEmpty())
+				return@get okJson(call, CardsState(collectionSize, ArrayList()).serialize())
 
 			val highest = Collection.cardsDateOrder.lastIndex
 			val lowest = (highest - 9).coerceAtLeast(0)
@@ -66,16 +66,19 @@ fun Route.collectionRouting() {
 				sendCards.add(Collection.cardsDateOrder[i])
 			}
 
-			okJson(call, Homonyms.Homonym(0, sendCards).serialize())
+			okJson(call, CardsState(collectionSize, sendCards).serialize())
 		}
 		get("random") {
-			if (Collection.cards.isEmpty()) return@get okJson(call, Homonyms.Homonym.empty().serialize())
+			val collectionSize = Collection.getCollectionSize()
+
+			if (Collection.cards.isEmpty())
+				return@get okJson(call, CardsState(collectionSize, ArrayList()).serialize())
 
 			val card = Collection.cards[Random.nextInt(Collection.cards.size)]
 
 			val homonym = Homonyms.getHomonym(card.word) ?: return@get notFound(call, "Homonym not found")
 
-			okJson(call, homonym.serialize())
+			okJson(call, CardsState(collectionSize, homonym.cards).serialize())
 		}
 		put {
 			try {

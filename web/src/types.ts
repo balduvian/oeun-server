@@ -96,3 +96,14 @@ export type Homonym = {
 };
 
 export type Setter<T> = (value: T) => void;
+
+export type CollectionSize = {
+	size: number;
+	addedToday: number;
+	ankiToday: number;
+};
+
+export type CardsState = {
+	collectionSize: CollectionSize;
+	cards: Card[];
+};

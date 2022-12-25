@@ -1,5 +1,5 @@
 type Props = {
-	cards: number;
+	cards: number | undefined;
 };
 
 export const CardDisplay = ({ cards }: Props) => (
@@ -52,10 +52,12 @@ export const CardDisplay = ({ cards }: Props) => (
 			className="cls-4"
 			d="M5.1,1.72v.75h-4V1.72h4m0-.25h-4a.25.25,0,0,0-.25.25v.75a.25.25,0,0,0,.25.25h4a.25.25,0,0,0,.25-.25V1.72a.25.25,0,0,0-.25-.25Z"
 		/>
-		<svg x="0.97" y="1.6" width="4.25" height="1" viewBox="0 0 425 100">
-			<foreignObject className="size-display">
-				{`카드 ${cards}장`}
-			</foreignObject>
-		</svg>
+		{cards == undefined ? null : (
+			<svg x="0.97" y="1.6" width="4.25" height="1" viewBox="0 0 425 100">
+				<foreignObject className="size-display">
+					{`카드 ${cards}장`}
+				</foreignObject>
+			</svg>
+		)}
 	</svg>
 );

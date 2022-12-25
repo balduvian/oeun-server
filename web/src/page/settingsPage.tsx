@@ -1,6 +1,6 @@
-import { EbetFormField, EbetInput, EbetLabel } from './ebetUi';
-import { Settings } from './settings';
-import { Setter } from './types';
+import { EbetFormField, EbetInput, EbetLabel } from '../ebetUi';
+import { Settings } from '../settings';
+import { Setter } from '../types';
 
 type SettingsInputProps = {
 	label: string;

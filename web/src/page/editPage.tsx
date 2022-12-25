@@ -5,23 +5,23 @@ import {
 	Setter,
 	EditingCard,
 	UploadCard,
-} from './types';
-import * as util from './util';
+} from '../types';
+import * as util from '../util';
 import {
 	composingEvents,
 	doBracketing,
 	isComposing,
 	setSelection,
-} from './korInput';
+} from '../korInput';
 import {
 	EbetButton,
 	EbetFormField,
 	EbetInput,
 	EbetLabel,
 	EbetPictureInput,
-} from './ebetUi';
-import { createGo, Go } from './go';
-import { warn } from './toast';
+} from '../ebetUi';
+import { createGo, Go } from '../go';
+import { warn } from '../toast';
 
 const getElementByTabIndex = (index: number) =>
 	[
