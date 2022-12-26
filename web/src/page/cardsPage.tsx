@@ -82,7 +82,7 @@ const CardsPage = ({
 			</div>
 		</div>
 	) : (
-		<>
+		<div className="standard-sheet">
 			{cards.map((card, index) => (
 				<CardPanel
 					key={card.id}
@@ -137,7 +137,7 @@ const CardsPage = ({
 					goTo={goTo}
 				/>
 			))}
-		</>
+		</div>
 	);
 };
 

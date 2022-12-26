@@ -3,6 +3,12 @@ package com.balduvian
 object Homonyms {
 	data class Homonym(val id: Int, val cards: ArrayList<Card>) {
 		fun word() = cards.first().word
+
+		fun insertInto(card: Card) {
+			val instant = card.date.toInstant()
+			val insertIndex = cards.binarySearch { it.date.toInstant().compareTo(instant) }
+			cards.add(if (insertIndex < 0) -insertIndex - 1 else insertIndex, card)
+		}
 	}
 
 	private val homonymMap: HashMap<String, Homonym> = HashMap(2048)
@@ -43,7 +49,8 @@ object Homonyms {
 			homonymList.add(-index - 1, homonym)
 		}
 
-		homonym.cards.add(card)
+		/* insert into homonym sorted by date */
+		homonym.insertInto(card)
 
 		return homonym
 	}

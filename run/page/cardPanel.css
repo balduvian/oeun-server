@@ -2,8 +2,8 @@
 .card-panel {
 	display: grid;
     height: 14rem;
-    width: calc(100% - 2rem);
-    margin-top: 1rem;
+    width: 100%;
+    margin-bottom: 1rem;
     margin-left: auto;
     margin-right: auto;
     border: 1px solid var(--gold);
@@ -15,7 +15,6 @@
     background-blend-mode: overlay;
     position: relative;
     max-width: 40rem;
-    box-sizing: border-box;
 }
 
 .card-panel p {

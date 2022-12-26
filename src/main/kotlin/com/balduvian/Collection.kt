@@ -184,8 +184,7 @@ object Collection {
 	data class PreSearchResult(
 		val word: String,
 		val sortValue: Int,
-		val homonymId: Int,
-		val numbers: ArrayList<Int>,
+		val homonymId: Int
 	)
 
 	data class OutSearchResult(
@@ -256,9 +255,7 @@ object Collection {
 			val (start, match) = matchFunction(completedPart, lastSyllable, word)
 			if (match != Syllable.MATCH_NONE) {
 				val sortValue = (if (match == Syllable.MATCH_EXACT) 0 else 10000) + (if (start == 0) 0 else 1000) + word.length
-				val searchResult = PreSearchResult(word, sortValue, homonym.id, homonym.cards.mapNotNull { card ->
-					findDateCardIndex(card.date)?.plus(1)
-				} as ArrayList<Int>)
+				val searchResult = PreSearchResult(word, sortValue, homonym.id)
 
 				val insertPosition = ret.binarySearch { it.sortValue - sortValue }
 				if (insertPosition < 0) {
@@ -268,9 +265,11 @@ object Collection {
 				}
 			}
 		}
-
+		
 		return ret.take(limit).map { pre ->
-			OutSearchResult(pre.word, pre.numbers, "/cards/homonym/${pre.homonymId}")
+			OutSearchResult(pre.word, Homonyms.getHomonym(pre.homonymId)?.cards?.mapNotNull { card ->
+				findDateCardIndex(card.date)?.plus(1)
+			}  as ArrayList<Int>? ?: ArrayList(), "/cards/homonym/${pre.homonymId}")
 		} as ArrayList<OutSearchResult>
 	}
 
