@@ -44,6 +44,16 @@ const stateResults = (
 			special: SuggestionSpecial.ADD,
 		});
 
+	/* placeholder for no number search results */
+	if (query.startsWith('#') && firstResult === undefined) {
+		results.push({
+			word: `No cards for ${query}`,
+			numbers: [],
+			url: '',
+			special: SuggestionSpecial.NO_RESULTS,
+		});
+	}
+
 	return {
 		suggestions: results,
 		state: ResultState.GOOD,
@@ -119,10 +129,12 @@ const Header = ({ searchValue, setSearchValue, goTo }: Props) => {
 		setState(state => ({ ...state, shown: false }));
 	};
 
-	const setSearch = (suggestion: SearchSuggestion | undefined) => {
+	const executeSuggestion = (suggestion: SearchSuggestion | undefined) => {
 		inputRef.current?.blur();
 
-		if (suggestion?.special === SuggestionSpecial.ADD) {
+		if (suggestion?.special === SuggestionSpecial.NO_RESULTS) {
+			setHide();
+		} else if (suggestion?.special === SuggestionSpecial.ADD) {
 			setClear(suggestion.word);
 			goTo(createGo(suggestion.url));
 		} else if (
@@ -190,14 +202,16 @@ const Header = ({ searchValue, setSearchValue, goTo }: Props) => {
 											...newState,
 										}));
 									else
-										setSearch(
+										executeSuggestion(
 											newState.suggestions[
 												newState.selection
 											],
 										);
 								});
 							} else {
-								setSearch(state.suggestions[state.selection]);
+								executeSuggestion(
+									state.suggestions[state.selection],
+								);
 							}
 						}
 					}}
@@ -216,7 +230,7 @@ const Header = ({ searchValue, setSearchValue, goTo }: Props) => {
 							);
 						} else setShown();
 					}}
-					//onBlur={() => setHide()}
+					onBlur={() => setHide()}
 					onInput={async event => {
 						const currentValue = event.currentTarget.value;
 						if (currentValue === searchValue) return;
