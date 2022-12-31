@@ -20,7 +20,7 @@ export const Footer = ({ collectionSize }: Props) => {
 					</div>
 					<div>
 						<p className="footer-info">
-							<span>{'오늘 추가하는 카드 '}</span>
+							<span>{'오늘 추가한 카드 '}</span>
 							<span className="added-today">
 								{collectionSize.addedToday}
 							</span>
@@ -29,7 +29,7 @@ export const Footer = ({ collectionSize }: Props) => {
 					</div>
 					<div>
 						<p className="footer-info">
-							<span>{`오늘 암기에 추가하는 카드 `}</span>
+							<span>{`오늘 암기에 추가한 카드 `}</span>
 							<span className="anki-today">
 								{collectionSize.ankiToday}
 							</span>
