@@ -63,6 +63,7 @@ type Props = {
 	cards: Card[];
 	setCards: Setter<Card[]>;
 	collectionSize: CollectionSize | undefined;
+	setCollectionSize: Setter<CollectionSize>;
 	parts: Part[];
 	settings: Settings;
 };
@@ -72,6 +73,7 @@ const CardsPage = ({
 	cards,
 	setCards,
 	collectionSize,
+	setCollectionSize,
 	parts,
 	settings,
 }: Props) => {
@@ -113,26 +115,34 @@ const CardsPage = ({
 							? undefined
 							: (ankiId, mode) =>
 									util
-										.postRequest<Card>(
+										.postRequest<CardsState>(
 											mode === AnkiMode.ADD
 												? `/api/anki/add/${ankiId}`
 												: `/api/anki/sync/${ankiId}`,
 											{},
 										)
-										.then(updatedCard => {
-											const replaceIndex =
-												cards.findIndex(
-													card =>
-														card.id ===
-														updatedCard.id,
+										.then(
+											({
+												collectionSize,
+												cards: [updatedCard],
+											}) => {
+												setCollectionSize(
+													collectionSize,
 												);
-											if (replaceIndex !== -1) {
-												const list = [...cards];
-												list[replaceIndex] =
-													updatedCard;
-												setCards(list);
-											}
-										})
+												const replaceIndex =
+													cards.findIndex(
+														card =>
+															card.id ===
+															updatedCard.id,
+													);
+												if (replaceIndex !== -1) {
+													const list = [...cards];
+													list[replaceIndex] =
+														updatedCard;
+													setCards(list);
+												}
+											},
+										)
 					}
 					goTo={goTo}
 				/>

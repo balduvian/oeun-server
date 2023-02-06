@@ -172,6 +172,7 @@ const Router = () => {
 						cards={cards}
 						setCards={setCards}
 						collectionSize={collectionSize}
+						setCollectionSize={setCollectionSize}
 						parts={parts}
 						settings={settings}
 					/>

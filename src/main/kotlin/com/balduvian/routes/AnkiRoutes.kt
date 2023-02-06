@@ -24,7 +24,6 @@ fun Route.ankiRouting() {
 	}
 
 	route("/api/anki") {
-		//TODO send a full cardstate back
 		post("add/{id?}") {
 			handleError(call) {
 				val card = getCard(call)
@@ -33,7 +32,7 @@ fun Route.ankiRouting() {
 				val ankiId = AnkiConnect.addCardToAnki(deckName, modelName, card)
 				Collection.setCardAnki(card, ankiId)
 
-				Util.okJson(call, card.serialize())
+				Util.okJson(call, CardsState(Collection.getCollectionSize(), arrayListOf(card)).serialize())
 			}
 		}
 		post("sync/{id?}") {
@@ -44,7 +43,7 @@ fun Route.ankiRouting() {
 				val ankiId = AnkiConnect.editCardInAnki(deckName, modelName, card)
 				if (ankiId != card.anki?.id) Collection.setCardAnki(card, ankiId)
 
-				Util.okJson(call, card.serialize())
+				Util.okJson(call, CardsState(Collection.getCollectionSize(), arrayListOf(card)).serialize())
 			}
 		}
 		post("sync") {
