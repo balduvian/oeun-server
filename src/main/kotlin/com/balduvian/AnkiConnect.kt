@@ -6,12 +6,9 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import io.ktor.http.*
 import java.io.File
-import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.util.*
 import kotlin.collections.ArrayList
 
 object AnkiConnect {
@@ -33,22 +30,23 @@ object AnkiConnect {
 	}
 
 	/*
-	* "note": {
-            "id": 1514547547030,
-            "fields": {
-                "Front": "new front content",
-                "Back": "new back content"
-            },
-            "audio": [{
-                "url": "https://assets.languagepod101.com/dictionary/japanese/audiomp3.php?kanji=猫&kana=ねこ",
-                "filename": "yomichan_ねこ_猫.mp3",
-                "skipHash": "7e2c2f954ef6051373ba916f000168dc",
-                "fields": [
-                    "Front"
-                ]
-            }]
-        }
-	* */
+	 * sample ankiConnect not format
+	 * "note": {
+     *       "id": 1514547547030,
+     *      "fields": {
+     *          "Front": "new front content",
+     *          "Back": "new back content"
+     *      },
+     *      "audio": [{
+     *          "url": "https://assets.languagepod101.com/dictionary/japanese/audiomp3.php?kanji=猫&kana=ねこ",
+     *          "filename": "yomichan_ねこ_猫.mp3",
+     *          "skipHash": "7e2c2f954ef6051373ba916f000168dc",
+     *          "fields": [
+     *              "Front"
+     *          ]
+     *     }]
+     * }
+	 */
 
 	fun fieldsObject(card: Card): JsonObject {
 		val fields = JsonObject()
@@ -57,6 +55,7 @@ object AnkiConnect {
 		fields.addProperty("Target", card.word)
 		fields.addProperty("Part", card.part?.english ?: "")
 		fields.addProperty("Definition", card.definition)
+		fields.addProperty("Picture", "")
 		return fields
 	}
 
@@ -159,14 +158,17 @@ object AnkiConnect {
 		}
 	}
 
+	private fun isDuplicateError(error: String) = error == "Cannot create note because it is a duplicate"
+
+	/**
+	 * try adding card to anki. If it already exists, edit the existing card instead
+	 */
 	suspend fun addCardToAnki(deckName: String, modelName: String, card: Card): Long {
 		val (error, result) = jsonPostRequest(createRequestObj("addNote", addNoteParams(deckName, modelName, card)))
+
 		if (error == null) return result.asLong
+		if (!isDuplicateError(error)) throw PrettyException(error)
 
-		/* catastrophic failure */
-		if (error != "Cannot create note because it is a duplicate") throw PrettyException(error)
-
-		/* note actually already existed, edit it */
 		val ankiId = findCardAnkiId(deckName, modelName, card) ?: throw PrettyException("Card exists but also doesn't")
 
 		val (editError) = jsonPostRequest(createRequestObj("updateNoteFields", updateNoteFieldsParams(card, ankiId)))
@@ -175,6 +177,9 @@ object AnkiConnect {
 		return ankiId
 	}
 
+	/**
+	 * try editing the existing card in Anki. If it doesn't exist, add it instead
+	 */
 	suspend fun editCardInAnki(deckName: String, modelName: String, card: Card): Long {
 		val ankiId = card.anki?.id ?: throw PrettyException("Card is not linked to Anki")
 
