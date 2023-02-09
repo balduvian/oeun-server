@@ -4,7 +4,7 @@ import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.io.File
 import java.io.InputStream
-import java.util.Date
+import java.time.Instant
 import javax.imageio.ImageIO
 
 class Images(val dirName: String, val cacheSize: Int) {
@@ -115,7 +115,7 @@ class Images(val dirName: String, val cacheSize: Int) {
 
 	companion object {
 		fun imageFilename(): String {
-			return "paste-${Date().time}.jpg"
+			return "paste-${Instant.now().toEpochMilli()}.jpg"
 		}
 	}
 }
