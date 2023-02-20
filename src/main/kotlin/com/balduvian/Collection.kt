@@ -67,7 +67,7 @@ object Collection {
 	private fun findNewId(): Pair<Int, Int> {
 		while (true) {
 			val id = Random.nextInt()
-			val index = cards.binarySearch { it.id - id }
+			val index = cards.binarySearch { it.id.compareTo(id) }
 			/* id doesn't exist yet */
 			if (index < 0) return id to -index - 1
 		}
@@ -126,7 +126,7 @@ object Collection {
 	}
 
 	fun getCard(id: Int): Card? {
-		val index = cards.binarySearch { it.id - id }
+		val index = cards.binarySearch { it.id.compareTo(id) }
 		return if (index < 0) {
 			null
 		} else {
@@ -150,7 +150,7 @@ object Collection {
 	}
 
 	suspend fun removeCard(id: Int): Warnings {
-		val removeIndex = cards.binarySearch { it.id - id }
+		val removeIndex = cards.binarySearch { it.id.compareTo(id) }
 		if (removeIndex < 0) throw Exception("Card does not exist")
 
 		Homonyms.removeCard(cards[removeIndex])
@@ -257,7 +257,7 @@ object Collection {
 				val sortValue = (if (match == Syllable.MATCH_EXACT) 0 else 10000) + (if (start == 0) 0 else 1000) + word.length
 				val searchResult = PreSearchResult(word, sortValue, homonym.id)
 
-				val insertPosition = ret.binarySearch { it.sortValue - sortValue }
+				val insertPosition = ret.binarySearch { it.sortValue.compareTo(sortValue) }
 				if (insertPosition < 0) {
 					ret.add(-insertPosition - 1, searchResult)
 				} else {

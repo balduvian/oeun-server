@@ -37,7 +37,7 @@ object Homonyms {
 	}
 
 	private fun indexOf(id: Int): Int {
-		return homonymList.binarySearch { it.id - id }
+		return homonymList.binarySearch { it.id.compareTo(id) }
 	}
 
 	fun addCard(card: Card): Homonym {
