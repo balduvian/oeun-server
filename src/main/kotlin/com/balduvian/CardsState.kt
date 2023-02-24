@@ -2,7 +2,7 @@ package com.balduvian
 
 import com.google.gson.JsonObject
 
-data class CollectionSize(val size: Int, val addedToday: Int, val ankiToday: Int) {
+data class CollectionSize(val size: Int, val addedToday: Int, val ankiToday: Int, val editedToday: Int) {
     fun serialize() = JsonUtil.senderGson.toJsonTree(this) as JsonObject
 }
 

@@ -43,7 +43,7 @@ const CardPanel = ({ card, parts, index, onDelete, onAnki, goTo }: Props) => {
 
 	return (
 		<div
-			className="card-panel"
+			className={`card-panel card_${card.id}`}
 			style={
 				card.picture === undefined
 					? {

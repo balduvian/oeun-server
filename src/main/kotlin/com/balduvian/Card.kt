@@ -18,6 +18,7 @@ class Card(
 	var sentence: String?,
 	var picture: String?,
 	var date: ZonedDateTime,
+	var edited: ZonedDateTime?,
 	var badges: ArrayList<String>,
 	var anki: AnkiData?,
 ) {
@@ -74,17 +75,32 @@ class Card(
 		file.delete()
 	}
 
-	fun permuteInto(uploadCard: UploadCard) {
+	/**
+	 * @return was the card changed at all
+	 */
+	fun permuteInto(uploadCard: UploadCard, now: ZonedDateTime): Boolean {
+		val hasDifference = this.word != uploadCard.word || this.part != uploadCard.part ||
+				this.definition != uploadCard.definition ||
+				this.sentence != uploadCard.sentence ||
+				this.picture != uploadCard.picture ||
+				this.badges != uploadCard.badges
+
 		this.word = uploadCard.word
 		this.part = uploadCard.part
 		this.definition = uploadCard.definition
 		this.sentence = uploadCard.sentence
 		this.picture = uploadCard.picture
 		this.badges = uploadCard.badges
+
+		if (hasDifference) this.edited = now
+
+		return hasDifference
 	}
 
 	companion object {
 		fun fromUpload(id: Int, uploadCard: UploadCard): Card {
+			val now = ZonedDateTime.now()
+
 			return Card(
 				id,
 				uploadCard.word,
@@ -92,7 +108,8 @@ class Card(
 				uploadCard.definition,
 				uploadCard.sentence,
 				uploadCard.picture,
-				ZonedDateTime.now(),
+				now,
+				now,
 				uploadCard.badges,
 				null
 			)

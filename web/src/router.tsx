@@ -62,7 +62,7 @@ const Router = () => {
 	const uploadCardImage = (data: ArrayBuffer | string) =>
 		imagePostRequest<string>('/api/images/cards', data);
 
-	const stripJustdataPart = (data: string): string => {
+	const stripJustDataPart = (data: string): string => {
 		const index = data.indexOf('base64,');
 		if (index === -1) return data;
 		return data.substring(index + 7);
@@ -119,7 +119,7 @@ const Router = () => {
 							if (base64 === undefined) return;
 
 							uploadCardImage(
-								base64ToBuffer(stripJustdataPart(base64)),
+								base64ToBuffer(stripJustDataPart(base64)),
 							)
 								.then(newPicture =>
 									setEditCard(card =>

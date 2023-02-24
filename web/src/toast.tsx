@@ -16,5 +16,8 @@ export const ToastHolder = () => {
 };
 
 export const warn = (warning: string) => {
-	toast(warning);
+	toast(warning, {
+		icon: '⚠️',
+		style: { backgroundColor: 'var(--red)', color: 'var(--text)' },
+	});
 };

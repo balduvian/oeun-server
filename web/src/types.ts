@@ -102,6 +102,7 @@ export type CollectionSize = {
 	size: number;
 	addedToday: number;
 	ankiToday: number;
+	editedToday: number;
 };
 
 export type CardsState = {

@@ -131,6 +131,7 @@ object AnkiConverter {
 				sentence.ifEmpty { null },
 				image.ifEmpty { null },
 				date,
+				date,
 				arrayListOf("legacy"),
 				null,
 			)

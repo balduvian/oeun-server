@@ -55,6 +55,7 @@ suspend fun main() {
                     json.getMaybe("sentence")?.asString,
                     json.getMaybe("picture")?.asString,
                     ZonedDateTime.parse(json.get("date").asString),
+                    ZonedDateTime.parse(json.get("date").asString),
                     ArrayList(),
                     null,
                 )

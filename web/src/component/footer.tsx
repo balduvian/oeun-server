@@ -10,30 +10,33 @@ export const Footer = ({ collectionSize }: Props) => {
 			{collectionSize === undefined ? null : (
 				<>
 					<div>
-						<p className="footer-info">
-							<span>{'모음집 크기 '}</span>
-							<span className="collection-size">
-								{collectionSize.size}
-							</span>
-							<span>{'장'}</span>
+						<p className="footer-info collection-size">
+							<span>{'전체 '}</span>
+							<span className="bold">{collectionSize.size}</span>
 						</p>
 					</div>
 					<div>
-						<p className="footer-info">
-							<span>{'오늘 추가한 카드 '}</span>
-							<span className="added-today">
+						<p className="footer-info edited-today">
+							<span>{'편집 '}</span>
+							<span className="bold">
+								{collectionSize.editedToday}
+							</span>
+						</p>
+					</div>
+					<div>
+						<p className="footer-info added-today">
+							<span>{'추가 '}</span>
+							<span className="bold">
 								{collectionSize.addedToday}
 							</span>
-							<span>{'장'}</span>
 						</p>
 					</div>
 					<div>
-						<p className="footer-info">
-							<span>{`오늘 암기에 추가한 카드 `}</span>
-							<span className="anki-today">
+						<p className="footer-info anki-today">
+							<span>{`암기 `}</span>
+							<span className="bold">
 								{collectionSize.ankiToday}
 							</span>
-							<span>{'장'}</span>
 						</p>
 					</div>
 				</>

@@ -147,6 +147,7 @@ export const EbetPictureInput = ({
 							event.preventDefault();
 							event.currentTarget.blur();
 						}
+						events.onKeyDown?.(event);
 					}}
 					onPaste={event => {
 						event.preventDefault();

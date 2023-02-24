@@ -7,13 +7,13 @@ abstract class CardsToday {
     var storedDate: LocalDate? = null
     val list = ArrayList<Card>()
 
-    abstract fun getDate(card: Card): ZonedDateTime?
+    abstract fun getDate(card: Card, today: LocalDate): ZonedDateTime?
 
     fun load(cards: ArrayList<Card>, now: ZonedDateTime) {
         val date = now.toLocalDate()
 
         storedDate = date
-        list.addAll(cards.filter { card -> getDate(card)?.toLocalDate()?.equals(date) ?: false })
+        list.addAll(cards.filter { card -> getDate(card, date)?.toLocalDate()?.equals(date) ?: false })
     }
 
     fun onAddCard(card: Card, now: ZonedDateTime) {
@@ -24,7 +24,7 @@ abstract class CardsToday {
             storedDate = date
         }
 
-        if (getDate(card)?.toLocalDate()?.isEqual(date) == true) {
+        if (getDate(card, date)?.toLocalDate()?.isEqual(date) == true) {
             list.add(card)
         }
     }
@@ -35,7 +35,7 @@ abstract class CardsToday {
         if (!date.equals(storedDate)) {
             list.clear()
             storedDate = date
-        } else if (getDate(card)?.toLocalDate()?.isEqual(date) == true) {
+        } else if (getDate(card, date)?.toLocalDate()?.isEqual(date) == true) {
             list.remove(card)
         }
     }

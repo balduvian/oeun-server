@@ -5,6 +5,7 @@ import com.balduvian.Directories.PATH_TRASH
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
+import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.util.concurrent.CompletableFuture
 import kotlin.random.Random
@@ -13,10 +14,13 @@ object Collection {
 	val cards: ArrayList<Card> = ArrayList()
 	val cardsDateOrder: ArrayList<Card> = ArrayList()
 	val addedToday = object : CardsToday() {
-		override fun getDate(card: Card) = card.date
+		override fun getDate(card: Card, today: LocalDate) = card.date
 	}
 	val ankiToday = object : CardsToday() {
-		override fun getDate(card: Card) = card.anki?.added
+		override fun getDate(card: Card, today: LocalDate) = card.anki?.added
+	}
+	val editedToday = object : CardsToday() {
+		override fun getDate(card: Card, today: LocalDate) = if (card.date.toLocalDate() == today) null else card.edited
 	}
 
 	init { Homonyms }
@@ -53,6 +57,7 @@ object Collection {
 		val now = ZonedDateTime.now()
 		addedToday.load(cards, now)
 		ankiToday.load(cards, now)
+		editedToday.load(cards, now)
 	}
 
 	fun findDateCardIndex(date: ZonedDateTime): Int? {
@@ -88,30 +93,36 @@ object Collection {
 	}
 
 	private suspend fun editCard(id: Int, uploadCard: Card.UploadCard): Pair<Homonyms.Homonym, Warnings> {
+		val now = ZonedDateTime.now()
 		val collectionCard = getCard(id) ?: throw PrettyException("Card with id=${id} doesn't exist")
 
 		val ankiData = collectionCard.anki
 		val isInAnki = uploadCard.anki
 
 		val oldWord = collectionCard.word
-		collectionCard.permuteInto(uploadCard)
+		val hasDifference = collectionCard.permuteInto(uploadCard, now)
 		val homonym = Homonyms.renameCard(collectionCard, oldWord) ?: throw PrettyException("Could not rename card")
 
 		val warnings = Warnings.make()
-		if (ankiData != null) try {
-			if (isInAnki) {
-				val (deckName, modelName) = Settings.options.getDeckModelName()
-				ankiData.id = AnkiConnect.editCardInAnki(deckName, modelName, collectionCard)
-			} else {
-				AnkiConnect.deleteCardFromAnki(ankiData.id)
-				ankiToday.onRemoveCard(collectionCard, ZonedDateTime.now())
-				collectionCard.anki = null
-			}
-		} catch (ex: Throwable) {
-			warnings.add(ex.message)
-		}
 
-		CompletableFuture.runAsync { collectionCard.save(PATH_CARDS.path) }
+		if (hasDifference) {
+			if (ankiData != null) try {
+				if (isInAnki) {
+					val (deckName, modelName) = Settings.options.getDeckModelName()
+					ankiData.id = AnkiConnect.editCardInAnki(deckName, modelName, collectionCard)
+				} else {
+					AnkiConnect.deleteCardFromAnki(ankiData.id)
+					ankiToday.onRemoveCard(collectionCard, now)
+					collectionCard.anki = null
+				}
+			} catch (ex: Throwable) {
+				warnings.add(ex.message)
+			}
+
+			editedToday.onAddCard(collectionCard, now)
+
+			CompletableFuture.runAsync { collectionCard.save(PATH_CARDS.path) }
+		}
 
 		return homonym to warnings
 	}
@@ -136,7 +147,7 @@ object Collection {
 
 	fun getCollectionSize(): CollectionSize {
 		val now = ZonedDateTime.now()
-		return CollectionSize(cards.size, addedToday.get(now).size, ankiToday.get(now).size)
+		return CollectionSize(cards.size, addedToday.get(now).size, ankiToday.get(now).size, editedToday.get(now).size)
 	}
 
 	/**
@@ -160,6 +171,7 @@ object Collection {
 		val now = ZonedDateTime.now()
 		addedToday.onRemoveCard(card, now)
 		ankiToday.onRemoveCard(card, now)
+		editedToday.onRemoveCard(card, now)
 
 		val warnings = Warnings.make()
 		card.anki?.let { (ankiId) ->

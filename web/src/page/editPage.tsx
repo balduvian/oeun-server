@@ -91,6 +91,7 @@ type NewPartFieldProps = {
 	setValue: (value: string) => void;
 	parts: Part[];
 	tabIndex: number;
+	confirm: (() => void) | undefined;
 };
 
 const NewPartField = ({
@@ -98,6 +99,7 @@ const NewPartField = ({
 	setValue,
 	parts,
 	tabIndex,
+	confirm,
 }: NewPartFieldProps) => {
 	const [active, setActive] = React.useState(false);
 	return (
@@ -136,6 +138,7 @@ const NewPartField = ({
 						event.preventDefault();
 
 						if (key === 'enter') {
+							if (confirm !== undefined) return confirm();
 							getElementByTabIndex(tabIndex + 1)?.focus();
 							return;
 						}
@@ -225,12 +228,21 @@ export const EditPage = ({
 		const realDefinition = realValue(card.definition);
 
 		if (realWord !== undefined && realDefinition !== undefined) {
+			const realSentence = realValue(card.sentence);
+			if (
+				realSentence != null &&
+				util
+					.strToHighlights(realSentence)
+					.every(({ highlight }) => !highlight)
+			)
+				return warn('Sentence contains no highlight');
+
 			const uploadCard: UploadCard = {
 				id: card.id,
 				word: realWord,
 				part: realValue(card.part),
 				definition: realDefinition,
-				sentence: realValue(card.sentence),
+				sentence: realSentence,
 				picture: realValue(card.picture),
 				badges: [],
 				anki: card.anki,
@@ -243,6 +255,12 @@ export const EditPage = ({
 					warnings.forEach(warning => warn(warning));
 				})
 				.catch(() => setError(true));
+		} else {
+			const requireds = [
+				...(realWord === undefined ? ['Word'] : []),
+				...(realDefinition === undefined ? ['Definition'] : []),
+			];
+			warn(`value for ${requireds.join(' And ')} is required`);
 		}
 	};
 
@@ -270,6 +288,7 @@ export const EditPage = ({
 				setValue={value => updateField('part', value)}
 				parts={parts}
 				tabIndex={2}
+				confirm={allComplete ? confirm : undefined}
 			/>
 			<NewCardField
 				value={card.definition}
@@ -305,7 +324,13 @@ export const EditPage = ({
 							console.log(err);
 						}
 					}}
-					events={{ tabIndex: 5 }}
+					events={{
+						tabIndex: 5,
+						onKeyDown: ({ key }) =>
+							key === 'Enter' && allComplete
+								? confirm()
+								: undefined,
+					}}
 				/>
 			</EbetFormField>
 			{wasInAnki ? (
