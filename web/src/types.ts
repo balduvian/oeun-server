@@ -69,7 +69,7 @@ export type EditingCard = {
 	part: string;
 	definition: string;
 	sentence: string;
-	picture: string;
+	pictureURL: string;
 	anki: boolean;
 };
 

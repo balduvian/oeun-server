@@ -27,9 +27,12 @@ fun Route.settingsRouting() {
 						return value.asString.trim().ifEmpty { null }
 					}
 
+					fun realValueInt(value: JsonElement) = if (value.isJsonNull) null else value.asInt
+
 					options.get("deckName")?.let { Settings.options.deckName = realValue(it) }
 					options.get("modelName")?.let { Settings.options.modelName = realValue(it) }
 					options.get("extensionId")?.let { Settings.options.extensionId = realValue(it) }
+					options.get("dayCutoffHour")?.let { Settings.options.dayCutoffHour = realValueInt(it) }
 
 					Settings.options.save()
 

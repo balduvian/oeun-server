@@ -17,7 +17,7 @@ export const Footer = ({ collectionSize }: Props) => {
 					</div>
 					<div>
 						<p className="footer-info edited-today">
-							<span>{'편집 '}</span>
+							<span>{'수정 '}</span>
 							<span className="bold">
 								{collectionSize.editedToday}
 							</span>

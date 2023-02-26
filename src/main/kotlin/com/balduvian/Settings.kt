@@ -13,6 +13,7 @@ object Settings {
 		var deckName: String?,
 		var modelName: String?,
 		var extensionId: String?,
+		var dayCutoffHour: Int?,
 	) {
 		fun save() {
 			val file = File(OPTIONS_PATH)
@@ -26,6 +27,10 @@ object Settings {
 			return (deckName ?: throw NotFoundException("No Deck Name specified")) to
 				(modelName ?: throw NotFoundException("No Model Name specified"))
 		}
+
+		fun getDayCutoffHour(): Int {
+			return dayCutoffHour ?: 0
+		}
 	}
 
 	fun load(): Options {
@@ -34,7 +39,7 @@ object Settings {
 		return if (file.exists()) {
 			JsonUtil.readerGson.fromJson(File(OPTIONS_PATH).reader(), Options::class.java)
 		} else {
-			val defaultOptions = Options(DEFAULT_PORT, null, null, null)
+			val defaultOptions = Options(DEFAULT_PORT, null, null, null, null)
 
 			defaultOptions.save()
 

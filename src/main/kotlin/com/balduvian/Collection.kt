@@ -5,8 +5,10 @@ import com.balduvian.Directories.PATH_TRASH
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
+import java.io.PipedOutputStream
 import java.time.LocalDate
 import java.time.ZonedDateTime
+import java.util.Base64
 import java.util.concurrent.CompletableFuture
 import kotlin.random.Random
 
@@ -78,9 +80,33 @@ object Collection {
 		}
 	}
 
-	private fun addCard(uploadCard: Card.UploadCard): Homonyms.Homonym {
+	private fun isDataURL(pictureData: String): Boolean {
+		return pictureData.startsWith("data:image/")
+	}
+
+	private fun handleCardsUploadedPicture(pictureData: String?, warnings: Warnings): String? {
+		if (pictureData == null) return null
+		if (!isDataURL(pictureData)) return null
+
+		return try {
+			val filename = Images.imageFilename()
+
+			val pictureBytes = Base64.getDecoder().decode(pictureData.substring(pictureData.indexOf(',') + 1))
+			ImagePool.CARDS.images.saveImage(filename, pictureBytes.inputStream())
+
+			filename
+
+		} catch (ex: Throwable) {
+			warnings.add("Invalid picture data")
+			null
+		}
+	}
+
+	private fun addCard(uploadCard: Card.UploadCard): Pair<Homonyms.Homonym, Warnings> {
+		val warnings = Warnings.make()
 		val (id, insertIndex) = findNewId()
-		val card = Card.fromUpload(id, uploadCard)
+
+		val card = Card.fromUpload(id, uploadCard, handleCardsUploadedPicture(uploadCard.picture, warnings))
 
 		cards.add(insertIndex, card)
 		cardsDateOrder.add(card)
@@ -89,10 +115,12 @@ object Collection {
 
 		CompletableFuture.runAsync { card.save(PATH_CARDS.path) }
 
-		return homonym
+		return homonym to warnings
 	}
 
 	private suspend fun editCard(id: Int, uploadCard: Card.UploadCard): Pair<Homonyms.Homonym, Warnings> {
+		val warnings = Warnings.make()
+
 		val now = ZonedDateTime.now()
 		val collectionCard = getCard(id) ?: throw PrettyException("Card with id=${id} doesn't exist")
 
@@ -100,10 +128,8 @@ object Collection {
 		val isInAnki = uploadCard.anki
 
 		val oldWord = collectionCard.word
-		val hasDifference = collectionCard.permuteInto(uploadCard, now)
+		val hasDifference = collectionCard.permuteInto(uploadCard, now, handleCardsUploadedPicture(uploadCard.picture, warnings) ?: uploadCard.picture)
 		val homonym = Homonyms.renameCard(collectionCard, oldWord) ?: throw PrettyException("Could not rename card")
-
-		val warnings = Warnings.make()
 
 		if (hasDifference) {
 			if (ankiData != null) try {
@@ -131,7 +157,7 @@ object Collection {
 
 	suspend fun putCard(uploadCard: Card.UploadCard): Pair<Homonyms.Homonym, Warnings> {
 		return if (uploadCard.id == null)
-			addCard(uploadCard) to Warnings.make()
+			addCard(uploadCard)
 		else
 			editCard(uploadCard.id, uploadCard)
 	}

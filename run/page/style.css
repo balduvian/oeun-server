@@ -31,7 +31,7 @@ img {
 }
 
 .blank-holder > p {
-  color: white;
+  color: var(--text);
   font-size: 20px;
   text-align: center;
 }

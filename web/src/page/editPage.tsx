@@ -20,8 +20,9 @@ import {
 	EbetLabel,
 	EbetPictureInput,
 } from '../ebetUi';
-import { createGo, Go } from '../go';
+import { createGo, Nav } from '../go';
 import { warn } from '../toast';
+import { btoa } from 'buffer';
 
 const getElementByTabIndex = (index: number) =>
 	[
@@ -188,7 +189,7 @@ const editingCardComplete = (card: EditingCard) =>
 	card.part !== '' &&
 	!realEmpty(card.definition) &&
 	!realEmpty(card.sentence) &&
-	card.picture !== '';
+	card.pictureURL !== '';
 
 const realValue = (value: string) => {
 	const trimmed = value.trim();
@@ -199,11 +200,22 @@ const realEmpty = (value: string) => {
 	return trimmed.length === 0;
 };
 
+const BASE_PICTURE_URL = '/api/images/cards/';
+
+export const convertToPictureURL = (picture: string) =>
+	`${BASE_PICTURE_URL}${picture}`;
+
+export const stripPictureURL = (pictureURL: string): string | undefined => {
+	if (pictureURL.length === 0) return undefined;
+	if (pictureURL.startsWith(BASE_PICTURE_URL))
+		return pictureURL.substring(BASE_PICTURE_URL.length);
+	return pictureURL;
+};
+
 type Props = {
 	setSearchValue: (searchValue: string) => void;
-	goTo: (go: Go) => void;
+	nav: Nav;
 	parts: Part[];
-	setError: Setter<boolean>;
 	card: EditingCard;
 	setCard: Setter<EditingCard>;
 	uploadCardImage: (buffer: ArrayBuffer | string) => Promise<string>;
@@ -211,9 +223,8 @@ type Props = {
 
 export const EditPage = ({
 	setSearchValue,
-	goTo,
+	nav,
 	parts,
-	setError,
 	card,
 	setCard,
 	uploadCardImage,
@@ -243,7 +254,7 @@ export const EditPage = ({
 				part: realValue(card.part),
 				definition: realDefinition,
 				sentence: realSentence,
-				picture: realValue(card.picture),
+				picture: stripPictureURL(card.pictureURL),
 				badges: [],
 				anki: card.anki,
 			};
@@ -251,10 +262,10 @@ export const EditPage = ({
 			util.putRequest<CardPutResponse>('/api/collection', uploadCard)
 				.then(({ word, url, warnings }) => {
 					setSearchValue(word);
-					goTo(createGo(url));
+					nav.goTo(createGo(url));
 					warnings.forEach(warning => warn(warning));
 				})
-				.catch(() => setError(true));
+				.catch(() => nav.setError(true));
 		} else {
 			const requireds = [
 				...(realWord === undefined ? ['Word'] : []),
@@ -309,16 +320,14 @@ export const EditPage = ({
 				<EbetLabel text="Picture" />
 				<EbetPictureInput
 					src={
-						realEmpty(card.picture)
-							? undefined
-							: `/api/images/cards/${card.picture}`
+						realEmpty(card.pictureURL) ? undefined : card.pictureURL
 					}
-					onDelete={() => updateField('picture', '')}
+					onDelete={() => updateField('pictureURL', '')}
 					onPaste={async buffer => {
 						try {
 							updateField(
-								'picture',
-								await uploadCardImage(buffer),
+								'pictureURL',
+								util.pngDataURL(util.bufferToBase64(buffer)),
 							);
 						} catch (err) {
 							console.log(err);
@@ -349,7 +358,7 @@ export const EditPage = ({
 			<div className="button-grid">
 				<EbetButton
 					text="Cancel"
-					onClick={() => goTo(createGo('/cards'))}
+					onClick={() => nav.goTo(createGo('/cards'))}
 					events={{ tabIndex: 6 }}
 				/>
 				<EbetButton

@@ -10,7 +10,7 @@ import {
 import * as util from '../util';
 import { getParts } from '../partsBadges';
 import CardPanel, { AnkiMode } from '../component/cardPanel';
-import { createGo, Go } from '../go';
+import { createGo, Nav } from '../go';
 import { CardDisplay } from '../component/cardDisplay';
 import { Settings } from '../settings';
 import { warn } from '../toast';
@@ -59,7 +59,7 @@ export const onGoCards = (
 };
 
 type Props = {
-	goTo: (go: Go) => void;
+	nav: Nav;
 	cards: Card[];
 	setCards: Setter<Card[]>;
 	collectionSize: CollectionSize | undefined;
@@ -69,7 +69,7 @@ type Props = {
 };
 
 const CardsPage = ({
-	goTo,
+	nav,
 	cards,
 	setCards,
 	collectionSize,
@@ -102,7 +102,7 @@ const CardsPage = ({
 									card => card.id !== deletedId,
 								);
 								if (newCards.length === 0) {
-									goTo(createGo('/cards'));
+									nav.goTo(createGo('/cards'));
 								} else {
 									setCards(newCards);
 								}
@@ -144,7 +144,7 @@ const CardsPage = ({
 											},
 										)
 					}
-					goTo={goTo}
+					nav={nav}
 				/>
 			))}
 		</div>

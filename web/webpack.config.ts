@@ -4,7 +4,7 @@ import * as webpack from 'webpack';
 const config: webpack.Configuration = {
 	mode: 'development',
 	entry: {
-		index: './src/router.tsx',
+		index: './src/app.tsx',
 	},
 	devtool: 'source-map',
 	module: {

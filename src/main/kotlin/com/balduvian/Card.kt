@@ -78,18 +78,18 @@ class Card(
 	/**
 	 * @return was the card changed at all
 	 */
-	fun permuteInto(uploadCard: UploadCard, now: ZonedDateTime): Boolean {
+	fun permuteInto(uploadCard: UploadCard, now: ZonedDateTime, pictureFilename: String?): Boolean {
 		val hasDifference = this.word != uploadCard.word || this.part != uploadCard.part ||
 				this.definition != uploadCard.definition ||
 				this.sentence != uploadCard.sentence ||
-				this.picture != uploadCard.picture ||
+				this.picture != pictureFilename ||
 				this.badges != uploadCard.badges
 
 		this.word = uploadCard.word
 		this.part = uploadCard.part
 		this.definition = uploadCard.definition
 		this.sentence = uploadCard.sentence
-		this.picture = uploadCard.picture
+		this.picture = pictureFilename
 		this.badges = uploadCard.badges
 
 		if (hasDifference) this.edited = now
@@ -98,7 +98,7 @@ class Card(
 	}
 
 	companion object {
-		fun fromUpload(id: Int, uploadCard: UploadCard): Card {
+		fun fromUpload(id: Int, uploadCard: UploadCard, pictureFilename: String?): Card {
 			val now = ZonedDateTime.now()
 
 			return Card(
@@ -107,7 +107,7 @@ class Card(
 				uploadCard.part,
 				uploadCard.definition,
 				uploadCard.sentence,
-				uploadCard.picture,
+				pictureFilename,
 				now,
 				now,
 				uploadCard.badges,

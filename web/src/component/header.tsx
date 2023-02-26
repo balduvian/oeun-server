@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { createGo, Go } from '../go';
+import { createGo, Go, Nav } from '../go';
 import { composingEvents, isComposing } from '../korInput';
 import { SearchSuggestion, SuggestionSpecial } from '../types';
 import * as util from '../util';
@@ -94,10 +94,10 @@ const makeSearch = async (
 type Props = {
 	searchValue: string;
 	setSearchValue: (value: string) => void;
-	goTo: (go: Go) => void;
+	nav: Nav;
 };
 
-const Header = ({ searchValue, setSearchValue, goTo }: Props) => {
+const Header = ({ searchValue, setSearchValue, nav }: Props) => {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const waitingOnInput = useRef(false);
 	const typingEventNo = useRef(0);
@@ -136,16 +136,16 @@ const Header = ({ searchValue, setSearchValue, goTo }: Props) => {
 			setHide();
 		} else if (suggestion?.special === SuggestionSpecial.ADD) {
 			setClear(suggestion.word);
-			goTo(createGo(suggestion.url));
+			nav.goTo(createGo(suggestion.url));
 		} else if (
 			suggestion?.special === SuggestionSpecial.HOME ||
 			suggestion === undefined
 		) {
 			setClear('');
-			goTo(createGo('/cards'));
+			nav.goTo(createGo('/cards'));
 		} else {
 			setClear(suggestion.word);
-			goTo(createGo(suggestion.url));
+			nav.goTo(createGo(suggestion.url));
 		}
 	};
 

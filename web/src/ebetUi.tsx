@@ -1,10 +1,8 @@
-import { text } from 'stream/consumers';
-
 export type Size = 'small' | 'medium' | 'large';
 
 /* ELEMENTS */
 
-type InputProps = {
+export type InputProps = {
 	size?: Size;
 	disabled?: boolean;
 	error?: boolean;

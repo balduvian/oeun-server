@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card, Part } from '../types';
 import * as util from '../util';
-import { createGo, Go } from '../go';
+import { createGo, Nav } from '../go';
+import { warn } from '../toast';
 
 type HighlightsProps = {
 	sentence: string | undefined;
@@ -35,10 +36,10 @@ type Props = {
 	index: number;
 	onDelete: (id: number) => void;
 	onAnki: ((id: number, mode: AnkiMode) => Promise<void>) | undefined;
-	goTo: (go: Go) => void;
+	nav: Nav;
 };
 
-const CardPanel = ({ card, parts, index, onDelete, onAnki, goTo }: Props) => {
+const CardPanel = ({ card, parts, index, onDelete, onAnki, nav }: Props) => {
 	const [ankiLoading, setAnkiLoading] = React.useState(false);
 
 	return (
@@ -68,7 +69,9 @@ const CardPanel = ({ card, parts, index, onDelete, onAnki, goTo }: Props) => {
 								card.anki === undefined
 									? AnkiMode.ADD
 									: AnkiMode.SYNC,
-							).finally(() => setAnkiLoading(false));
+							)
+								.catch(() => warn('Could not connect to Anki'))
+								.finally(() => setAnkiLoading(false));
 						}}
 					>
 						{card.anki !== undefined || ankiLoading ? '↻' : '★'}
@@ -77,7 +80,7 @@ const CardPanel = ({ card, parts, index, onDelete, onAnki, goTo }: Props) => {
 				<button
 					className="card-button add"
 					onClick={() =>
-						goTo(
+						nav.goTo(
 							createGo('/edit', {
 								word: card.word,
 							}),
@@ -89,7 +92,7 @@ const CardPanel = ({ card, parts, index, onDelete, onAnki, goTo }: Props) => {
 				<button
 					className="card-button edit"
 					onClick={() =>
-						goTo(
+						nav.goTo(
 							createGo('/edit', {
 								id: card.id.toString(),
 								word: card.word,

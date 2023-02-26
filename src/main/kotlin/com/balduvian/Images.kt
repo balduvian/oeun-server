@@ -79,6 +79,7 @@ class Images(val dirName: String, val cacheSize: Int) {
 	}
 
 	fun saveImage(name: String, inputStream: InputStream) {
+		//TODO smart write to memory and add to cache immediately
 		ImageIO.write(cropImage(inputStream, 608, 342), "JPEG", File(dirName + name))
 	}
 
@@ -90,12 +91,16 @@ class Images(val dirName: String, val cacheSize: Int) {
 		if (!file.exists()) return null
 		val newBytes = file.readBytes()
 
+		addToCache(CachedImage(name, newBytes))
+
+		return newBytes
+	}
+
+	private fun addToCache(image: CachedImage) {
 		if (imageCache.size == cacheSize) {
 			imageCache.removeAt(0)
 		}
-		imageCache.add(CachedImage(name, newBytes))
-
-		return newBytes
+		imageCache.add(image)
 	}
 
 	fun deleteUnused(): Int {

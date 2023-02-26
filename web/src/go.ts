@@ -1,3 +1,5 @@
+import { Setter } from './types';
+
 export type Go = {
 	url: string;
 };
@@ -21,3 +23,9 @@ const makeQueryString = (obj: { [key: string]: string | undefined }): string =>
 		})
 		.filter((value): value is string => value !== undefined)
 		.join('&');
+
+export type Nav = {
+	error: boolean;
+	setError: Setter<boolean>;
+	goTo: (go: Go) => void;
+};

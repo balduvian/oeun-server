@@ -13,7 +13,7 @@
     box-sizing: border-box;
     border-radius: 0.5rem;
     border: 1px solid var(--positive);
-    color: white;
+    color: var(--text);
 }
 
 .part-entry {

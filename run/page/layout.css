@@ -101,6 +101,10 @@ body {
 	margin-top: 1rem;
 }
 
+.standard-sheet h2 {
+	color: var(--text)
+}
+
 /* search */
 
 .header {

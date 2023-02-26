@@ -4,12 +4,14 @@ export type Settings = {
 	deckName: string | null;
 	modelName: string | null;
 	extensionId: string | null;
+	dayCutoffHour: number | null;
 };
 
-export const dummySettings = (): Settings => ({
+export const blankSettings = (): Settings => ({
 	deckName: null,
 	modelName: null,
 	extensionId: null,
+	dayCutoffHour: null,
 });
 
 export const pullSettings = () => getRequest<Settings>('/api/settings');
