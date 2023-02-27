@@ -58,9 +58,6 @@ const App = () => {
 		pullSettings().then(settings => mergeSettings(settings));
 	}, []);
 
-	const uploadCardImage = (data: ArrayBuffer | string) =>
-		imagePostRequest<string>('/api/images/cards', data);
-
 	const routes: Route[] = [
 		{
 			url: toTemplateURL('/edit'),
@@ -72,7 +69,6 @@ const App = () => {
 						parts={parts}
 						card={editCard}
 						setCard={setEditCard}
-						uploadCardImage={uploadCardImage}
 					/>
 				),
 			onGo: (nav, query) => {

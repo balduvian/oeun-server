@@ -32,8 +32,6 @@ export type SearchSuggestion = {
 	special?: SuggestionSpecial;
 };
 
-export type Highlights = { part: string; highlight: boolean }[];
-
 export type HistoryEntry = { field: keyof Card; value: string };
 
 export type AnkiData = {

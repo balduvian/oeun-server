@@ -1,8 +1,8 @@
 import React from 'react';
 import { Card, Part } from '../types';
-import * as util from '../util';
 import { createGo, Nav } from '../go';
 import { warn } from '../toast';
+import { IDOLS_NAMES, highlightThenKpopHighlight } from '../highlight';
 
 type HighlightsProps = {
 	sentence: string | undefined;
@@ -10,14 +10,25 @@ type HighlightsProps = {
 
 const Highlights = React.memo(({ sentence }: HighlightsProps) => {
 	const highlights =
-		sentence === undefined ? undefined : util.strToHighlights(sentence);
+		sentence === undefined
+			? undefined
+			: highlightThenKpopHighlight(sentence);
 
 	return highlights === undefined ? (
 		<span />
 	) : (
 		<>
-			{highlights.map(({ part, highlight }, i) => (
-				<span key={i} className={highlight ? 'highlight' : ''}>
+			{highlights.map(([part, highlight], i) => (
+				<span
+					key={i}
+					className={
+						highlight === false
+							? ''
+							: highlight === true
+							? 'highlight'
+							: `idol-name ${IDOLS_NAMES[highlight]}`
+					}
+				>
 					{part}
 				</span>
 			))}

@@ -22,7 +22,7 @@ import {
 } from '../ebetUi';
 import { createGo, Nav } from '../go';
 import { warn } from '../toast';
-import { btoa } from 'buffer';
+import { highlightString } from '../highlight';
 
 const getElementByTabIndex = (index: number) =>
 	[
@@ -218,7 +218,6 @@ type Props = {
 	parts: Part[];
 	card: EditingCard;
 	setCard: Setter<EditingCard>;
-	uploadCardImage: (buffer: ArrayBuffer | string) => Promise<string>;
 };
 
 export const EditPage = ({
@@ -227,7 +226,6 @@ export const EditPage = ({
 	parts,
 	card,
 	setCard,
-	uploadCardImage,
 }: Props) => {
 	const [wasInAnki] = React.useState(card.anki);
 
@@ -242,9 +240,9 @@ export const EditPage = ({
 			const realSentence = realValue(card.sentence);
 			if (
 				realSentence != null &&
-				util
-					.strToHighlights(realSentence)
-					.every(({ highlight }) => !highlight)
+				highlightString(realSentence).every(
+					([, highlight]) => !highlight,
+				)
 			)
 				return warn('Sentence contains no highlight');
 
