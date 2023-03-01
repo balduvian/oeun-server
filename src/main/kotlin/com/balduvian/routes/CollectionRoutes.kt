@@ -107,6 +107,7 @@ fun Route.collectionRouting() {
 
 				val response = JsonObject()
 				response.add("warnings", warnings.serialize())
+				response.add("collectionSize", Collection.getCollectionSize().serialize())
 
 				okJson(call, response)
 

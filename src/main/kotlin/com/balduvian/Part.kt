@@ -17,7 +17,8 @@ enum class Part(val english: String, val korean: String, val keybind: Char) {
 	POSTPOSITIONAL_PARTICLE("Postpositional particle", "조사", 'o'),
 	AUXILIARY_VERB("Auxiliary verb", "보조 동사", 'l'),
 	WORD_ENDING("Word ending", "어미", 'w'),
-	AUXILIARY_ADJECTIVE("Auxiliary adjective", "보조 형용사", 'r');
+	AUXILIARY_ADJECTIVE("Auxiliary adjective", "보조 형용사", 'r'),
+	GRAMMAR("Grammar", "문법", 'g');
 
 	companion object {
 		val serializedList: String

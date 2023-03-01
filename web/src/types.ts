@@ -87,6 +87,7 @@ export type MessageResponse = {
 
 export type DeleteResponse = {
 	warnings: string[];
+	collectionSize: CollectionSize;
 };
 
 export type Homonym = {

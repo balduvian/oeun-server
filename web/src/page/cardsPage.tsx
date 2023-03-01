@@ -96,7 +96,8 @@ const CardsPage = ({
 							.deleteRequest<DeleteResponse>(
 								`/api/collection/${deletedId}`,
 							)
-							.then(({ warnings }) => {
+							.then(({ warnings, collectionSize }) => {
+								setCollectionSize(collectionSize);
 								warnings.forEach(warning => warn(warning));
 								const newCards = cards.filter(
 									card => card.id !== deletedId,

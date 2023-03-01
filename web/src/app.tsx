@@ -12,14 +12,7 @@ import {
 	ResultType,
 } from './types';
 import { Route, useRouter } from './router';
-import {
-	base64ToBuffer,
-	bufferToBase64,
-	imagePostRequest,
-	intOrUndefined,
-	pngDataURL,
-	stripJustDataPart,
-} from './util';
+import { intOrUndefined } from './util';
 import BadgesPage from './page/badgesPage';
 import CardsPage, { onGoCards } from './page/cardsPage';
 import EditPage, { convertToPictureURL } from './page/editPage';
@@ -32,6 +25,10 @@ import {
 	pushSettings,
 } from './settings';
 import { toTemplateURL } from './url';
+import { getRequest } from './util';
+
+const getCollectionSize = () =>
+	getRequest<CollectionSize>('/api/collection/size');
 
 const App = () => {
 	const [searchValue, setSearchValue] = useState('');
@@ -85,6 +82,7 @@ const App = () => {
 					anki: query.anki === 'true',
 				};
 
+				getCollectionSize().then(setCollectionSize);
 				setEditCard(card);
 				getParts(setParts, nav.setError);
 
@@ -114,7 +112,9 @@ const App = () => {
 		{
 			url: toTemplateURL('/badges'),
 			element: () => <BadgesPage />,
-			onGo: () => {},
+			onGo: () => {
+				getCollectionSize().then(setCollectionSize);
+			},
 		},
 		{
 			url: toTemplateURL('/settings'),
@@ -134,6 +134,7 @@ const App = () => {
 				),
 			onGo: () => {
 				pullSettings().then(settings => setSettings(settings));
+				getCollectionSize().then(setCollectionSize);
 			},
 		},
 		...(
