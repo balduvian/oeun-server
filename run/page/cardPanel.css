@@ -1,20 +1,19 @@
-
 .card-panel {
 	display: grid;
-    height: 14rem;
-    width: 100%;
-    margin-bottom: 1rem;
-    margin-left: auto;
-    margin-right: auto;
-    border: 1px solid var(--gold);
-    border-radius: 0.25rem;
-    overflow: hidden;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-blend-mode: overlay;
-    position: relative;
-    max-width: 40rem;
+	height: 14rem;
+	width: 100%;
+	margin-bottom: 1rem;
+	margin-left: auto;
+	margin-right: auto;
+	border: 1px solid var(--gold);
+	border-radius: 0.25rem;
+	overflow: hidden;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: cover;
+	background-blend-mode: overlay;
+	position: relative;
+	max-width: 40rem;
 }
 
 .card-panel p {
@@ -23,10 +22,10 @@
 
 .card-fields {
 	display: grid;
-    grid-template-rows: 2rem max-content 1fr;
-    row-gap: 0.25rem;
-    padding: 0.5rem;
-    position: relative;
+	grid-template-rows: 2rem max-content 1fr;
+	row-gap: 0.25rem;
+	padding: 0.5rem;
+	position: relative;
 }
 
 .card-field-row {
@@ -38,11 +37,11 @@
 	column-gap: 0.5em;
 }
 
-.card-field-row > p {
+.card-field-row>p {
 	width: fit-content;
 }
 
-.card-field-row > p:hover {
+.card-field-row>p:hover {
 	background-color: rgba(0, 0, 0, 0.5);
 	border-radius: 0.15rem;
 }
@@ -56,8 +55,8 @@
 
 .card-part {
 	color: var(--text);
-    font-size: 1.0rem;
-    line-height: 2rem;
+	font-size: 1rem;
+	line-height: 2rem;
 }
 
 .card-part.no-part {
@@ -70,8 +69,8 @@
 
 .card-definition {
 	color: var(--text);
-    font-size: 1.0rem;
-    line-height: 1.5rem;
+	font-size: 1rem;
+	line-height: 1.5rem;
 }
 
 .card-sentence {
@@ -79,7 +78,7 @@
 	line-height: 1.5rem;
 }
 
-.card-sentence > .highlight {
+.card-sentence>.highlight {
 	font-weight: bold;
 }
 
@@ -87,76 +86,112 @@
 
 .card-button-holder {
 	position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    width: fit-content;
-    height: 1.5rem;
-    display: flex;
-    flex-direction: row-reverse;
-    column-gap: 0.5rem;
+	top: 0.5rem;
+	right: 0.5rem;
+	width: fit-content;
+	height: 1.5rem;
+	display: flex;
+	flex-direction: row-reverse;
+	column-gap: 0.5rem;
 	z-index: 1;
 }
 
 .card-button {
 	width: 1.5rem;
 	height: 1.5rem;
-  
+
 	background-color: var(--field-dark);
-  
+
 	text-align: center;
-	font-size: 1.0rem;
-  
+	font-size: 1rem;
+
 	box-sizing: border-box;
 	border-width: 1px;
 	border-style: solid;
 	border-radius: 0.25rem;
-  
+
 	cursor: pointer;
 
-	line-height: 1.0rem;
+	line-height: 1rem;
 	padding: 0;
 
 	filter: drop-shadow(0 0 0.75rem black);
-  }
-  
-  .card-button.delete {
-	color: var(--red);
+}
+
+.icon-holder {
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	padding: 0.1rem;
+}
+
+.card-button:hover svg>* {
+	fill: var(--text) !important;
+}
+
+/* delete button */
+.card-button.delete {
 	border-color: var(--red);
-  }
-  .card-button.delete:hover {
+}
+
+.card-button.delete:hover {
 	background-color: var(--red);
-	color: var(--text);
-  }
-  
-  .card-button.edit {
-	color: var(--blu);
+}
+
+.card-button.delete svg>* {
+	fill: var(--red);
+	border-color: var(--red);
+}
+
+/* edit button */
+.card-button.edit {
 	border-color: var(--blu);
-  }
-  .card-button.edit:hover {
+}
+
+.card-button.edit:hover {
 	background-color: var(--blu);
-	color: var(--text);
-  }
-  
-  .card-button.add {
-	color: var(--gre);
+}
+
+.card-button.edit svg>* {
+	fill: var(--blu);
+	border-color: var(--blu);
+}
+
+/* add button */
+.card-button.add {
 	border-color: var(--gre);
-  }
-  .card-button.add:hover {
+}
+
+.card-button.add:hover {
 	background-color: var(--gre);
-	color: var(--text);
-  }
-  
-  .card-button.anki {
-	color: var(--lblu);
+}
+
+.card-button.add svg>* {
+	fill: var(--gre);
+	border-color: var(--gre);
+}
+
+/* anki button */
+.card-button.anki {
 	border-color: var(--lblu);
-  }
-  .card-button.anki:hover,
-  .card-button.anki.active {
+}
+
+.card-button.anki:hover,
+.card-button.anki.active {
 	background-color: var(--lblu);
-	color: var(--text);
-  }
-  .card-button.anki.loading {
+}
+
+.card-button.anki svg>* {
+	fill: var(--lblu);
+	border-color: var(--lblu);
+}
+
+.card-button.anki.loading,
+.card-button.anki:active {
 	background-color: var(--dblu);
-	color: var(--text);
-  }
-  
+}
+
+.card-button.anki.active svg>*,
+.card-button.anki.loading svg>* {
+	fill: var(--text);
+}

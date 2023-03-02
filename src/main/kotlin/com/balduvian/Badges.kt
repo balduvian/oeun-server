@@ -1,7 +1,6 @@
 package com.balduvian
 
 import com.google.gson.JsonParser
-import java.io.File
 import java.io.InputStreamReader
 
 class Badge(
@@ -29,7 +28,7 @@ object Badges {
 	}
 
 	fun loadBadges() {
-		val badgesDataFile = File(Directories.PATH_BADGES.path + "badges.json")
+		val badgesDataFile = Directories.PATH_BADGES.path.resolve("badges.json").toFile()
 
 		badgesList.addAll(if (badgesDataFile.exists()) {
 			loadBadgesData(badgesDataFile.reader())

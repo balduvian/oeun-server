@@ -4,8 +4,7 @@ import com.balduvian.Directories.PATH_CARDS
 import com.balduvian.Directories.PATH_TRASH
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import java.io.File
-import java.io.PipedOutputStream
+import java.nio.file.Path
 import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.util.Base64
@@ -34,7 +33,7 @@ object Collection {
 	)
 
 	fun loadAllCards() {
-		val directory = File(PATH_CARDS.path)
+		val directory = PATH_CARDS.path.toFile()
 		val files = directory.listFiles { _, name -> Card.isCardFile(name) } ?: return
 
 		cards.ensureCapacity(files.size)
@@ -84,21 +83,19 @@ object Collection {
 		return pictureData.startsWith("data:image/")
 	}
 
-	private fun handleCardsUploadedPicture(pictureData: String?, warnings: Warnings): String? {
-		if (pictureData == null) return null
-		if (!isDataURL(pictureData)) return null
+	private fun handleCardsUploadedPicture(uploadPictureData: String?): String? {
+		if (uploadPictureData == null || !isDataURL(uploadPictureData)) return uploadPictureData
 
 		return try {
 			val filename = Images.imageFilename()
 
-			val pictureBytes = Base64.getDecoder().decode(pictureData.substring(pictureData.indexOf(',') + 1))
+			val pictureBytes = Base64.getDecoder().decode(uploadPictureData.substring(uploadPictureData.indexOf(',') + 1))
 			ImagePool.CARDS.images.saveImage(filename, pictureBytes.inputStream())
 
 			filename
 
 		} catch (ex: Throwable) {
-			warnings.add("Invalid picture data")
-			null
+			throw PrettyException("Invalid picture data")
 		}
 	}
 
@@ -106,16 +103,37 @@ object Collection {
 		val warnings = Warnings.make()
 		val (id, insertIndex) = findNewId()
 
-		val card = Card.fromUpload(id, uploadCard, handleCardsUploadedPicture(uploadCard.picture, warnings))
+		val pictureFilename = handleCardsUploadedPicture(uploadCard.picture)
+		val card = Card.fromUpload(id, uploadCard, pictureFilename)
 
 		cards.add(insertIndex, card)
 		cardsDateOrder.add(card)
 		val homonym = Homonyms.addCard(card)
 		addedToday.onAddCard(card, card.date)
 
-		CompletableFuture.runAsync { card.save(PATH_CARDS.path) }
+		CompletableFuture.runAsync { card.save(PATH_CARDS.path, card.filename()) }
 
 		return homonym to warnings
+	}
+
+	private suspend fun editCardInAnki(collectionCard: Card, ankiData: Card.AnkiData) {
+		val (deckName, modelName) = Settings.options.getDeckModelName()
+		ankiData.id = AnkiConnect.editCardInAnki(deckName, modelName, collectionCard)
+	}
+
+	private suspend fun removeCardFromAnki(collectionCard: Card, ankiData: Card.AnkiData, now: ZonedDateTime) {
+		AnkiConnect.deleteCardFromAnki(ankiData.id)
+		ankiToday.onRemoveCard(collectionCard, now)
+		collectionCard.anki = null
+	}
+
+	private fun wasCardChanged(collectionCard: Card, uploadCard: Card.UploadCard, pictureFilename: String?): Boolean {
+		return collectionCard.word != uploadCard.word || collectionCard.part != uploadCard.part ||
+			collectionCard.definition != uploadCard.definition ||
+			collectionCard.sentence != uploadCard.sentence ||
+			collectionCard.picture != pictureFilename ||
+			collectionCard.badges != uploadCard.badges ||
+			(collectionCard.anki != null) != uploadCard.anki
 	}
 
 	private suspend fun editCard(id: Int, uploadCard: Card.UploadCard): Pair<Homonyms.Homonym, Warnings> {
@@ -124,30 +142,40 @@ object Collection {
 		val now = ZonedDateTime.now()
 		val collectionCard = getCard(id) ?: throw PrettyException("Card with id=${id} doesn't exist")
 
-		val ankiData = collectionCard.anki
-		val isInAnki = uploadCard.anki
+		val oldAnkiData = collectionCard.anki
+		val isInAnkiNow = uploadCard.anki
 
-		val oldWord = collectionCard.word
-		val hasDifference = collectionCard.permuteInto(uploadCard, now, handleCardsUploadedPicture(uploadCard.picture, warnings) ?: uploadCard.picture)
-		val homonym = Homonyms.renameCard(collectionCard, oldWord) ?: throw PrettyException("Could not rename card")
+		val newPictureFilename = handleCardsUploadedPicture(uploadCard.picture)
+		val wasChanged = wasCardChanged(collectionCard, uploadCard, newPictureFilename)
 
-		if (hasDifference) {
-			if (ankiData != null) try {
-				if (isInAnki) {
-					val (deckName, modelName) = Settings.options.getDeckModelName()
-					ankiData.id = AnkiConnect.editCardInAnki(deckName, modelName, collectionCard)
-				} else {
-					AnkiConnect.deleteCardFromAnki(ankiData.id)
-					ankiToday.onRemoveCard(collectionCard, now)
-					collectionCard.anki = null
-				}
+		val homonym = Homonyms.renameCard(collectionCard, newWord = uploadCard.word, oldWord = collectionCard.word)
+			?: throw PrettyException("Could not rename card")
+
+		if (wasChanged) {
+			/* update picture */
+			if (newPictureFilename != collectionCard.picture)
+				collectionCard.picture?.let { ImagePool.CARDS.images.moveToTrash(Path.of(it)) }
+
+			/* permute card */
+			collectionCard.part = uploadCard.part
+			collectionCard.definition = uploadCard.definition
+			collectionCard.sentence = uploadCard.sentence
+			collectionCard.picture = newPictureFilename
+			collectionCard.badges = uploadCard.badges
+
+			/* update card in anki */
+			if (oldAnkiData != null) try {
+				if (isInAnkiNow)
+					editCardInAnki(collectionCard, oldAnkiData)
+				else
+					removeCardFromAnki(collectionCard, oldAnkiData, now)
 			} catch (ex: Throwable) {
 				warnings.add(ex.message)
 			}
 
 			editedToday.onAddCard(collectionCard, now)
 
-			CompletableFuture.runAsync { collectionCard.save(PATH_CARDS.path) }
+			CompletableFuture.runAsync { collectionCard.save(PATH_CARDS.path, collectionCard.filename()) }
 		}
 
 		return homonym to warnings
@@ -183,7 +211,7 @@ object Collection {
 		val now = ZonedDateTime.now()
 		card.anki = ankiId?.let { Card.AnkiData(it, now) }
 		ankiToday.onAddCard(card, now)
-		CompletableFuture.runAsync { card.save(PATH_CARDS.path) }
+		CompletableFuture.runAsync { card.save(PATH_CARDS.path, card.filename()) }
 	}
 
 	suspend fun removeCard(id: Int): Warnings {
@@ -209,9 +237,10 @@ object Collection {
 		}
 
 		CompletableFuture.runAsync {
-			card.unsave(PATH_CARDS.path)
-			card.save(PATH_TRASH.path, true)
-			//TODO move image to trash
+			card.delete(PATH_CARDS.path, card.filename())
+			card.save(PATH_TRASH.path, Card.scrambledName())
+
+			card.picture?.let { ImagePool.CARDS.images.moveToTrash(Path.of(it)) }
 		}
 
 		return warnings
@@ -229,6 +258,7 @@ object Collection {
 		val word: String,
 		val numbers: ArrayList<Int>,
 		val url: String,
+		val definitions: ArrayList<String>,
 	)
 
 	/**
@@ -240,7 +270,7 @@ object Collection {
 		if (phrase.startsWith('!')) {
 			return commands.zip(commands.indices).mapNotNull { (command, i) ->
 				if (command.commandName.startsWith(phrase.subSequence(1, phrase.length))) {
-					OutSearchResult('!' + command.commandName, arrayListOf(i + 1), command.url)
+					OutSearchResult('!' + command.commandName, arrayListOf(i + 1), command.url, ArrayList())
 				} else {
 					null
 				}
@@ -262,7 +292,8 @@ object Collection {
 				results.add(OutSearchResult(
 					card.word,
 					arrayListOf(i + 1),
-					"/cards/card/${card.id}"
+					"/cards/card/${card.id}",
+					arrayListOf(card.definition)
 				))
 			}
 
@@ -305,9 +336,14 @@ object Collection {
 		}
 		
 		return ret.take(limit).map { pre ->
-			OutSearchResult(pre.word, Homonyms.getHomonym(pre.homonymId)?.cards?.mapNotNull { card ->
-				findDateCardIndex(card.date)?.plus(1)
-			}  as ArrayList<Int>? ?: ArrayList(), "/cards/homonym/${pre.homonymId}")
+			val homonym = Homonyms.getHomonym(pre.homonymId)
+
+			OutSearchResult(
+				pre.word,
+				homonym?.cards?.mapNotNull { card -> findDateCardIndex(card.date)?.plus(1) } as ArrayList<Int>? ?: ArrayList(),
+				"/cards/homonym/${pre.homonymId}",
+				homonym?.cards?.map { card -> card.definition } as ArrayList<String>? ?: ArrayList()
+			)
 		} as ArrayList<OutSearchResult>
 	}
 
@@ -322,6 +358,10 @@ object Collection {
 
 			entry.addProperty("word", result.word)
 			entry.addProperty("url", result.url)
+
+			val definitions = JsonArray(result.definitions.size)
+			for (definition in result.definitions) definitions.add(definition)
+			entry.add("definitions", definitions)
 
 			array.add(entry)
 		}

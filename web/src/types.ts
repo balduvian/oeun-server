@@ -29,6 +29,7 @@ export type SearchSuggestion = {
 	word: string;
 	numbers: number[];
 	url: string;
+	definitions: string[];
 	special?: SuggestionSpecial;
 };
 

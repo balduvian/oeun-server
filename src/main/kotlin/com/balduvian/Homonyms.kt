@@ -76,9 +76,11 @@ object Homonyms {
 	}
 
 	/** @return the new homonym for the card, if renamed or not, null if error */
-	fun renameCard(card: Card, oldWord: String): Homonym? {
+	fun renameCard(card: Card, newWord: String, oldWord: String): Homonym? {
 		val oldHomonym = getHomonym(oldWord) ?: return null
-		if (card.word == oldWord) return oldHomonym
+		if (newWord == oldWord) return oldHomonym
+
+		card.word = newWord
 
 		internalRemoveCard(oldHomonym, card.id, oldWord)
 		return addCard(card)

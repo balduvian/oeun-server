@@ -7,6 +7,7 @@ import java.nio.charset.Charset
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.nio.file.Path
 
 object AnkiConverter {
 	fun loadAnkiFile(path: String): CharArray {
@@ -136,7 +137,7 @@ object AnkiConverter {
 				null,
 			)
 
-			card.save("C:\\Users\\Emmet\\Programming\\lang\\java\\skybranch\\run\\data\\cards\\")
+			card.save(Path.of("C:\\Users\\Emmet\\Programming\\lang\\java\\skybranch\\run\\data\\cards\\"), card.filename())
 		}
 	}
 }

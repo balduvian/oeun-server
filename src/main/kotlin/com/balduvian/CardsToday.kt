@@ -38,7 +38,7 @@ abstract class CardsToday {
             storedDate = date
         }
 
-        if (getDay(card, date)?.equals(date) == true) {
+        if (!list.contains(card) && getDay(card, date)?.equals(date) == true) {
             list.add(card)
         }
     }

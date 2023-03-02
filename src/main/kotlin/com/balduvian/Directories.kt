@@ -1,18 +1,18 @@
 package com.balduvian
 
-import java.io.File
+import java.nio.file.Path
 
-enum class Directories(val path: String) {
-	PATH_DATA("./data/"),
-	PATH_CARDS("./data/cards/"),
-	PATH_IMAGES("./data/images/"),
-	PATH_TRASH("./data/trash/"),
-	PATH_BADGES("./data/badges/");
+enum class Directories(val path: Path) {
+	PATH_DATA(Path.of("./data/")),
+	PATH_CARDS(Path.of("./data/cards/")),
+	PATH_IMAGES(Path.of("./data/images/")),
+	PATH_TRASH(Path.of("./data/trash/")),
+	PATH_BADGES(Path.of("./data/badges/"));
 
 	companion object {
 		fun setup() {
 			values().forEach { directory ->
-				val file = File(directory.path)
+				val file = directory.path.toFile()
 				if (!file.exists()) file.mkdir()
 			}
 		}

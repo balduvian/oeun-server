@@ -6,6 +6,7 @@ import java.io.File
 import java.io.FileWriter
 import java.io.InputStream
 import java.nio.charset.Charset
+import java.nio.file.Path
 import java.time.ZonedDateTime
 import java.util.*
 import kotlin.collections.ArrayList
@@ -59,45 +60,27 @@ class Card(
 		return JsonUtil.senderGson.toJsonTree(this) as JsonObject
 	}
 
-	private fun filename(directoryPath: String, scramble: Boolean): String {
-		return directoryPath + "card_" + (if (scramble) UUID.randomUUID().toString() else id.toString()) + ".json"
+	fun filename(): Path {
+		return Path.of("card_${id}.json")
 	}
 
-	fun save(directoryPath: String, scramble: Boolean = false) {
-		val file = File(filename(directoryPath, scramble))
+	fun save(directory: Path, filename: Path) {
+		val file = directory.resolve(filename).toFile()
 		val fileWriter = FileWriter(file, Charset.forName("UTF-8"))
 		fileWriter.write(JsonUtil.saverGson.toJson(serialize()))
 		fileWriter.close()
 	}
 
-	fun unsave(directoryPath: String) {
-		val file = File(filename(directoryPath, false))
+	fun delete(directory: Path, filename: Path) {
+		val file = directory.resolve(filename).toFile()
 		file.delete()
 	}
 
-	/**
-	 * @return was the card changed at all
-	 */
-	fun permuteInto(uploadCard: UploadCard, now: ZonedDateTime, pictureFilename: String?): Boolean {
-		val hasDifference = this.word != uploadCard.word || this.part != uploadCard.part ||
-				this.definition != uploadCard.definition ||
-				this.sentence != uploadCard.sentence ||
-				this.picture != pictureFilename ||
-				this.badges != uploadCard.badges
-
-		this.word = uploadCard.word
-		this.part = uploadCard.part
-		this.definition = uploadCard.definition
-		this.sentence = uploadCard.sentence
-		this.picture = pictureFilename
-		this.badges = uploadCard.badges
-
-		if (hasDifference) this.edited = now
-
-		return hasDifference
-	}
-
 	companion object {
+		fun scrambledName(): Path {
+			return Path.of("card_${UUID.randomUUID()}.json")
+		}
+
 		fun fromUpload(id: Int, uploadCard: UploadCard, pictureFilename: String?): Card {
 			val now = ZonedDateTime.now()
 

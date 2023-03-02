@@ -1,13 +1,16 @@
 package com.balduvian
 
+import io.ktor.util.*
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
-import java.io.File
 import java.io.InputStream
+import java.nio.file.Path
 import java.time.Instant
+import java.util.UUID
 import javax.imageio.ImageIO
+import kotlin.io.path.nameWithoutExtension
 
-class Images(val dirName: String, val cacheSize: Int) {
+class Images(val directory: Path, val trash: Path, val cacheSize: Int) {
 	data class CachedImage(val name: String, val data: ByteArray)
 
 	val imageCache = ArrayList<CachedImage>(cacheSize)
@@ -80,14 +83,14 @@ class Images(val dirName: String, val cacheSize: Int) {
 
 	fun saveImage(name: String, inputStream: InputStream) {
 		//TODO smart write to memory and add to cache immediately
-		ImageIO.write(cropImage(inputStream, 608, 342), "JPEG", File(dirName + name))
+		ImageIO.write(cropImage(inputStream, 608, 342), "JPEG", directory.resolve(name).toFile())
 	}
 
 	fun getImage(name: String): ByteArray? {
 		val cached = getCachedImage(name)
 		if (cached != null) return cached
 
-		val file = File(dirName + name)
+		val file = directory.resolve(name).toFile()
 		if (!file.exists()) return null
 		val newBytes = file.readBytes()
 
@@ -103,15 +106,43 @@ class Images(val dirName: String, val cacheSize: Int) {
 		imageCache.add(image)
 	}
 
+	private fun mangleFilename(filename: Path): Path {
+		return Path.of("${filename.nameWithoutExtension}_${UUID.randomUUID()}.${filename.extension}")
+	}
+
+	fun moveToTrash(filename: Path) {
+		val file = directory.resolve(filename).toFile()
+		val trashFile = trash.resolve(mangleFilename(filename)).toFile()
+
+		/* remove image from cache */
+		val searchName = filename.toString()
+		val cacheIndex = imageCache.indexOfFirst { it.name == searchName }
+		if (cacheIndex != -1) imageCache.removeAt(cacheIndex)
+
+		try {
+			val sourceStream = file.inputStream().channel
+			val destStream = trashFile.outputStream().channel
+
+			destStream.transferFrom(sourceStream, 0, sourceStream.size())
+
+			sourceStream.close()
+			destStream.close()
+
+			file.delete()
+		} catch (ex: Throwable) {
+			println("couldn't delete image $filename")
+		}
+	}
+
 	fun deleteUnused(): Int {
 		var count = 0
 		val allUsed = Collection.cards.mapNotNull { card -> card.picture }
 
-		val allFiles = File(dirName).listFiles() ?: throw Exception()
+		val allFiles = directory.toFile().listFiles() ?: throw Exception()
 		for (file in allFiles) {
 			if (!allUsed.contains(file.name)) {
 				++count
-				file.delete()
+				moveToTrash(file.toPath().fileName)
 			}
 		}
 

@@ -30,26 +30,42 @@ const stateResults = (
 	query: string,
 	results: SearchSuggestion[],
 ): StateMayShown => {
+	const isCommand = query.startsWith('!');
+	const isNumberSearch = query.startsWith('#');
+
 	/* add the create link */
 	const firstResult = results[0] as SearchSuggestion | undefined;
 	if (
-		!query.startsWith('!') &&
-		!query.startsWith('#') &&
+		!isCommand &&
+		!isNumberSearch &&
 		(firstResult === undefined || firstResult.word !== query)
 	)
 		results.splice(0, 0, {
 			word: query,
 			numbers: [],
 			url: `/edit?word=${query}`,
+			definitions: [],
 			special: SuggestionSpecial.ADD,
 		});
 
 	/* placeholder for no number search results */
-	if (query.startsWith('#') && firstResult === undefined) {
+	if (isNumberSearch && firstResult === undefined) {
 		results.push({
-			word: `No cards for ${query}`,
+			word: '',
 			numbers: [],
 			url: '',
+			definitions: [`No cards for ${query}`],
+			special: SuggestionSpecial.NO_RESULTS,
+		});
+	}
+
+	/* placeholder for no command results */
+	if (isCommand && firstResult === undefined) {
+		results.push({
+			word: '',
+			numbers: [],
+			url: '',
+			definitions: [`No commands matching ${query}`],
 			special: SuggestionSpecial.NO_RESULTS,
 		});
 	}
@@ -73,6 +89,7 @@ const makeSearch = async (
 					word: 'Home',
 					numbers: [],
 					url: '/cards',
+					definitions: [],
 					special: SuggestionSpecial.HOME,
 				},
 			],
@@ -265,7 +282,10 @@ const Header = ({ searchValue, setSearchValue, nav }: Props) => {
 							</div>
 						) : (
 							state.suggestions.map(
-								({ word, numbers, special }, i) => (
+								(
+									{ word, numbers, special, definitions },
+									i,
+								) => (
 									<div
 										className={`search-suggestion ${
 											i === state.selection
@@ -279,13 +299,24 @@ const Header = ({ searchValue, setSearchValue, nav }: Props) => {
 										key={word}
 									>
 										{special === SuggestionSpecial.ADD ? (
-											<div className="add-plus">+</div>
+											<div className="suggestion-special-box">
+												+
+											</div>
 										) : special ===
 										  SuggestionSpecial.HOME ? (
-											<div className="add-plus">H</div>
-										) : null}
-										{word}
-										<div className="id">
+											<div className="suggestion-special-box">
+												⌂
+											</div>
+										) : (
+											<div className="suggestion-special-box" />
+										)}
+										<div className="suggestion-word">
+											{word}
+										</div>
+										<div className="suggestion-definitions">
+											{definitions.join(', ')}
+										</div>
+										<div className="suggestion-id">
 											{numbers.join(' ')}
 										</div>
 									</div>

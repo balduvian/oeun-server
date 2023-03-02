@@ -4,6 +4,13 @@ import { createGo, Nav } from '../go';
 import { warn } from '../toast';
 import { IDOLS_NAMES, highlightThenKpopHighlight } from '../highlight';
 
+import addIcon from '../icon/add-icon.svg';
+import ankiIcon from '../icon/anki-icon.svg';
+import deleteIcon from '../icon/delete-icon.svg';
+import editIcon from '../icon/edit-icon.svg';
+import loadingIcon from '../icon/loading-icon.svg';
+import refreshIcon from '../icon/refresh-icon.svg';
+
 type HighlightsProps = {
 	sentence: string | undefined;
 };
@@ -33,6 +40,15 @@ const Highlights = React.memo(({ sentence }: HighlightsProps) => {
 				</span>
 			))}
 		</>
+	);
+});
+
+const ButtonIcon = React.memo(({ icon }: { icon: string }) => {
+	return (
+		<div
+			className="icon-holder"
+			dangerouslySetInnerHTML={{ __html: icon }}
+		/>
 	);
 });
 
@@ -85,7 +101,15 @@ const CardPanel = ({ card, parts, index, onDelete, onAnki, nav }: Props) => {
 								.finally(() => setAnkiLoading(false));
 						}}
 					>
-						{card.anki !== undefined || ankiLoading ? '↻' : '★'}
+						<ButtonIcon
+							icon={
+								card.anki !== undefined
+									? refreshIcon
+									: ankiLoading
+									? loadingIcon
+									: ankiIcon
+							}
+						/>
 					</button>
 				)}
 				<button
@@ -98,7 +122,7 @@ const CardPanel = ({ card, parts, index, onDelete, onAnki, nav }: Props) => {
 						)
 					}
 				>
-					+
+					<ButtonIcon icon={addIcon} />
 				</button>
 				<button
 					className="card-button edit"
@@ -117,13 +141,13 @@ const CardPanel = ({ card, parts, index, onDelete, onAnki, nav }: Props) => {
 						)
 					}
 				>
-					E
+					<ButtonIcon icon={editIcon} />
 				</button>
 				<button
 					className="card-button delete"
 					onClick={() => onDelete(card.id)}
 				>
-					X
+					<ButtonIcon icon={deleteIcon} />
 				</button>
 			</div>
 			<div className="card-fields">

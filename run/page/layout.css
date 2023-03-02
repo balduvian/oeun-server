@@ -142,13 +142,14 @@ body {
 }
 
 .search-suggestions {
+	left: 1rem;
+	width: calc(100% - 2rem);
+
 	z-index: 20;
     position: absolute;
     top: calc(100% + 0.5rem);
-    left: 2rem;
     border: 1px solid var(--positive);
     border-radius: 0.75rem;
-    width: calc(100% - 4rem);
     height: auto;
     display: grid;
     grid-template-columns: 1fr;
@@ -156,6 +157,8 @@ body {
     background-color: rgba(0,0,0, 0.5);
     filter: drop-shadow(5px 5px 5px #000);
     padding: 0.25rem;
+
+	box-sizing: border-box;
 }
 
 .search-suggestion {
@@ -163,10 +166,12 @@ body {
     width: 100%;
     text-align: center;
     height: 2rem;
-    line-height: 2rem;
-    font-size: 1.25rem;
-    color: var(--text);
+    
     border-radius: 0.5rem;
+
+	display: grid;
+	grid-template-columns: max-content max-content 1fr max-content;
+	column-gap: 0.5rem;
 }
 
 .search-suggestion.selected {
@@ -174,41 +179,57 @@ body {
     color: var(--background);
 }
 
-.search-suggestion.add {
-	color: var(--gold);
+.search-suggestion.selected > .id {
+	color: var(--background);
 }
 
+.search-suggestion > .suggestion-special-box  {
+	width: 2rem;
+    height: 2rem;
+	line-height: 2rem;
+	font-size: 1.25rem;
+	color: var(--text);
+    text-align: center;
+}
+
+.search-suggestion > .suggestion-word {
+	line-height: 2rem;
+    font-size: 1.25rem;
+    color: var(--text);
+}
+
+.search-suggestion > .suggestion-definitions {
+	text-overflow: ellipsis;	
+	overflow: hidden;
+	white-space: nowrap;
+
+	color: var(--text);
+	opacity: 0.8;
+	font-size: 0.9rem;
+	line-height: 2rem;
+	text-align: left;
+}
+
+.search-suggestion > .suggestion-id {
+	color: var(--text);
+	font-size: 0.7rem;
+	line-height: 2rem;
+	padding-right: 0.5rem;
+}
+
+.search-suggestion.add > div {
+	color: var(--gold);
+}
 .search-suggestion.add.selected {
 	background-color: var(--gold);
+}
+.search-suggestion.add.selected > div {
 	color: var(--background);
 }
 
 .search-suggestion.error {
 	color: gray;
 	font-style: italic;
-}
-
-.search-suggestion > .id {
-	position: absolute;
-    right: 0.5rem;
-    bottom: 0.25rem;
-    color: var(--text);
-    height: 0.75rem;
-    line-height: 0.75rem;
-    font-size: 0.75rem;
-    text-align: right;
-}
-
-.search-suggestion.selected > .id {
-	color: var(--background);
-}
-
-.search-suggestion > .add-plus {
-	width: 2rem;
-    height: 2rem;
-    text-align: center;
-    position: absolute;
-    left: 0;
 }
 
 /* footer */
