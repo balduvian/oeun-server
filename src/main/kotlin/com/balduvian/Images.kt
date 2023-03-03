@@ -19,9 +19,9 @@ class Images(
 	val width: Int,
 	val height: Int,
 ) {
-	enum class Format(val javaId: String, val extension: String) {
-		JPG("JPEG", "jpg"),
-		PNG("PNG", "png");
+	enum class Format(val javaId: String, val extension: String, val imageFormat: Int) {
+		JPG("JPEG", "jpg", BufferedImage.TYPE_INT_RGB),
+		PNG("PNG", "png", BufferedImage.TYPE_INT_ARGB);
 	}
 
 	data class CachedImage(val name: String, val data: ByteArray)
@@ -47,7 +47,7 @@ class Images(
 
 	private fun cropImage(inputStream: InputStream, toWidth: Int, toHeight: Int): BufferedImage {
 		val inputImage = ImageIO.read(inputStream)
-		val newImage = BufferedImage(toWidth, toHeight, BufferedImage.TYPE_INT_ARGB)
+		val newImage = BufferedImage(toWidth, toHeight, format.imageFormat)
 
 		if (inputImage.width == toWidth && inputImage.height == toHeight) {
 			val pixelsCopy = IntArray(toWidth * toHeight)
