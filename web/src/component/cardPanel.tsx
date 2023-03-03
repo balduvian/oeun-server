@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Part } from '../types';
+import { Badge, Card, Part, Setter } from '../types';
 import { createGo, Nav } from '../go';
 import { warn } from '../toast';
 import { IDOLS_NAMES, highlightThenKpopHighlight } from '../highlight';
@@ -57,16 +57,55 @@ export enum AnkiMode {
 	SYNC,
 }
 
+const AnkiButton = ({
+	card,
+	ankiLoading: loading,
+	onClick,
+}: {
+	card: Card;
+	ankiLoading: boolean;
+	onClick: () => void;
+}) => {
+	return (
+		<button
+			disabled={loading}
+			className={`card-button anki ${
+				card.anki === undefined ? '' : 'active'
+			} ${loading ? 'loading' : ''}`}
+			onClick={onClick}
+		>
+			<ButtonIcon
+				icon={
+					card.anki !== undefined
+						? refreshIcon
+						: loading
+						? loadingIcon
+						: ankiIcon
+				}
+			/>
+		</button>
+	);
+};
+
 type Props = {
 	card: Card;
 	parts: Part[];
+	badges: Badge[];
 	index: number;
 	onDelete: (id: number) => void;
 	onAnki: ((id: number, mode: AnkiMode) => Promise<void>) | undefined;
 	nav: Nav;
 };
 
-const CardPanel = ({ card, parts, index, onDelete, onAnki, nav }: Props) => {
+const CardPanel = ({
+	card,
+	parts,
+	badges,
+	index,
+	onDelete,
+	onAnki,
+	nav,
+}: Props) => {
 	const [ankiLoading, setAnkiLoading] = React.useState(false);
 
 	return (
@@ -84,11 +123,9 @@ const CardPanel = ({ card, parts, index, onDelete, onAnki, nav }: Props) => {
 		>
 			<div className="card-button-holder">
 				{onAnki === undefined ? null : (
-					<button
-						disabled={ankiLoading}
-						className={`card-button anki ${
-							card.anki === undefined ? '' : 'active'
-						} ${ankiLoading ? 'loading' : ''}`}
+					<AnkiButton
+						card={card}
+						ankiLoading={ankiLoading}
 						onClick={() => {
 							setAnkiLoading(true);
 							onAnki(
@@ -100,17 +137,7 @@ const CardPanel = ({ card, parts, index, onDelete, onAnki, nav }: Props) => {
 								.catch(() => warn('Could not connect to Anki'))
 								.finally(() => setAnkiLoading(false));
 						}}
-					>
-						<ButtonIcon
-							icon={
-								card.anki !== undefined
-									? refreshIcon
-									: ankiLoading
-									? loadingIcon
-									: ankiIcon
-							}
-						/>
-					</button>
+					/>
 				)}
 				<button
 					className="card-button add"
@@ -137,6 +164,7 @@ const CardPanel = ({ card, parts, index, onDelete, onAnki, nav }: Props) => {
 								picture: card.picture,
 								anki:
 									card.anki !== undefined ? 'true' : 'false',
+								badges: JSON.stringify(card.badges),
 							}),
 						)
 					}
@@ -172,6 +200,30 @@ const CardPanel = ({ card, parts, index, onDelete, onAnki, nav }: Props) => {
 						<Highlights sentence={card.sentence} />
 					</p>
 				</div>
+				{card.badges.length === 0 ? null : (
+					<div className="card-field-row badge-row">
+						{card.badges.map(badgeId => {
+							const badge = badges.find(
+								({ id }) => id === badgeId,
+							);
+							return (
+								<div className="card-badge">
+									<img
+										src={
+											badge?.picture === undefined
+												? '/missing-badge-icon.svg'
+												: `/api/images/badges/${badge.picture}`
+										}
+									/>
+									<div className="badge-tooltip">
+										{badge?.displayName ??
+											`Unknown badge of id: ${badgeId}`}
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				)}
 			</div>
 		</div>
 	);

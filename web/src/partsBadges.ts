@@ -1,75 +1,74 @@
 import * as util from './util';
-import { Part } from './types';
+import { Badge, DbParts, Part } from './types';
 
 const KEY_PARTS = 'parts';
+const KEY_BADGES = 'badges';
+
 const STALE_TIME = 2700000;
 
-type StorageParts = {
+type CachedResource<R> = {
 	cacheTime: number;
-	parts: Part[];
+	resource: R;
 };
 
-/**
- * @returns either a value or a promise depending on if it can be fast fetched
- */
-export const getParts = (
-	setParts: (parts: Part[]) => void,
-	setError: (error: boolean) => void,
-) => {
-	const data = window.localStorage.getItem(KEY_PARTS);
+/* general */
 
-	let retrievedParts: StorageParts | undefined;
-
-	retrievedParts = data !== null ? parseStorageParts(data) : undefined;
-	if (
-		retrievedParts !== undefined &&
-		Date.now() - retrievedParts.cacheTime > STALE_TIME
-	)
-		retrievedParts = undefined;
-
-	if (retrievedParts !== undefined) {
-		setParts(retrievedParts.parts);
-	} else {
-		return fetchParts()
-			.then(fetchedParts => {
-				saveParts(fetchedParts);
-				setParts(fetchedParts);
-			})
-			.catch(() => setError(true));
-	}
-};
-
-const parseStorageParts = (data: string) => {
+const parseCachedResource = <R>(data: string) => {
 	try {
 		const storageParts = JSON.parse(data);
 
 		if (typeof storageParts !== 'object') return undefined;
 		if (typeof storageParts.cacheTime !== 'number') return undefined;
-		if (!Array.isArray(storageParts.parts)) return undefined;
+		if (!Array.isArray(storageParts.resource)) return undefined;
 
-		return storageParts as StorageParts;
+		return storageParts as CachedResource<R>;
 	} catch (err) {
 		return undefined;
 	}
 };
 
-const fetchParts = async (): Promise<Part[]> => {
-	const parts = await util.getRequest<{
-		[key: string]: { english: string; korean: string; keybind: string };
-	}>('/api/parts');
-
-	return Object.keys(parts).map(partName => ({
-		id: partName,
-		...parts[partName],
-	}));
-};
-
-const saveParts = (parts: Part[]) => {
+const saveResource = <R>(key: string, resource: R) => {
 	window.localStorage.setItem(
-		KEY_PARTS,
+		key,
 		JSON.stringify({
 			cacheTime: Date.now(),
-			parts: parts,
+			resource,
 		}),
 	);
 };
+
+const getResource = <R>(
+	key: string,
+	fetchResource: () => Promise<R>,
+): Promise<R> => {
+	const storageData = window.localStorage.getItem(key);
+
+	let cache =
+		storageData !== null ? parseCachedResource<R>(storageData) : undefined;
+
+	if (cache !== undefined && Date.now() - cache.cacheTime > STALE_TIME)
+		cache = undefined;
+
+	if (cache !== undefined) return Promise.resolve(cache.resource);
+
+	return fetchResource().then(resource => {
+		saveResource(key, resource);
+		return resource;
+	});
+};
+
+/* parts */
+
+export const getParts = () =>
+	getResource(KEY_PARTS, async (): Promise<Part[]> => {
+		const parts = await util.getRequest<DbParts>('/api/parts');
+
+		return Object.entries(parts).map(([id, part]) => ({
+			id,
+			...part,
+		}));
+	});
+
+/* badges */
+
+export const getBadges = () => util.getRequest<Badge[]>('/api/badges');

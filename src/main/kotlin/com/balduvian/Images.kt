@@ -6,14 +6,27 @@ import java.awt.image.BufferedImage
 import java.io.InputStream
 import java.nio.file.Path
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import javax.imageio.ImageIO
+import kotlin.collections.ArrayList
 import kotlin.io.path.nameWithoutExtension
 
-class Images(val directory: Path, val trash: Path, val cacheSize: Int) {
+class Images(
+	val directory: Path,
+	val trash: Path,
+	val cacheSize: Int,
+	val format: Format,
+	val width: Int,
+	val height: Int,
+) {
+	enum class Format(val javaId: String, val extension: String) {
+		JPG("JPEG", "jpg"),
+		PNG("PNG", "png");
+	}
+
 	data class CachedImage(val name: String, val data: ByteArray)
 
-	val imageCache = ArrayList<CachedImage>(cacheSize)
+	private val imageCache = ArrayList<CachedImage>(cacheSize)
 
 	private fun getCachedImage(name: String): ByteArray? {
 		for (i in imageCache.lastIndex downTo 0) {
@@ -34,7 +47,7 @@ class Images(val directory: Path, val trash: Path, val cacheSize: Int) {
 
 	private fun cropImage(inputStream: InputStream, toWidth: Int, toHeight: Int): BufferedImage {
 		val inputImage = ImageIO.read(inputStream)
-		val newImage = BufferedImage(toWidth, toHeight, BufferedImage.TYPE_INT_RGB)
+		val newImage = BufferedImage(toWidth, toHeight, BufferedImage.TYPE_INT_ARGB)
 
 		if (inputImage.width == toWidth && inputImage.height == toHeight) {
 			val pixelsCopy = IntArray(toWidth * toHeight)
@@ -81,9 +94,34 @@ class Images(val directory: Path, val trash: Path, val cacheSize: Int) {
 		return newImage
 	}
 
-	fun saveImage(name: String, inputStream: InputStream) {
+	private fun isDataURL(pictureData: String): Boolean {
+		return pictureData.startsWith("data:image/")
+	}
+
+	private fun getUploadFilename(uploadPicture: String?): String? {
+		if (uploadPicture == null || !isDataURL(uploadPicture)) return uploadPicture
+
+		val filename = imageFilename()
+
+		val pictureBytes = Base64.getDecoder().decode(uploadPicture.substring(uploadPicture.indexOf(',') + 1))
+		saveImage(filename, pictureBytes.inputStream())
+
+		return filename
+	}
+
+	fun handleUploadedPicture(oldPicture: String?, uploadPicture: String?): String? {
+		val newFilename = getUploadFilename(uploadPicture)
+
+		if (oldPicture != null && oldPicture != newFilename) {
+			moveToTrash(Path.of(oldPicture))
+		}
+
+		return newFilename
+	}
+
+	private fun saveImage(name: String, inputStream: InputStream) {
 		//TODO smart write to memory and add to cache immediately
-		ImageIO.write(cropImage(inputStream, 608, 342), "JPEG", directory.resolve(name).toFile())
+		ImageIO.write(cropImage(inputStream, width, height), format.javaId, directory.resolve(name).toFile())
 	}
 
 	fun getImage(name: String): ByteArray? {
@@ -149,9 +187,7 @@ class Images(val directory: Path, val trash: Path, val cacheSize: Int) {
 		return count
 	}
 
-	companion object {
-		fun imageFilename(): String {
-			return "paste-${Instant.now().toEpochMilli()}.jpg"
-		}
+	private fun imageFilename(): String {
+		return "${Instant.now().toEpochMilli()}.${format.extension}"
 	}
 }

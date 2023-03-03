@@ -1,10 +1,11 @@
-
 .small {
 	font-size: 14px;
 }
+
 .medium {
 	font-size: 18px;
 }
+
 .large {
 	font-size: 22px;
 }
@@ -14,7 +15,10 @@
 	margin-right: 0;
 }
 
-.eui-button, .eui-input, .eui-picture-placeholder, .eui-select {
+.eui-button,
+.eui-input,
+.eui-picture-placeholder,
+.eui-select {
 	border: none;
 	outline: none;
 	border-radius: 5px;
@@ -22,13 +26,18 @@
 	color: var(--text);
 	box-sizing: border-box;
 	position: relative;
+}
+
+.eui-input,
+.eui-picture-placeholder,
+.eui-select {
 	margin-bottom: 0.5em;
 }
 
-.eui-field > .eui-button:last-child,
-.eui-field > .eui-input:last-child,
-.eui-field > .eui-picture-placeholder:last-child,
-.eui-field > .eui-select:last-child {
+.eui-field>.eui-button:last-child,
+.eui-field>.eui-input:last-child,
+.eui-field>.eui-picture-placeholder:last-child,
+.eui-field>.eui-select:last-child {
 	margin-bottom: 0;
 }
 
@@ -46,10 +55,12 @@
 	height: 2em;
 	cursor: pointer;
 }
+
 .eui-button:hover {
 	background-color: var(--field-light);
 	color: var(--text-light);
 }
+
 .eui-button:active {
 	background-color: var(--field-dark);
 	color: var(--text-dark);
@@ -64,6 +75,7 @@
 .eui-button.positive {
 	background-color: var(--positive);
 }
+
 .eui-button:hover.positive {
 	background-color: var(--positive-light);
 }
@@ -74,22 +86,26 @@
 	margin-top: 0;
 }
 
-.eui-input, .eui-select {
+.eui-input,
+.eui-select {
 	padding: 0em 0.5em;
 	height: 40px;
 }
 
-.eui-input:focus, .eui-select:focus {
+.eui-input:focus,
+.eui-select:focus {
 	outline: 1px solid var(--positive);
 	color: var(--text-light);
 }
 
-.eui-input:disabled, .eui-select:disabled {
+.eui-input:disabled,
+.eui-select:disabled {
 	background-color: var(--field-dark);
 	color: var(--text-dark);
 }
 
-.eui-input.error, .eui-select.error {
+.eui-input.error,
+.eui-select.error {
 	background-color: rgb(216, 84, 84);
 }
 
@@ -97,11 +113,7 @@
 	position: relative;
 }
 
-.eui-picture-placeholder {
-	padding-top: calc(9 / 16 * 100%);
-}
-
-.eui-picture-placeholder > span {
+.eui-picture-placeholder>span {
 	color: var(--text-dark);
 	text-align: center;
 	display: block;
@@ -109,15 +121,16 @@
 	transform: translate(-50%, -50%);
 	top: 50%;
 	left: 50%;
+	width: max-content;
 }
 
-.eui-picture-container > input {
+.eui-picture-container>input {
 	z-index: 50;
 
 	position: absolute;
 	left: 0;
 	top: 0;
-  
+
 	color: rgba(0, 0, 0, 0);
 	user-select: none;
 	background: none;
@@ -125,12 +138,16 @@
 	width: 100%;
 	height: 100%;
 	display: block;
-  
+
 	margin: 0;
 	padding: 0;
 	border-radius: 5px;
 }
 
-.eui-picture-container > input:focus {
+.eui-picture-container>input:focus {
 	outline: 1px solid var(--positive);
+}
+
+input[type="file"]::file-selector-button {
+	display: none;
 }

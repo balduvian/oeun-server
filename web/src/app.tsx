@@ -1,7 +1,7 @@
 import * as reactDom from 'react-dom/client';
 import { useEffect, useState } from 'react';
 import Header from './component/header';
-import { ToastHolder } from './toast';
+import { ToastHolder, warn } from './toast';
 import { Footer } from './component/footer';
 import {
 	Badge,
@@ -17,7 +17,7 @@ import BadgesPage from './page/badgesPage';
 import CardsPage, { onGoCards } from './page/cardsPage';
 import EditPage, { convertToPictureURL } from './page/editPage';
 import SettingsPage from './page/settingsPage';
-import { getParts } from './partsBadges';
+import { getBadges, getParts } from './partsBadges';
 import {
 	Settings,
 	blankSettings,
@@ -29,6 +29,21 @@ import { getRequest } from './util';
 
 const getCollectionSize = () =>
 	getRequest<CollectionSize>('/api/collection/size');
+
+const CARD_PAGE_URLS = [
+	[ResultType.HOMONYM, toTemplateURL('/cards/homonym/#id')],
+	[ResultType.CARD, toTemplateURL('/cards/card/#id')],
+	[ResultType.LATEST, toTemplateURL('/cards/latest')],
+	[ResultType.RANDOM, toTemplateURL('/cards/random')],
+	[ResultType.NONE, toTemplateURL('/cards')],
+	[ResultType.NONE, toTemplateURL('/')],
+] as const;
+
+const EDIT_PAGE_URL = toTemplateURL('/edit');
+
+const BADGE_PAGE_URL = toTemplateURL('/badges');
+
+const SETTINGS_PAGE_URL = toTemplateURL('/settings');
 
 const App = () => {
 	const [searchValue, setSearchValue] = useState('');
@@ -57,18 +72,19 @@ const App = () => {
 
 	const routes: Route[] = [
 		{
-			url: toTemplateURL('/edit'),
+			url: EDIT_PAGE_URL,
 			element: nav =>
 				editCard === undefined ? null : (
 					<EditPage
 						setSearchValue={setSearchValue}
 						nav={nav}
 						parts={parts}
+						badges={badges}
 						card={editCard}
 						setCard={setEditCard}
 					/>
 				),
-			onGo: (nav, query) => {
+			onGo: (_, query) => {
 				const card: EditingCard = {
 					id: intOrUndefined(query.id),
 					word: query.word ?? '',
@@ -80,11 +96,20 @@ const App = () => {
 							? ''
 							: convertToPictureURL(query.picture),
 					anki: query.anki === 'true',
+					badges:
+						query.badges === undefined
+							? []
+							: JSON.parse(query.badges),
 				};
 
 				getCollectionSize().then(setCollectionSize);
 				setEditCard(card);
-				getParts(setParts, nav.setError);
+				getParts()
+					.then(setParts)
+					.catch(() => warn('Could not get parts'));
+				getBadges()
+					.then(setBadges)
+					.catch(() => warn('Could not get badges'));
 
 				const extensionId = settings?.extensionId ?? null;
 
@@ -110,14 +135,17 @@ const App = () => {
 			},
 		},
 		{
-			url: toTemplateURL('/badges'),
-			element: () => <BadgesPage />,
+			url: BADGE_PAGE_URL,
+			element: () => <BadgesPage badges={badges} setBadges={setBadges} />,
 			onGo: () => {
 				getCollectionSize().then(setCollectionSize);
+				getBadges()
+					.then(setBadges)
+					.catch(() => warn('Could not get badges'));
 			},
 		},
 		{
-			url: toTemplateURL('/settings'),
+			url: SETTINGS_PAGE_URL,
 			element: () =>
 				settings === undefined ? null : (
 					<SettingsPage
@@ -137,16 +165,7 @@ const App = () => {
 				getCollectionSize().then(setCollectionSize);
 			},
 		},
-		...(
-			[
-				[ResultType.HOMONYM, toTemplateURL('/cards/homonym/#id')],
-				[ResultType.CARD, toTemplateURL('/cards/card/#id')],
-				[ResultType.LATEST, toTemplateURL('/cards/latest')],
-				[ResultType.RANDOM, toTemplateURL('/cards/random')],
-				[ResultType.NONE, toTemplateURL('/cards')],
-				[ResultType.NONE, toTemplateURL('/')],
-			] as const
-		).map(
+		...CARD_PAGE_URLS.map(
 			([resultType, url]): Route => ({
 				url: url,
 				element: nav =>
@@ -158,6 +177,7 @@ const App = () => {
 							collectionSize={collectionSize}
 							setCollectionSize={setCollectionSize}
 							parts={parts}
+							badges={badges}
 							settings={settings}
 						/>
 					),

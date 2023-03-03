@@ -1,16 +1,27 @@
 package com.balduvian
 
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.io.InputStreamReader
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import kotlin.io.path.Path
 
 class Badge(
 	var id: String,
 	var displayName: String,
 	var picture: String,
-)
+) {
+	fun serialize(): JsonObject {
+		return JsonUtil.senderGson.toJsonTree(this, Badge::class.java).asJsonObject
+	}
+}
 
 object Badges {
 	val badgesList = ArrayList<Badge>()
+	private val saverPool: ExecutorService = Executors.newFixedThreadPool(1)
+
+	private fun badgesFile() = Directories.PATH_BADGES.path.resolve("badges.json").toFile()
 
 	private fun loadBadgesData(reader: InputStreamReader): ArrayList<Badge> {
 		try {
@@ -28,33 +39,64 @@ object Badges {
 	}
 
 	fun loadBadges() {
-		val badgesDataFile = Directories.PATH_BADGES.path.resolve("badges.json").toFile()
+		val badgesFile = badgesFile()
 
-		badgesList.addAll(if (badgesDataFile.exists()) {
-			loadBadgesData(badgesDataFile.reader())
+		badgesList.addAll(if (badgesFile.exists()) {
+			loadBadgesData(badgesFile.reader())
 		} else {
 			println("badges.json doesn't exist, creating it")
-			badgesDataFile.writeText("[]")
+			badgesFile.writeText("[]")
 			ArrayList()
 		})
 	}
 
-	fun addOrReplace(oldId: String?, badge: Badge) {
+	private fun saveBadges() {
+		val badgesFile = badgesFile()
+		val serialized = JsonUtil.saverGson.toJson(badgesList)
+		badgesFile.writeText(serialized)
+	}
+
+	fun addOrReplace(oldId: String?, uploadBadge: Badge): Badge {
 		val existing = if (oldId == null) null else badgesList.find { existing -> existing.id == oldId }
 
-		if (existing != null) {
-			existing.id = badge.id
-			existing.displayName = badge.displayName
-			existing.picture = badge.picture
+		if (uploadBadge.displayName == null || uploadBadge.id == null)
+			throw PrettyException("Badly formatted upload badge")
+
+		val imageFilename = ImagePool.BADGES.images.handleUploadedPicture(existing?.picture, uploadBadge.picture)
+			?: throw PrettyException("Badge needs an image")
+		uploadBadge.picture = imageFilename
+
+		return if (existing != null) {
+			val wasChanged = existing.id != uploadBadge.id ||
+				existing.displayName != uploadBadge.displayName ||
+				existing.picture != uploadBadge.picture
+
+			if (wasChanged) {
+				existing.id = uploadBadge.id
+				existing.displayName = uploadBadge.displayName
+				existing.picture = uploadBadge.picture
+
+				saverPool.execute { saveBadges() }
+			}
+
+			existing
 		} else {
-			badgesList.add(badge)
+			badgesList.add(uploadBadge)
+
+			saverPool.execute { saveBadges() }
+
+			uploadBadge
 		}
 	}
 
 	fun remove(id: String): Boolean {
 		val index = badgesList.indexOfFirst { badge -> badge.id == id }
 		if (index == -1) return false
-		badgesList.removeAt(index)
+		val deleted = badgesList.removeAt(index)
+
+		ImagePool.BADGES.images.moveToTrash(Path(deleted.picture))
+		saverPool.execute { saveBadges() }
+
 		return true
 	}
 }

@@ -15,14 +15,15 @@ fun Route.badgesRouting() {
 		get {
 			Util.okJson(call, JsonUtil.senderGson.toJsonTree(Badges.badgesList))
 		}
-		patch("{oldId?}") {
-			val oldId = call.parameters["oldId"]?.lowercase()
+		put("{oldId?}") {
+			val oldId = call.parameters["oldId"]?.uppercase()
 
 			try {
 				withContext(Dispatchers.IO) {
-					val badge = JsonUtil.senderGson.fromJson(call.receiveStream().reader(), Badge::class.java)
-					Badges.addOrReplace(oldId, badge)
-					Util.ok(call, "patched")
+					val uploadBadge = JsonUtil.senderGson.fromJson(call.receiveStream().reader(), Badge::class.java)
+					val collectionBadge = Badges.addOrReplace(oldId, uploadBadge)
+
+					Util.okJson(call, collectionBadge.serialize())
 				}
 			} catch (ex: Exception) {
 				ex.printStackTrace()
@@ -30,7 +31,7 @@ fun Route.badgesRouting() {
 			}
 		}
 		delete("{id?}") {
-			val id = call.parameters["id"]?.lowercase()
+			val id = call.parameters["id"]?.uppercase()
 				?: return@delete Util.badRequest(call, "Need an id to delete")
 
 			if (Badges.remove(id))

@@ -1,4 +1,5 @@
 import {
+	Badge,
 	Card,
 	CardsState,
 	CollectionSize,
@@ -40,7 +41,9 @@ export const onGoCards = (
 	setCollectionSize: Setter<CollectionSize>,
 ) => {
 	setCards(undefined);
-	getParts(setParts, setError);
+	getParts()
+		.then(setParts)
+		.catch(() => warn('Could not get parts'));
 
 	const getCards = initialGetRequest(id, mode);
 	if (getCards !== undefined) {
@@ -65,6 +68,7 @@ type Props = {
 	collectionSize: CollectionSize | undefined;
 	setCollectionSize: Setter<CollectionSize>;
 	parts: Part[];
+	badges: Badge[];
 	settings: Settings;
 };
 
@@ -75,6 +79,7 @@ const CardsPage = ({
 	collectionSize,
 	setCollectionSize,
 	parts,
+	badges,
 	settings,
 }: Props) => {
 	return cards.length === 0 ? (
@@ -90,6 +95,7 @@ const CardsPage = ({
 					key={card.id}
 					card={card}
 					parts={parts}
+					badges={badges}
 					index={index}
 					onDelete={deletedId =>
 						util

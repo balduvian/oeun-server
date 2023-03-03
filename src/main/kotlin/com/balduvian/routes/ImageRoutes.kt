@@ -1,14 +1,11 @@
 package com.balduvian.routes
 
-import com.balduvian.Images
 import com.balduvian.Util.badRequest
+import com.balduvian.Util.errorResponse
 import com.balduvian.Util.getImagePool
 import com.balduvian.Util.notFound
 import com.balduvian.Util.ok
-import com.balduvian.Util.okJson
-import com.google.gson.JsonPrimitive
 import io.ktor.server.application.*
-import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
@@ -24,13 +21,7 @@ fun Route.imageRouting() {
 			call.respondBytes(image)
 		}
 		post {
-			val pool = getImagePool(call, call.parameters["pool"]) ?: return@post
-			val filename = Images.imageFilename()
-
-			withContext(Dispatchers.IO) {
-				pool.saveImage(filename, call.receiveStream())
-				okJson(call, JsonPrimitive(filename))
-			}
+			errorResponse(call, "Route shut down", 501)
 		}
 		delete("unused") {
 			withContext(Dispatchers.IO) {

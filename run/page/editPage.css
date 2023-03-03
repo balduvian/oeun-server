@@ -1,8 +1,8 @@
 .part-dropdown {
-	position: absolute;
+    position: absolute;
     z-index: 100;
     width: 20rem;
-	height: fit-content;
+    height: fit-content;
     background-color: var(--field);
     top: calc(100% + 0.5rem);
     left: 0.5rem;
@@ -17,15 +17,34 @@
 }
 
 .part-entry {
-	display: grid;
+    display: grid;
     grid-template-columns: 2rem 1fr;
     border-radius: 0.25rem;
     cursor: pointer;
-	padding: 0.25rem;
-	text-align: center;
+    padding: 0.25rem;
+    text-align: center;
 }
 
 .part-entry.selected {
     background-color: var(--field-light);
     color: var(--gold);
+}
+
+/* badges selector */
+
+.badges-selector {
+    display: flex;
+    flex-direction: row;
+    gap: 1.0rem;
+    justify-content: left;
+
+    margin-bottom: 0.5rem;
+}
+
+.badges-selector>.card-badge {
+    cursor: pointer;
+}
+
+.card-badge.selected {
+    outline: 0.25rem solid var(--positive);
 }

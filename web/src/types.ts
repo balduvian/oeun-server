@@ -13,10 +13,12 @@ export type Part = {
 	keybind: string;
 };
 
+export type DbParts = { [id: string]: Omit<Part, 'id'> };
+
 export type Badge = {
 	id: string;
-	name: string;
-	image: string;
+	displayName: string;
+	picture: string;
 };
 
 export enum SuggestionSpecial {
@@ -70,6 +72,7 @@ export type EditingCard = {
 	sentence: string;
 	pictureURL: string;
 	anki: boolean;
+	badges: string[];
 };
 
 export type CardPutResponse = {

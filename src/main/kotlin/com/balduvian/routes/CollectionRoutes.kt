@@ -19,9 +19,9 @@ fun Route.collectionRouting() {
 			val query = call.parameters["q"] ?: ""
 			val limit = call.parameters["limit"]?.toIntOrNull() ?: return@get badRequest(call, "Missing limit")
 
-			val results = Collection.search(query, limit)
+			val results = Search.search(query, limit)
 
-			okJson(call, Collection.serializeSearchResults(results))
+			okJson(call, Search.serializeSearchResults(results))
 		}
 		get("{id?}") {
 			val id = call.parameters["id"]?.toIntOrNull() ?: return@get badRequest(call, "Missing card id")

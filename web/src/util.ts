@@ -106,6 +106,15 @@ export const stripJustDataPart = (data: string): string => {
 	return data.substring(index + 7);
 };
 
+export const stripPictureURL = (
+	picture: string,
+	baseUrl: string,
+): string | undefined => {
+	if (picture.length === 0) return undefined;
+	if (picture.startsWith(baseUrl)) return picture.substring(baseUrl.length);
+	return picture;
+};
+
 export const base64ToBuffer = (base64: string): ArrayBuffer => {
 	var binaryImg = window.atob(base64);
 	var length = binaryImg.length;

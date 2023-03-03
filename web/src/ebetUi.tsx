@@ -37,7 +37,7 @@ type ButtonProps = {
 	fullWidth?: boolean;
 	positive?: boolean;
 	text: string;
-	onClick: () => void;
+	onClick: (() => void) | undefined;
 	events?: JSX.IntrinsicElements['button'];
 };
 
@@ -117,8 +117,10 @@ type PictureInputProps = {
 	fullWidth?: boolean;
 	disabled?: boolean;
 	onDelete?: () => void;
-	onPaste?: (buffer: ArrayBuffer) => void;
+	onBuffer: (buffer: ArrayBuffer) => void;
+	aspectRatio: number;
 	events?: JSX.IntrinsicElements['input'];
+	paste: boolean;
 };
 
 export const EbetPictureInput = ({
@@ -126,8 +128,10 @@ export const EbetPictureInput = ({
 	fullWidth = true,
 	disabled = false,
 	onDelete,
-	onPaste,
+	onBuffer,
+	aspectRatio,
 	events = {},
+	paste,
 }: PictureInputProps) => {
 	return (
 		<div
@@ -135,10 +139,15 @@ export const EbetPictureInput = ({
 		>
 			{disabled ? null : (
 				<input
-					readOnly
+					accept=".jpg,.jpeg,.png,.webp"
+					type={paste ? undefined : 'file'}
+					readOnly={paste}
 					{...events}
 					onKeyDown={event => {
-						if (event.code === 'Delete') {
+						if (
+							event.code === 'Delete' ||
+							event.code === 'Backspace'
+						) {
 							event.preventDefault();
 							onDelete?.();
 						} else if (event.code === 'Escape') {
@@ -147,30 +156,67 @@ export const EbetPictureInput = ({
 						}
 						events.onKeyDown?.(event);
 					}}
-					onPaste={event => {
-						event.preventDefault();
+					onPaste={
+						!paste
+							? undefined
+							: event => {
+									event.preventDefault();
 
-						const file =
-							[...event.clipboardData.items]
-								.find(
-									item =>
-										item.type === 'image/png' ||
-										item.type === 'image/jpeg',
-								)
-								?.getAsFile() ?? undefined;
-						if (file === undefined) return;
+									const file =
+										[...event.clipboardData.items]
+											.find(
+												item =>
+													item.type === 'image/png' ||
+													item.type === 'image/jpeg',
+											)
+											?.getAsFile() ?? undefined;
+									if (file === undefined) return;
 
-						file.arrayBuffer()
-							.then(buffer => onPaste?.(buffer))
-							.catch(console.error);
-					}}
+									file.arrayBuffer()
+										.then(buffer => onBuffer(buffer))
+										.catch(console.error);
+							  }
+					}
+					onChange={
+						paste
+							? undefined
+							: event => {
+									const file = event.currentTarget.files?.[0];
+									if (file === undefined) return;
+
+									console.log(file.name);
+									console.log(file.type);
+
+									const fileReader = new FileReader();
+									fileReader.readAsArrayBuffer(file);
+									fileReader.onload = event => {
+										const buffer = event.target?.result;
+										if (
+											buffer === null ||
+											buffer === undefined
+										)
+											return;
+
+										onBuffer(buffer as ArrayBuffer);
+									};
+							  }
+					}
 				/>
 			)}
 			{src !== undefined ? (
 				<img className="card-img" src={src} />
 			) : (
-				<div className="eui-picture-placeholder">
-					<span>{disabled ? '%' : 'Paste Image Here'}</span>
+				<div
+					className="eui-picture-placeholder"
+					style={{ paddingTop: `calc(${aspectRatio} * 100%)` }}
+				>
+					<span>
+						{disabled
+							? '%'
+							: paste
+							? 'Paste Image Here'
+							: 'Upload Image'}
+					</span>
 				</div>
 			)}
 		</div>

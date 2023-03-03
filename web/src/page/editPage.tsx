@@ -5,6 +5,7 @@ import {
 	Setter,
 	EditingCard,
 	UploadCard,
+	Badge,
 } from '../types';
 import * as util from '../util';
 import {
@@ -180,6 +181,41 @@ const NewPartField = ({
 	);
 };
 
+const BadgesSelector = ({
+	badges,
+	selected,
+	setSelection,
+}: {
+	badges: Badge[];
+	selected: string[];
+	setSelection: (selection: string[]) => void;
+}) => {
+	return (
+		<div className="badges-selector">
+			{badges.map(({ id, displayName, picture }) => {
+				const isSelected = selected.includes(id);
+				return (
+					<div
+						className={`card-badge ${isSelected ? 'selected' : ''}`}
+						onClick={() => {
+							if (isSelected) {
+								selected.splice(selected.indexOf(id), 1);
+								setSelection(selected);
+							} else {
+								selected.push(id);
+								setSelection(selected);
+							}
+						}}
+					>
+						<img src={`/api/images/badges/${picture}`} />
+						<div className="badge-tooltip">{displayName}</div>
+					</div>
+				);
+			})}
+		</div>
+	);
+};
+
 const editingCardReady = (card: EditingCard) =>
 	realValue(card.word) !== undefined &&
 	realValue(card.definition) !== undefined;
@@ -205,17 +241,11 @@ const BASE_PICTURE_URL = '/api/images/cards/';
 export const convertToPictureURL = (picture: string) =>
 	`${BASE_PICTURE_URL}${picture}`;
 
-export const stripPictureURL = (pictureURL: string): string | undefined => {
-	if (pictureURL.length === 0) return undefined;
-	if (pictureURL.startsWith(BASE_PICTURE_URL))
-		return pictureURL.substring(BASE_PICTURE_URL.length);
-	return pictureURL;
-};
-
 type Props = {
 	setSearchValue: (searchValue: string) => void;
 	nav: Nav;
 	parts: Part[];
+	badges: Badge[];
 	card: EditingCard;
 	setCard: Setter<EditingCard>;
 };
@@ -224,6 +254,7 @@ export const EditPage = ({
 	setSearchValue,
 	nav,
 	parts,
+	badges,
 	card,
 	setCard,
 }: Props) => {
@@ -252,8 +283,11 @@ export const EditPage = ({
 				part: realValue(card.part),
 				definition: realDefinition,
 				sentence: realSentence,
-				picture: stripPictureURL(card.pictureURL),
-				badges: [],
+				picture: util.stripPictureURL(
+					card.pictureURL,
+					BASE_PICTURE_URL,
+				),
+				badges: card.badges,
 				anki: card.anki,
 			};
 
@@ -317,19 +351,16 @@ export const EditPage = ({
 			<EbetFormField>
 				<EbetLabel text="Picture" />
 				<EbetPictureInput
+					paste={true}
 					src={
 						realEmpty(card.pictureURL) ? undefined : card.pictureURL
 					}
 					onDelete={() => updateField('pictureURL', '')}
-					onPaste={async buffer => {
-						try {
-							updateField(
-								'pictureURL',
-								util.pngDataURL(util.bufferToBase64(buffer)),
-							);
-						} catch (err) {
-							console.log(err);
-						}
+					onBuffer={async buffer => {
+						updateField(
+							'pictureURL',
+							util.pngDataURL(util.bufferToBase64(buffer)),
+						);
 					}}
 					events={{
 						tabIndex: 5,
@@ -338,6 +369,7 @@ export const EditPage = ({
 								? confirm()
 								: undefined,
 					}}
+					aspectRatio={16 / 9}
 				/>
 			</EbetFormField>
 			{wasInAnki ? (
@@ -353,6 +385,11 @@ export const EditPage = ({
 					/>
 				</EbetFormField>
 			) : null}
+			<BadgesSelector
+				badges={badges}
+				selected={card.badges}
+				setSelection={badges => updateField('badges', badges)}
+			/>
 			<div className="button-grid">
 				<EbetButton
 					text="Cancel"

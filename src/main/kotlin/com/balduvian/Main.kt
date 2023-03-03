@@ -22,9 +22,11 @@ fun main() {
 				file("cards", "index.html")
 				file("edit", "index.html")
 				file("settings", "index.html")
+				file("badges", "index.html")
 				file("cards/{...}", "index.html")
 				file("edit/{...}", "index.html")
 				file("settings/{...}", "index.html")
+				file("badges/{...}", "index.html")
 				files(".")
 			}
 			collectionRouting()
