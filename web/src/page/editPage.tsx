@@ -369,7 +369,7 @@ export const EditPage = ({
 								? confirm()
 								: undefined,
 					}}
-					aspectRatio={16 / 9}
+					aspectRatio={9 / 16}
 				/>
 			</EbetFormField>
 			{wasInAnki ? (

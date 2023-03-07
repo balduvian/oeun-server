@@ -8,7 +8,7 @@
 		"src/page/cardsPage.tsx",
 		"src/page/editPage.tsx",
 		"src/page/settingsPage.tsx",
-		"src/component/cardDisplay.tsx",
+		"src/component/welcomeMessage.tsx",
 		"src/component/cardPanel.tsx",
 		"src/component/header.tsx",
 		"src/component/badgeHolder.tsx"

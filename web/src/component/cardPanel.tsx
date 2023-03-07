@@ -2,7 +2,11 @@ import React from 'react';
 import { Badge, Card, Part, Setter } from '../types';
 import { createGo, Nav } from '../go';
 import { warn } from '../toast';
-import { IDOLS_NAMES, highlightThenKpopHighlight } from '../highlight';
+import {
+	IDOLS_NAMES,
+	highlightThenKpopHighlight,
+	HighlightType,
+} from '../highlight';
 
 import addIcon from '../icon/add-icon.svg';
 import ankiIcon from '../icon/anki-icon.svg';
@@ -25,15 +29,17 @@ const Highlights = React.memo(({ sentence }: HighlightsProps) => {
 		<span />
 	) : (
 		<>
-			{highlights.map(([part, highlight], i) => (
+			{highlights.map(([part, highlight, idolIndex], i) => (
 				<span
 					key={i}
 					className={
-						highlight === false
+						highlight === HighlightType.NONE
 							? ''
-							: highlight === true
-							? 'highlight'
-							: `idol-name ${IDOLS_NAMES[highlight]}`
+							: highlight === HighlightType.TARGET
+							? 'target'
+							: highlight === HighlightType.NAME
+							? 'name'
+							: `idol-name ${IDOLS_NAMES[idolIndex]}`
 					}
 				>
 					{part}

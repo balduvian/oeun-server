@@ -3,6 +3,7 @@ import * as util from './util';
 
 const bracketTypes = {
 	'*': ['**', '**'] as const,
+	_: ['__', '__'] as const,
 	')': ['(', ')'] as const,
 	"'": ["'", "'"] as const,
 	'"': ['"', '"'] as const,

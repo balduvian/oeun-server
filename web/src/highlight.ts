@@ -1,47 +1,106 @@
-export type Highlight = [string, boolean | number];
+export enum HighlightType {
+	NONE,
+	TARGET,
+	NAME,
+	IDOL,
+}
+export type Highlight = [string, HighlightType, number];
+
+enum TokenType {
+	DASH,
+	STAR,
+}
+
+type Token = string | TokenType;
+
+const tokensPlaintext = {
+	[TokenType.STAR]: '**',
+	[TokenType.DASH]: '__',
+} as const;
+const tokensHighlightType = {
+	[TokenType.STAR]: HighlightType.TARGET,
+	[TokenType.DASH]: HighlightType.NAME,
+} as const;
 
 export const highlightString = (string: string): Highlight[] => {
-	/* get indices of all the star markers */
-	const indices: number[] = [];
-	let start = 0;
+	const highlightRegex = /\*\*|__/g;
+
+	const tokens: Token[] = [];
+
+	let lastIndex = 0;
 	while (true) {
-		const nextIndex = string.indexOf('**', start);
-		if (nextIndex === -1) {
+		const matched = highlightRegex.exec(string);
+		if (matched === null) {
+			tokens.push(string.substring(lastIndex));
 			break;
 		} else {
-			indices.push(nextIndex);
-			start = nextIndex + 2;
+			if (matched.index > lastIndex)
+				tokens.push(string.substring(lastIndex, matched.index));
+
+			tokens.push(matched[0] === '**' ? TokenType.STAR : TokenType.DASH);
+			lastIndex = highlightRegex.lastIndex;
 		}
 	}
 
-	/* remove last fake index (no closing **) */
-	if (indices.length % 2 == 1) {
-		indices.pop();
+	const highlights: Highlight[] = [];
+	let tokenStack: Token[] = [];
+
+	for (const token of tokens) {
+		if (tokenStack.length === 0) {
+			if (typeof token === 'string') {
+				highlights.push([token, HighlightType.NONE, 0]);
+			} else {
+				tokenStack.push(token);
+			}
+		} else if (tokenStack.length === 1) {
+			if (typeof token === 'string') {
+				tokenStack.push(token);
+			} else {
+				highlights.push(
+					[
+						tokensPlaintext[tokenStack[0] as TokenType],
+						HighlightType.NONE,
+						0,
+					],
+					[tokensPlaintext[token], HighlightType.NONE, 0],
+				);
+				tokenStack = [];
+			}
+		} else {
+			if (token === tokenStack[0]) {
+				highlights.push([
+					tokenStack[1] as string,
+					tokensHighlightType[tokenStack[0] as TokenType],
+					0,
+				]);
+				tokenStack = [];
+			} else {
+				highlights.push(
+					[
+						tokensPlaintext[tokenStack[0] as TokenType],
+						HighlightType.NONE,
+						0,
+					],
+					[tokenStack[1] as string, HighlightType.NONE, 0],
+				);
+				tokenStack = [token];
+			}
+		}
 	}
 
-	/* don't need any processing */
-	if (indices.length === 0) return [[string, false]];
+	tokenStack.forEach(remainingToken => {
+		if (typeof remainingToken === 'string') {
+			highlights.push([remainingToken, HighlightType.NONE, 0]);
+		} else {
+			highlights.push([
+				tokensPlaintext[remainingToken],
+				HighlightType.NONE,
+				0,
+			]);
+		}
+	});
 
-	const ret: Highlight[] = [];
-
-	/* for each pair of indices */
-	for (let i = 0; i < indices.length / 2; ++i) {
-		ret.push([
-			string.substring(
-				i === 0 ? 0 : indices[(i - 1) * 2 + 1] + 2,
-				indices[i * 2],
-			),
-			false,
-		]);
-		ret.push([
-			string.substring(indices[i * 2] + 2, indices[i * 2 + 1]),
-			true,
-		]);
-	}
-	/* part after last pair */
-	ret.push([string.substring(indices[indices.length - 1] + 2), false]);
-
-	return ret;
+	return highlights;
 };
 
 export const IDOLS_NAMES = [
@@ -99,20 +158,23 @@ export const kpopHighlightString = (string: string): Highlight[] => {
 		if (matched.index > startIndex)
 			stringParts.push([
 				string.substring(startIndex, matched.index),
-				false,
+				HighlightType.NONE,
+				0,
 			]);
 
-		stringParts.push([matched[0], idolIndex]);
+		stringParts.push([matched[0], HighlightType.IDOL, idolIndex]);
 		lastIndex = regex.lastIndex;
 	} while (true);
 
 	if (lastIndex < string.length)
-		stringParts.push([string.substring(lastIndex), false]);
+		stringParts.push([string.substring(lastIndex), HighlightType.NONE, 0]);
 
 	return stringParts;
 };
 
 export const highlightThenKpopHighlight = (string: string) =>
 	highlightString(string).flatMap(section =>
-		section[1] === true ? [section] : kpopHighlightString(section[0]),
+		section[1] === HighlightType.NONE
+			? kpopHighlightString(section[0])
+			: [section],
 	);

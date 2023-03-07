@@ -12,7 +12,7 @@ import * as util from '../util';
 import { getParts } from '../partsBadges';
 import CardPanel, { AnkiMode } from '../component/cardPanel';
 import { createGo, Nav } from '../go';
-import { CardDisplay } from '../component/cardDisplay';
+import { WelcomeMessage } from '../component/welcomeMessage';
 import { Settings } from '../settings';
 import { warn } from '../toast';
 
@@ -85,7 +85,7 @@ const CardsPage = ({
 	return cards.length === 0 ? (
 		<div className="blank-holder">
 			<div className="image-holder">
-				<CardDisplay cards={collectionSize?.size} />
+				<WelcomeMessage cards={collectionSize?.size} />
 			</div>
 		</div>
 	) : (

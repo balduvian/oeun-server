@@ -2,7 +2,7 @@ type Props = {
 	cards: number | undefined;
 };
 
-export const CardDisplay = ({ cards }: Props) => (
+export const WelcomeMessage = ({ cards }: Props) => (
 	<svg
 		xmlns="http://www.w3.org/2000/"
 		viewBox="0 0 6.2 6.2"
@@ -55,7 +55,7 @@ export const CardDisplay = ({ cards }: Props) => (
 		{cards == undefined ? null : (
 			<svg x="0.97" y="1.6" width="4.25" height="1" viewBox="0 0 425 100">
 				<foreignObject className="size-display">
-					{`카드 ${cards}장`}
+					{`알려진 단어 ${cards}개`}
 				</foreignObject>
 			</svg>
 		)}
