@@ -192,8 +192,7 @@ const CardPanel = ({
 							card.part === undefined ? 'no-part' : ''
 						}`}
 					>
-						{parts.find(({ id }) => id === card.part)?.english ??
-							''}
+						{parts.find(({ id }) => id === card.part)?.korean ?? ''}
 					</p>
 				</div>
 				<div className="card-field-row">

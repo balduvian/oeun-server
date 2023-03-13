@@ -117,7 +117,7 @@ const NewPartField = ({
 							data-id={part.id}
 						>
 							<b>{part.keybind}</b>
-							<span>{part.english}</span>
+							<span>{part.korean}</span>
 						</div>
 					))}
 				</div>
@@ -127,8 +127,7 @@ const NewPartField = ({
 				value={
 					value === ''
 						? ''
-						: parts.find(part => part.id === value)?.english ??
-						  '???'
+						: parts.find(part => part.id === value)?.korean ?? '???'
 				}
 				events={{
 					tabIndex,
