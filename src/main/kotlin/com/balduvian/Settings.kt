@@ -1,5 +1,7 @@
 package com.balduvian
 
+import com.balduvian.util.JsonUtil
+import com.balduvian.util.NotFoundException
 import java.io.File
 
 object Settings {
@@ -19,7 +21,7 @@ object Settings {
 			val file = File(OPTIONS_PATH)
 
 			val writer = file.writer()
-			writer.write(JsonUtil.saverGson.toJson(this))
+			writer.write(JsonUtil.localGson.toJson(this))
 			writer.close()
 		}
 
@@ -37,7 +39,7 @@ object Settings {
 		val file = File(OPTIONS_PATH)
 
 		return if (file.exists()) {
-			JsonUtil.readerGson.fromJson(File(OPTIONS_PATH).reader(), Options::class.java)
+			JsonUtil.localGson.fromJson(File(OPTIONS_PATH).reader(), Options::class.java)
 		} else {
 			val defaultOptions = Options(DEFAULT_PORT, null, null, null, null)
 

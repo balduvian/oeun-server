@@ -10,7 +10,7 @@ enum class Directories(val path: Path) {
 	PATH_BADGES(Path.of("./data/badges/"));
 
 	companion object {
-		fun setup() {
+		init {
 			values().forEach { directory ->
 				val file = directory.path.toFile()
 				if (!file.exists()) file.mkdir()

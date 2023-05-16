@@ -2,6 +2,10 @@ package com.balduvian
 
 import com.balduvian.Directories.PATH_CARDS
 import com.balduvian.Directories.PATH_TRASH
+import com.balduvian.images.ImagePool
+import com.balduvian.`object`.*
+import com.balduvian.util.Highlighter
+import com.balduvian.util.PrettyException
 import java.nio.file.Path
 import java.time.LocalDate
 import java.time.ZonedDateTime
@@ -72,8 +76,17 @@ object Collection {
 		}
 	}
 
+	private fun checkForHighlight(uploadCard: Card.UploadCard, warnings: Warnings) {
+		uploadCard.sentence?.let { sentence ->
+			if (Highlighter.highlightString(sentence).all { it.highlightType != Highlighter.HighlightType.TARGET }) {
+				warnings.add("Sentence contains no highlight")
+			}
+		}
+	}
+
 	private fun addCard(uploadCard: Card.UploadCard): Pair<Homonyms.Homonym, Warnings> {
 		val warnings = Warnings.make()
+		checkForHighlight(uploadCard, warnings)
 		val (id, insertIndex) = findNewId()
 
 		val pictureFilename = ImagePool.CARDS.images.handleUploadedPicture(null, uploadCard.picture)
@@ -111,6 +124,7 @@ object Collection {
 
 	private suspend fun editCard(id: Int, uploadCard: Card.UploadCard): Pair<Homonyms.Homonym, Warnings> {
 		val warnings = Warnings.make()
+		checkForHighlight(uploadCard, warnings)
 
 		val now = ZonedDateTime.now()
 		val collectionCard = getCard(id) ?: throw PrettyException("Card with id=${id} doesn't exist")

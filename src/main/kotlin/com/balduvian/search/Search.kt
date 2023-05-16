@@ -1,5 +1,7 @@
-package com.balduvian
+package com.balduvian.search
 
+import com.balduvian.Collection
+import com.balduvian.`object`.Homonyms
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
@@ -52,12 +54,14 @@ object Search {
 
             for (i in high downTo low) {
                 val card = Collection.cardsDateOrder[i]
-                results.add(OutSearchResult(
+                results.add(
+                    OutSearchResult(
                     card.word,
                     arrayListOf(i + 1),
                     "/cards/card/${card.id}",
                     arrayListOf(card.definition)
-                ))
+                )
+                )
             }
 
             return results
@@ -76,9 +80,9 @@ object Search {
         val ret = ArrayList<PreSearchResult>()
 
         val matchFunction = if (completedPart.isEmpty() && lastSyllable != null) {
-            ::matchWordSyllable
+            Search::matchWordSyllable
         } else {
-            ::matchWordCompletedPlusSyllable
+            Search::matchWordCompletedPlusSyllable
         }
 
         for (homonym in Homonyms.HomonymListIterator()) {

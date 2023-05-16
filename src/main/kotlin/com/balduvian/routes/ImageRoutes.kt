@@ -1,10 +1,10 @@
 package com.balduvian.routes
 
-import com.balduvian.Util.badRequest
-import com.balduvian.Util.errorResponse
-import com.balduvian.Util.getImagePool
-import com.balduvian.Util.notFound
-import com.balduvian.Util.ok
+import com.balduvian.util.badRequest
+import com.balduvian.util.errorResponse
+import com.balduvian.util.getImagePool
+import com.balduvian.util.notFound
+import com.balduvian.util.ok
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*

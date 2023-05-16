@@ -1,9 +1,7 @@
 package com.balduvian.routes
 
-import com.balduvian.JsonUtil
-import com.balduvian.PrettyException
 import com.balduvian.Settings
-import com.balduvian.Util
+import com.balduvian.util.*
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import io.ktor.server.application.*
@@ -15,7 +13,7 @@ import kotlinx.coroutines.withContext
 fun Route.settingsRouting() {
 	route("/api/settings") {
 		get {
-			Util.okJson(call, JsonUtil.senderGson.toJsonTree(Settings.options))
+			okJson(call, JsonUtil.webGson.toJsonTree(Settings.options))
 		}
 		patch {
 			try {
@@ -36,13 +34,13 @@ fun Route.settingsRouting() {
 
 					Settings.options.save()
 
-					Util.ok(call, "changed")
+					ok(call, "changed")
 				}
 			} catch (ex: PrettyException) {
-				Util.badRequest(call, ex.message)
+				badRequest(call, ex.message)
 			} catch (ex: Exception) {
 				ex.printStackTrace()
-				Util.badRequest(call, "Bad settings data")
+				badRequest(call, "Bad settings data")
 			}
 		}
 	}

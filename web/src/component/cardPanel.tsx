@@ -1,13 +1,7 @@
 import React from 'react';
-import { Badge, Card, Part, Setter } from '../types';
+import { Badge, Card, Part, Highlight } from '../types';
 import { createGo, Nav } from '../go';
 import { warn } from '../toast';
-import {
-	IDOLS_NAMES,
-	highlightThenKpopHighlight,
-	HighlightType,
-} from '../highlight';
-
 import addIcon from '../icon/add-icon.svg';
 import ankiIcon from '../icon/anki-icon.svg';
 import deleteIcon from '../icon/delete-icon.svg';
@@ -16,33 +10,24 @@ import loadingIcon from '../icon/loading-icon.svg';
 import refreshIcon from '../icon/refresh-icon.svg';
 
 type HighlightsProps = {
-	sentence: string | undefined;
+	highlights: Highlight[] | undefined;
 };
 
-const Highlights = React.memo(({ sentence }: HighlightsProps) => {
-	const highlights =
-		sentence === undefined
-			? undefined
-			: highlightThenKpopHighlight(sentence);
-
+const Highlights = React.memo(({ highlights }: HighlightsProps) => {
 	return highlights === undefined ? (
 		<span />
 	) : (
 		<>
-			{highlights.map(([part, highlight, idolIndex], i) => (
+			{highlights.map(({ string, bold, italic, color }, i) => (
 				<span
 					key={i}
-					className={
-						highlight === HighlightType.NONE
-							? ''
-							: highlight === HighlightType.TARGET
-							? 'target'
-							: highlight === HighlightType.NAME
-							? 'name'
-							: `idol-name ${IDOLS_NAMES[idolIndex]}`
-					}
+					style={{
+						color: color,
+						fontStyle: italic ? 'italic' : undefined,
+						fontWeight: bold ? 'bold' : undefined,
+					}}
 				>
-					{part}
+					{string}
 				</span>
 			))}
 		</>
@@ -196,13 +181,22 @@ const CardPanel = ({
 					</p>
 				</div>
 				<div className="card-field-row">
-					<p className="card-definition">{`${index + 1}. ${
-						card.definition
-					}`}</p>
+					<p className="card-definition">
+						{card.definition_highlights === undefined ? (
+							<span />
+						) : (
+							<>
+								<span>{`${index + 1}. `}</span>
+								<Highlights
+									highlights={card.definition_highlights}
+								/>
+							</>
+						)}
+					</p>
 				</div>
 				<div className="card-field-row">
 					<p className="card-sentence">
-						<Highlights sentence={card.sentence} />
+						<Highlights highlights={card.sentence_highlights} />
 					</p>
 				</div>
 				{card.badges.length === 0 ? null : (
@@ -212,7 +206,7 @@ const CardPanel = ({
 								({ id }) => id === badgeId,
 							);
 							return (
-								<div className="card-badge">
+								<div key={badgeId} className="card-badge">
 									<img
 										src={
 											badge?.picture === undefined

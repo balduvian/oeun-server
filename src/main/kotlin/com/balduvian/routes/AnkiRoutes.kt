@@ -2,6 +2,9 @@ package com.balduvian.routes
 
 import com.balduvian.*
 import com.balduvian.Collection
+import com.balduvian.`object`.Card
+import com.balduvian.`object`.CardsState
+import com.balduvian.util.*
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 
@@ -9,10 +12,10 @@ suspend inline fun handleError(call: ApplicationCall, crossinline run: suspend (
 	try {
 		run(call)
 	} catch (ex: RequestException) {
-		Util.errorResponse(call, ex.message, ex.code)
+		errorResponse(call, ex.message, ex.code)
 	} catch (ex: Throwable) {
 		ex.printStackTrace()
-		Util.errorResponse(call, ex.message ?: "Unknown error", 500)
+		errorResponse(call, ex.message ?: "Unknown error", 500)
 	}
 }
 
@@ -32,7 +35,7 @@ fun Route.ankiRouting() {
 				val ankiId = AnkiConnect.addCardToAnki(deckName, modelName, card)
 				Collection.setCardAnki(card, ankiId)
 
-				Util.okJson(call, CardsState(Collection.getCollectionSize(), arrayListOf(card)).serialize())
+				okJson(call, CardsState(Collection.getCollectionSize(), arrayListOf(card)).serialize())
 			}
 		}
 		post("sync/{id?}") {
@@ -43,11 +46,11 @@ fun Route.ankiRouting() {
 				val ankiId = AnkiConnect.editCardInAnki(deckName, modelName, card)
 				if (ankiId != card.anki?.id) Collection.setCardAnki(card, ankiId)
 
-				Util.okJson(call, CardsState(Collection.getCollectionSize(), arrayListOf(card)).serialize())
+				okJson(call, CardsState(Collection.getCollectionSize(), arrayListOf(card)).serialize())
 			}
 		}
 		post("sync") {
-			Util.badRequest(call, "Not implemented")
+			badRequest(call, "Not implemented")
 		}
 	}
 }

@@ -1,5 +1,6 @@
-package com.balduvian
+package com.balduvian.`object`
 
+import com.balduvian.util.JsonUtil
 import com.google.gson.JsonArray
 
 class Warnings(val messages: ArrayList<String>) {
@@ -18,6 +19,6 @@ class Warnings(val messages: ArrayList<String>) {
     }
 
     fun serialize(): JsonArray {
-        return JsonUtil.senderGson.toJsonTree(messages) as JsonArray
+        return JsonUtil.webGson.toJsonTree(messages) as JsonArray
     }
 }

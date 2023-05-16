@@ -5,14 +5,20 @@ import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.io.File
 
-fun main() {
+@OptIn(DelicateCoroutinesApi::class)
+suspend fun main() {
 	Tray.initTray()
 
-	Directories.setup()
+	Directories
 	Collection.loadAllCards()
 	Badges.loadBadges()
+
+	GlobalScope.launch { Background.start() }
 
 	embeddedServer(Netty, Settings.options.port) {
 		routing {

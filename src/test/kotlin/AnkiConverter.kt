@@ -1,5 +1,4 @@
-import com.balduvian.Card
-import com.balduvian.Part
+import com.balduvian.`object`.Card
 import AnkiConverter.loadAnkiFile
 import AnkiConverter.parseAnkiFile
 import java.io.File

@@ -1,21 +1,14 @@
 package com.balduvian
 
-import com.google.gson.JsonObject
+import com.balduvian.images.ImagePool
+import com.balduvian.`object`.Badge
+import com.balduvian.util.JsonUtil
+import com.balduvian.util.PrettyException
 import com.google.gson.JsonParser
 import java.io.InputStreamReader
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.io.path.Path
-
-class Badge(
-	var id: String,
-	var displayName: String,
-	var picture: String,
-) {
-	fun serialize(): JsonObject {
-		return JsonUtil.senderGson.toJsonTree(this, Badge::class.java).asJsonObject
-	}
-}
 
 object Badges {
 	val badgesList = ArrayList<Badge>()
@@ -29,7 +22,7 @@ object Badges {
 			val ret = ArrayList<Badge>()
 
 			for (element in jsonArray) {
-				ret.add(JsonUtil.readerGson.fromJson(element, Badge::class.java))
+				ret.add(JsonUtil.localGson.fromJson(element, Badge::class.java))
 			}
 
 			return ret
@@ -52,7 +45,7 @@ object Badges {
 
 	private fun saveBadges() {
 		val badgesFile = badgesFile()
-		val serialized = JsonUtil.saverGson.toJson(badgesList)
+		val serialized = JsonUtil.localGson.toJson(badgesList)
 		badgesFile.writeText(serialized)
 	}
 

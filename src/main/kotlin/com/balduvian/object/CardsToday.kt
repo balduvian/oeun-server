@@ -1,5 +1,6 @@
-package com.balduvian
+package com.balduvian.`object`
 
+import com.balduvian.Settings
 import java.time.LocalDate
 import java.time.ZonedDateTime
 

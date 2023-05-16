@@ -23,7 +23,6 @@ import {
 } from '../ebetUi';
 import { createGo, Nav } from '../go';
 import { warn } from '../toast';
-import { highlightString } from '../highlight';
 
 const getElementByTabIndex = (index: number) =>
 	[
@@ -195,6 +194,7 @@ const BadgesSelector = ({
 				const isSelected = selected.includes(id);
 				return (
 					<div
+						key={id}
 						className={`card-badge ${isSelected ? 'selected' : ''}`}
 						onClick={() => {
 							if (isSelected) {
@@ -268,13 +268,6 @@ export const EditPage = ({
 
 		if (realWord !== undefined && realDefinition !== undefined) {
 			const realSentence = realValue(card.sentence);
-			if (
-				realSentence != null &&
-				highlightString(realSentence).every(
-					([, highlight]) => !highlight,
-				)
-			)
-				return warn('Sentence contains no highlight');
 
 			const uploadCard: UploadCard = {
 				id: card.id,
@@ -294,7 +287,7 @@ export const EditPage = ({
 				.then(({ word, url, warnings }) => {
 					setSearchValue(word);
 					nav.goTo(createGo(url));
-					warnings.forEach(warning => warn(warning));
+					warnings.forEach(warn);
 				})
 				.catch(() => nav.setError(true));
 		} else {

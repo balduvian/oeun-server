@@ -42,6 +42,13 @@ export type AnkiData = {
 	added: string;
 };
 
+export type Highlight = {
+	string: string;
+	bold: boolean;
+	italic: boolean;
+	color?: string;
+};
+
 export type Card = {
 	id: number;
 	word: string;
@@ -51,6 +58,8 @@ export type Card = {
 	picture: string | undefined;
 	badges: string[];
 	anki: AnkiData | undefined;
+	definition_highlights?: Highlight[];
+	sentence_highlights?: Highlight[];
 };
 
 export type UploadCard = {
