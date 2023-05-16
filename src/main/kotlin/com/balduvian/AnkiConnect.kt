@@ -2,6 +2,7 @@ package com.balduvian
 
 import com.balduvian.images.ImagePool
 import com.balduvian.`object`.Card
+import com.balduvian.util.Highlighter
 import com.balduvian.util.PrettyException
 import com.balduvian.util.getMaybe
 import com.google.gson.*
@@ -10,21 +11,18 @@ import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import io.ktor.util.*
 
 object AnkiConnect {
-	val senderGson = GsonBuilder().create()
-	val client = HttpClient(CIO)
-	val version = 6
-	val PORT = 8765
+	private val senderGson = GsonBuilder().create()
+	private val client = HttpClient(CIO)
+	private const val version = 6
+	private const val PORT = 8765
 
-	fun ankiFormat(string: String): String {
-		return string.replace(Regex("\\*\\*(.+?)\\*\\*"), "<b>$1</b>")
-	}
-
-	fun createRequestObj(action: String, params: JsonElement): JsonObject {
+	private fun createRequestObj(action: String, params: JsonElement): JsonObject {
 		val obj = JsonObject()
 		obj.addProperty("action", action)
-		obj.addProperty("version", 6)
+		obj.addProperty("version", version)
 		obj.add("params", params)
 		return obj
 	}
@@ -48,18 +46,32 @@ object AnkiConnect {
      * }
 	 */
 
-	fun fieldsObject(card: Card): JsonObject {
+	private fun highlightsToHtml(highlights: List<Highlighter.Highlight>): String {
+		return highlights.joinToString("") { highlight ->
+			val string = highlight.string.escapeHTML()
+			when (highlight.highlightType) {
+				Highlighter.HighlightType.NONE ->string
+				Highlighter.HighlightType.TARGET -> "<b>${string}</b>"
+				Highlighter.HighlightType.NAME -> "<i>${string}</i>"
+				Highlighter.HighlightType.IDOL -> "<span style=\"color:${highlight.toColor()}\">${string}</span>"
+			}
+		}
+	}
+
+	private fun fieldsObject(card: Card): JsonObject {
 		val fields = JsonObject()
 		fields.addProperty("CardId", card.id.toString())
-		fields.addProperty("Sentence", ankiFormat(card.sentence ?: "[No sentence]"))
-		fields.addProperty("Target", card.word)
-		fields.addProperty("Part", card.part?.english ?: "")
-		fields.addProperty("Definition", card.definition)
+
+		fields.addProperty("Sentence", card.sentence?.let { highlightsToHtml(Highlighter.highlightString(it)) } ?: "[No sentence]")
+		fields.addProperty("Target", card.word.escapeHTML())
+		fields.addProperty("Part", card.part?.english?.escapeHTML() ?: "")
+		fields.addProperty("Definition", highlightsToHtml(Highlighter.highlightString(card.definition)) )
+
 		fields.addProperty("Picture", "")
 		return fields
 	}
 
-	fun pictureArray(path: String): JsonArray {
+	private fun pictureArray(path: String): JsonArray {
 		val picture = JsonArray()
 		val entry = JsonObject()
 
@@ -73,7 +85,7 @@ object AnkiConnect {
 		return picture
 	}
 
-	fun deleteNotesParams(
+	private fun deleteNotesParams(
 		ankiId: Long,
 	): JsonObject {
 		val params = JsonObject()
@@ -83,7 +95,7 @@ object AnkiConnect {
 		return params
 	}
 
-	fun findNoteParams(
+	private fun findNoteParams(
 		deckName: String,
 		modelName: String,
 		card: Card,
@@ -93,7 +105,7 @@ object AnkiConnect {
 		return params
 	}
 
-	fun updateNoteFieldsParams(
+	private fun updateNoteFieldsParams(
 		card: Card,
 		ankiId: Long,
 	): JsonObject {
@@ -108,7 +120,7 @@ object AnkiConnect {
 		return params
 	}
 
-	fun addNoteParams(
+	private fun addNoteParams(
 		deckName: String,
 		modelName: String,
 		card: Card,
@@ -161,6 +173,18 @@ object AnkiConnect {
 	private fun isDuplicateError(error: String) = error == "Cannot create note because it is a duplicate"
 
 	/**
+	 * @return null if the card does not exist
+	 */
+	private suspend fun findCardAnkiId(deckName: String, modelName: String, card: Card): Long? {
+		val (error, result) = jsonPostRequest(createRequestObj("findNotes", findNoteParams(deckName, modelName, card)))
+		if (error != null) throw PrettyException("Could not find this card's anki id")
+
+		val results = result.asJsonArray
+		if (results.isEmpty) return null
+		return results[0].asLong
+	}
+
+	/**
 	 * try adding card to anki. If it already exists, edit the existing card instead
 	 */
 	suspend fun addCardToAnki(deckName: String, modelName: String, card: Card): Long {
@@ -191,18 +215,6 @@ object AnkiConnect {
 		if (addError != null) throw PrettyException(addError)
 
 		return addResult.asLong
-	}
-
-	/**
-	 * @return null if the card does not exist
-	 */
-	suspend fun findCardAnkiId(deckName: String, modelName: String, card: Card): Long? {
-		val (error, result) = jsonPostRequest(createRequestObj("findNotes", findNoteParams(deckName, modelName, card)))
-		if (error != null) throw PrettyException("Could not find this card's anki id")
-
-		val results = result.asJsonArray
-		if (results.isEmpty) return null
-		return results[0].asLong
 	}
 
 	suspend fun deleteCardFromAnki(ankiId: Long) {

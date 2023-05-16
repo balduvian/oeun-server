@@ -121,3 +121,8 @@ export type CardsState = {
 	collectionSize: CollectionSize;
 	cards: Card[];
 };
+
+export type WholeCollectionSyncReturn = {
+	editCount: number;
+	warnings: string[];
+};

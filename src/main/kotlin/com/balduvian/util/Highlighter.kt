@@ -54,13 +54,15 @@ object Highlighter {
 			fun createIdol(string: String, idolIndex: Int) = Highlight(string, HighlightType.IDOL, idolIndex)
 		}
 
+		fun toColor() = String.format("#%06x", Idol.values()[special].color)
+
 		fun serialize(): JsonObject {
 			val obj = JsonObject()
 
 			obj.addProperty("string", string)
 			obj.addProperty("bold", highlightType == HighlightType.TARGET)
 			obj.addProperty("italic", highlightType == HighlightType.NAME)
-			obj.addProperty("color", if (highlightType == HighlightType.IDOL) String.format("#%06x", Idol.values()[special].color) else null)
+			obj.addProperty("color", if (highlightType == HighlightType.IDOL) toColor() else null)
 
 
 			return obj

@@ -1,7 +1,15 @@
 import React from 'react';
-import { EbetFormField, EbetInput, EbetLabel, InputProps } from '../ebetUi';
+import {
+	EbetButton,
+	EbetFormField,
+	EbetInput,
+	EbetLabel,
+	InputProps,
+} from '../ebetUi';
 import { Settings } from '../settings';
-import { Setter } from '../types';
+import { Setter, WholeCollectionSyncReturn } from '../types';
+import { postRequest } from '../util';
+import { nice, warn } from '../toast';
 
 type SettingsInputProps = {
 	label: string;
@@ -65,6 +73,7 @@ export const blankToNull = (input: string) =>
 	input.length === 0 ? null : input;
 
 export const SettingsPage = ({ settings, setSettings }: Props) => {
+	const [waiting, setWaiting] = React.useState(false);
 	const [dummySettings, setDummySettings] = React.useState<DummySettings>(
 		() => createDummySettings(settings),
 	);
@@ -93,6 +102,29 @@ export const SettingsPage = ({ settings, setSettings }: Props) => {
 				value={dummySettings.modelName}
 				onChange={value =>
 					changeSetting('modelName', value, stringToReal)
+				}
+			/>
+			<EbetButton
+				text={waiting ? '...' : 'Sync Whole Collection'}
+				disabled={waiting}
+				onClick={
+					waiting
+						? undefined
+						: () => {
+								setWaiting(true);
+
+								postRequest<WholeCollectionSyncReturn>(
+									'/api/anki/sync',
+									{},
+								)
+									.then(({ editCount, warnings }) => {
+										warnings.forEach(warn);
+										nice(`Synced ${editCount} cards`);
+									})
+									.finally(() => {
+										setWaiting(false);
+									});
+						  }
 				}
 			/>
 			<h2>Ebetshot Settings</h2>
