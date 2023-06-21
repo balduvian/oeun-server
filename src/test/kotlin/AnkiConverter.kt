@@ -1,6 +1,7 @@
 import com.balduvian.`object`.Card
 import AnkiConverter.loadAnkiFile
 import AnkiConverter.parseAnkiFile
+import com.balduvian.`object`.Part
 import java.io.File
 import java.nio.charset.Charset
 import java.time.Instant

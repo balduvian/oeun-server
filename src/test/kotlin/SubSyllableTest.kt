@@ -1,4 +1,4 @@
-import com.balduvian.Syllable
+import com.balduvian.search.Syllable
 
 fun main() {
     fun test(first: Char, second: Char, next: Char?, correct: Int) {

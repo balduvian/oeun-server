@@ -1,4 +1,4 @@
-import com.balduvian.JsonUtil
+import com.balduvian.util.JsonUtil
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
@@ -10,7 +10,7 @@ import kotlin.system.exitProcess
 fun main() {
     val directory = Path("C:\\Users\\Emmet\\Programming\\lang\\java\\oeun-server\\run\\data\\cards").toFile()
 
-    val json = JsonUtil.saverGson
+    val json = JsonUtil.localGson
 
     val beforeDate = ZonedDateTime.parse("2022-04-11T19:02:52-07:00[America/Los_Angeles]")
 

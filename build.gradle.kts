@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     application
     id("com.github.johnrengelman.shadow") version "7.1.2"
@@ -17,8 +15,8 @@ repositories {
 }
 
 dependencies {
-    implementation("io.ktor:ktor-server-core:2.0.0")
-    implementation("io.ktor:ktor-server-netty:2.0.0")
+    implementation("io.ktor:ktor-server-core:2.3.1")
+    implementation("io.ktor:ktor-server-netty:2.3.1")
     implementation("io.ktor:ktor-client-core:2.0.0")
     implementation("io.ktor:ktor-client-cio:2.0.0")
     implementation("ch.qos.logback:logback-classic:1.4.6")
@@ -31,12 +29,8 @@ application {
     mainClass.set("com.balduvian.MainKt")
 }
 
-tasks.compileKotlin {
-    compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
-}
-
-tasks.compileJava {
-    targetCompatibility = "17"
+kotlin {
+    jvmToolchain(17)
 }
 
 tasks.withType<JavaExec> {
@@ -44,12 +38,12 @@ tasks.withType<JavaExec> {
 }
 
 tasks.withType<Jar> {
-    enabled = false
-    manifest.attributes["Main-Class"] = "com.balduvian.MainKt"
+    enabled = false;
 }
 
 tasks.shadowJar {
     archiveFileName.set("oeun server.jar")
+    manifest.attributes["Main-Class"] = "com.balduvian.MainKt"
 }
 
 tasks.build {
@@ -63,4 +57,6 @@ tasks.register("copyProductionJar", Copy::class.java) {
         from("./build/libs")
         include("oeun server.jar")
     })
+
+    dependsOn(tasks.shadowJar)
 }

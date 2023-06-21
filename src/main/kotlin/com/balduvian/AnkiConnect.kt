@@ -19,7 +19,7 @@ object AnkiConnect {
 	private const val version = 6
 	private const val PORT = 8765
 
-	private fun createRequestObj(action: String, params: JsonElement): JsonObject {
+	fun createRequestObj(action: String, params: JsonElement): JsonObject {
 		val obj = JsonObject()
 		obj.addProperty("action", action)
 		obj.addProperty("version", version)
@@ -105,7 +105,7 @@ object AnkiConnect {
 		return params
 	}
 
-	private fun updateNoteFieldsParams(
+	fun updateNoteFieldsParams(
 		card: Card,
 		ankiId: Long,
 	): JsonObject {

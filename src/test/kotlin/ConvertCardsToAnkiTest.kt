@@ -1,7 +1,7 @@
 import com.balduvian.AnkiConnect
-import com.balduvian.Card
-import com.balduvian.Part
-import com.balduvian.Util.getMaybe
+import com.balduvian.`object`.Card
+import com.balduvian.`object`.Part
+import com.balduvian.util.getMaybe
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
